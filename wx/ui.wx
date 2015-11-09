@@ -1,0 +1,483 @@
+%fonts = 'Interface\AddOns\ephemeral\fonts'
+%textures = 'Interface\AddOns\ephemeral\textures'
+
+Frame epRoot:
+  OnEvent:
+    *ep.event(event, ...)
+  OnLoad:
+    *ep.subscribe('PLAYER_LOGIN', function() ep.schedule(ep._bootstrap_ephemeral, 1, 1) end)
+
+Font epFont(font: '%fonts\petrock.ttf', virtual):
+  !Color(0.0, 0.0, 0.0, 1.0)
+  FontHeight:
+    AbsValue(val: 12)
+
+Font epConsoleFont(font: '%fonts\console.ttf', virtual):
+  !Color(0.0, 0.0, 0.0, 1.0)
+  FontHeight:
+    AbsValue(val: 9)
+
+Font epInnerLabelFont(epFont, virtual):
+  !Color(0.25, 0.25, 0.25, 0.75)
+
+Font epLabelFont(epFont, virtual):
+  !Color(0.2, 0.2, 0.2, 1.0)
+  Shadow:
+    !Color(0.4, 0.4, 0.4, 0.1)
+    Offset:
+      AbsDimension(x: 1, y: -1)
+
+Font epNormalFont(epFont, virtual):
+  !Color(0.1, 0.1, 0.1, 1.0)
+  Shadow:
+    !Color(0.3, 0.3, 0.3, 0.2)
+    Offset:
+      AbsDimension(x: 1, y: -1)
+
+Font epTitleFont(epFont, virtual):
+  !Color(0.0, 0.0, 0.0, 1.0)
+  Shadow:
+    !Color(0.2, 0.2, 0.2, 0.2)
+    Offset:
+      AbsDimension(x: 1, y: -1)
+
+Font epHighlightFont(epFont, virtual):
+  !Color(0.0, 0.0, 0.0, 1.0)
+  Shadow:
+    !Color(0.2, 0.2, 0.2, 0.2)
+    Offset:
+      AbsDimension(x: 1, y: -1)
+
+FontString epInnerLabel(epInnerLabelFont, justifyH: LEFT, virtual):
+  !Right(-5, 0)
+
+FontString epLeftLabel(epInnerLabelFont, justifyH: LEFT, virtual):
+  !Anchor(point: RIGHT, relativePoint: LEFT, x: -4, y: 0)
+
+Texture epArrowLeft(file: '%textures\arrow-left', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epArrowRight(file: '%textures\arrow-right', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epArrowUp(file: '%textures\arrow-up', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epArrowDown(file: '%textures\arrow-down', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epArrowUpBg(file: '%textures\arrow-up-bg', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epArrowDownBg(file: '%textures\arrow-down-bg', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epClose(file: '%textures\close-normal', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epCloseHighlight(file: '%textures\close-highlight', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epPlus(file: '%textures\plus-normal', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epPlusHighlight(file: '%textures\plus-highlight', virtual):
+  !Size(20, 20)
+  !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+
+Texture epStandardBackground(virtual):
+  !Color(0.75, 0.63, 0.4, 0.2)
+
+Texture epSlightHighlight(alphaMode: ADD, virtual):
+  !Color(0.8, 0.8, 0.8, 0.04)
+
+Texture epStandardHighlight(alphaMode: ADD, virtual):
+  !Color(0.8, 0.8, 0.8, 0.08)
+
+Texture epControlBackground(epStandardBackground, virtual):
+  !TopLeft(1, -1)
+  !BottomRight(-1, 1)
+
+Texture epControlEdgeTL(file: '%textures\control-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0, 0.1875, 0, 0.1875)
+
+Texture epControlEdgeT(file: '%textures\control-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.1875, 0.8125, 0, 0.1875)
+
+Texture epControlEdgeTR(file: '%textures\control-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.8125, 1.0, 0, 0.1875)
+
+Texture epControlEdgeL(file: '%textures\control-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0, 0.1875, 0.1875, 0.8125)
+
+Texture epControlEdgeR(file: '%textures\control-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.8125, 1.0, 0.1875, 0.8125)
+
+Texture epControlEdgeBL(file: '%textures\control-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0, 0.1875, 0.8125, 1.0)
+
+Texture epControlEdgeB(file: '%textures\control-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.1875, 0.8125, 0.8125, 1.0)
+
+Texture epControlEdgeBR(file: '%textures\control-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.8125, 1.0, 0.8125, 1.0)
+
+# reload icon
+
+Texture epReloadIcon(file: '%textures\icons', virtual):
+  !TexCoords(0, 0.09375, 0, 0.09375)
+
+Texture epReloadHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0, 0.09375, 0.09375, 0.1875)
+
+Texture epReloadDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0, 0.09375, 0.1875, 0.28125)
+
+# shield icon
+
+Texture epShieldIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.09375, 0.1875, 0, 0.09375)
+
+Texture epShieldHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.09375, 0.1875, 0.09375, 0.1875)
+
+Texture epShieldDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.09375, 0.1875, 0.1875, 0.28125)
+
+# up icon
+
+Texture epUpIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.1875, 0.28125, 0, 0.09375)
+
+Texture epUpHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.1875, 0.28125, 0.09375, 0.1875)
+
+Texture epUpDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.1875, 0.28125, 0.1875, 0.28125)
+
+# error icon
+
+Texture epErrorIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.28125, 0.375, 0, 0.09375)
+
+Texture epErrorHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.28125, 0.375, 0.09375, 0.1875)
+
+Texture epErrorDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.28125, 0.375, 0.1875, 0.28125)
+
+# pause icon
+
+Texture epPauseIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.375, 0.46875, 0, 0.09375)
+
+Texture epPauseHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.375, 0.46875, 0.09375, 0.1875)
+
+Texture epPauseDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.375, 0.46875, 0.1875, 0.28125)
+
+# play icon
+
+Texture epPlayIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.46875, 0.5625, 0, 0.09375)
+
+Texture epPlayHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.46875, 0.5625, 0.09375, 0.1875)
+
+Texture epPlayDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.46875, 0.5625, 0.1875, 0.28125)
+
+# book icon
+
+Texture epBookIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.5625, 0.65625, 0, 0.09375)
+
+Texture epBookHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.5625, 0.65625, 0.09375, 0.1875)
+
+Texture epBookDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.5625, 0.65625, 0.1875, 0.28125)
+
+# backpack icon
+
+Texture epBackpackIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.65625, 0.75, 0, 0.09375)
+
+Texture epBackpackHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.65625, 0.75, 0.09375, 0.1875)
+
+Texture epBackpackDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.65625, 0.75, 0.1875, 0.28125)
+
+# home icon
+
+Texture epHomeIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.75, 0.84375, 0, 0.09375)
+
+Texture epHomeHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.75, 0.84375, 0.09375, 0.1875)
+
+Texture epHomeDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.75, 0.84375, 0.1875, 0.28125)
+
+# help icon
+
+Texture epHelpIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.84375, 0.9375, 0, 0.09375)
+
+Texture epHelpHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.84375, 0.9375, 0.09375, 0.1875)
+
+Texture epHelpDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0.84375, 0.9375, 0.1875, 0.28125)
+
+# down icon
+
+Texture epDownIcon(file: '%textures\icons', virtual):
+  !TexCoords(0, 0.09375, 0.28125, 0.375)
+
+Texture epDownHighlightedIcon(file: '%textures\icons', virtual):
+  !TexCoords(0, 0.09375, 0.375, 0.46875)
+
+Texture epDownDisabledIcon(file: '%textures\icons', virtual):
+  !TexCoords(0, 0.09375, 0.46875, 0.5625)
+
+Frame epControlEdge(virtual):
+  !Border:
+    Texture(epControlEdgeTL):
+      !TopLeft(-6, 6)
+    Texture(epControlEdgeT):
+      !TopLeft(6, 6)
+      !TopRight(-6, 6)
+    Texture(epControlEdgeTR):
+      !TopRight(6, 6)
+    Texture(epControlEdgeL):
+      !TopLeft(-6, -6)
+      !BottomLeft(-6, 6)
+    Texture(epControlEdgeR):
+      !TopRight(6, -6)
+      !BottomRight(6, 6)
+    Texture(epControlEdgeBL):
+      !BottomLeft(-6, -6)
+    Texture(epControlEdgeB):
+      !BottomLeft(6, -6)
+      !BottomRight(-6, -6)
+    Texture(epControlEdgeBR):
+      !BottomRight(6, -6)
+
+Texture epControlHighlight(epStandardHighlight, alphaMode: ADD, virtual):
+  !TopLeft(1, -1)
+  !BottomRight(-1, 1)
+
+Texture epControlInnerEdgeTL(file: '%textures\control-inner-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0, 0.1875, 0, 0.1875)
+
+Texture epControlInnerEdgeT(file: '%textures\control-inner-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.1875, 0.8125, 0, 0.1875)
+
+Texture epControlInnerEdgeTR(file: '%textures\control-inner-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.8125, 1.0, 0, 0.1875)
+
+Texture epControlInnerEdgeL(file: '%textures\control-inner-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0, 0.1875, 0.1875, 0.8125)
+
+Texture epControlInnerEdgeR(file: '%textures\control-inner-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.8125, 1.0, 0.1875, 0.8125)
+
+Texture epControlInnerEdgeBL(file: '%textures\control-inner-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0, 0.1875, 0.8125, 1.0)
+
+Texture epControlInnerEdgeB(file: '%textures\control-inner-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.1875, 0.8125, 0.8125, 1.0)
+
+Texture epControlInnerEdgeBR(file: '%textures\control-inner-edge', virtual):
+  !Size(12, 12)
+  !TexCoords(0.8125, 1.0, 0.8125, 1.0)
+
+Frame epControl(epControlEdge, virtual):
+  !Background:
+    Texture(epControlBackground)
+
+Frame epFrame(virtual):
+  Backdrop(edgeFile: '%textures\panel-edge'):
+    EdgeSize:
+      AbsValue(val: 16)
+  !Background:
+    Texture $parentBackground(.background):
+      !TopLeft(6, -6)
+      !BottomRight(-6, 6)
+
+Frame epPanel(epFrame, enableMouse, virtual):
+  !Border:
+    Texture(file: '%textures\panel-title', .titletexture):
+      !Size(32, 32)
+      !TopLeft(6, -6)
+      !TopRight(-6, -6)
+    Texture(epStandardBackground, .hbg, hidden):
+      !TopLeft(6, -6)
+      !BottomLeft(6, 6)
+      !Size(x: 17)
+    Texture(epControlEdgeR, .hdg, hidden):
+      !TopLeft(17, -6)
+      !BottomLeft(17, 6)
+  !Artwork:
+    FontString $parentTitle(epTitleFont, .title):
+      !TopLeft(11, -10)
+  Button $parentAnchor(.anchor):
+    !Size(23, 23)
+    !TopLeft(4, -4)
+    !TopRight(-44, -4)
+    HighlightTexture(epControlHighlight, alphaMode: ADD)
+    OnMouseDown:
+      *local frame = self:GetParent()
+      *if button == 'LeftButton' and frame:IsMovable() then
+      *  frame:StartMoving()
+      *end
+    OnMouseUp:
+      *if button == 'LeftButton' then
+      *  self:GetParent():StopMovingOrSizing()
+      *end
+  Button $parentIconify(.iconify_button, hidden):
+    !Size(20, 20)
+    !TopRight(-22, -6)
+    NormalTexture(file: '%textures\iconify-normal'):
+      !Size(20, 20)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    HighlightTexture(file: '%textures\iconify-highlight'):
+      !Size(20, 20)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    OnClick:
+      *self:GetParent():iconify()
+  Button $parentClose(.close_button):
+    !Size(20, 20)
+    !TopRight(-6, -6)
+    NormalTexture(file: '%textures\close-normal'):
+      !Size(20, 20)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    HighlightTexture(file: '%textures\close-highlight'):
+      !Size(20, 20)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    OnClick:
+      *self:GetParent():close()
+  Button $parentVerticalResize(.vr, hidden):
+    !Size(9, 9)
+    !BottomLeft(4, 0)
+    !BottomRight(-20, 0)
+    !Overlay:
+      Texture $parentHighlight(.highlight, hidden, alphaMode: ADD):
+        !Size(y: 4)
+        !BottomLeft(2, 4)
+        !BottomRight(14, 4)
+        !Color(0.8, 0.8, 0.8, 0.12)
+    OnEnter:
+      *self.highlight:Show()
+    OnLeave:
+      *self.highlight:Hide()
+    OnMouseDown:
+      *local frame = self:GetParent()
+      *if button == 'LeftButton' and frame:IsResizable() then
+      *  frame:start_resizing('vertical')
+      *end
+    OnMouseUp:
+      *if button == 'LeftButton' then
+      *  self:GetParent():stop_resizing()
+      *end
+  Button $parentHorizontalResize(.hr, hidden):
+    !Size(9, 9)
+    !TopRight(0, -27)
+    !BottomRight(0, 20)
+    !Overlay:
+      Texture $parentHighlight(.highlight, hidden, alphaMode: ADD):
+        !Size(x: 4)
+        !TopRight(-4, 0)
+        !BottomRight(-4, -14)
+        !Color(0.8, 0.8, 0.8, 0.12)
+    OnEnter:
+      *self.highlight:Show()
+    OnLeave:
+      *self.highlight:Hide()
+    OnMouseDown:
+      *local frame = self:GetParent()
+      *if button == 'LeftButton' and frame:IsResizable() then
+      *  frame:start_resizing('horizontal')
+      *end
+    OnMouseUp:
+      *if button == 'LeftButton' then
+      *  self:GetParent():stop_resizing()
+      *end
+  Button $parentFullResizeOne(hidden):
+    !Size(20, 9)
+    !BottomRight(0, 0)
+    OnEnter:
+      *self:GetParent().hr.highlight:Show()
+      *self:GetParent().vr.highlight:Show()
+    OnLeave:
+      *self:GetParent().hr.highlight:Hide()
+      *self:GetParent().vr.highlight:Hide()
+    OnMouseDown:
+      *local frame = self:GetParent()
+      *if button == 'LeftButton' and frame:IsResizable() then
+      *  frame:start_resizing('full')
+      *end
+    OnMouseUp:
+      *if button == 'LeftButton' then
+      *  self:GetParent():stop_resizing()
+      *end
+  Button $parentFullResizeTwo(hidden):
+    !Size(9, 11)
+    !BottomRight(0, 9)
+    OnEnter:
+      *self:GetParent().hr.highlight:Show()
+      *self:GetParent().vr.highlight:Show()
+    OnLeave:
+      *self:GetParent().hr.highlight:Hide()
+      *self:GetParent().vr.highlight:Hide()
+    OnMouseDown:
+      *local frame = self:GetParent()
+      *if button == 'LeftButton' and frame:IsResizable() then
+      *  frame:start_resizing('full')
+      *end
+    OnMouseUp:
+      *if button == 'LeftButton' then
+      *  self:GetParent():stop_resizing()
+      *end
+
+Frame epTooltip(epFrame, frameStrata: TOOLTIP, hidden):
+  !Size(100, 100)
+  !Center
+  !Artwork:
+    FontString $parentT(epNormalFont, .t, justifyH: LEFT, justifyV: TOP, maxLines: 10):
+      !TopLeft(10, -10)
+    FontString $parentLH(epNormalFont, .lh, justifyH: LEFT, justifyV: TOP, maxLines: 10)
+    FontString $parentRH(epNormalFont, .rh, justifyH: RIGHT, justifyV: TOP, maxLines: 10)
+    FontString $parentC(epNormalFont, .c, justifyH: LEFT, justifyV: TOP, maxLines: 20)
+    FontString $parentLF(epNormalFont, .lf, justifyH: LEFT, justifyV: TOP, maxLines: 10)
+    FontString $parentRF(epNormalFont, .rf, justifyH: RIGHT, justifyV: TOP, maxLines: 10)
+    FontString $parentB(epNormalFont, .b, justifyH: LEFT, justifyV: TOP, maxLines: 10)
+  OnLoad:
+    *ep.tooltip(self)

@@ -1,0 +1,394 @@
+%textures = 'Interface\AddOns\ephemeral\textures'
+
+Frame epConsole(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+  !Size(400, 400)
+  !Center
+  Frame $parentTabs(epTabbedFrame, .tabs):
+    !TopLeft(10, -31)
+    !BottomRight(-10, 33)
+    Frame $parentInterpreter(epMessageFrameBase, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentLog(epMessageFrameBase, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    OnLoad:
+      *ep.tabbedframe(self, {
+      *  {label = 'Interpreter', client = epConsoleTabsInterpreter},
+      *  {label = 'Debug Log', client = epConsoleTabsLog},
+      *})
+  EditBox $parentInput(epEditBox, .input, font: epConsoleFont, historyLines: 32):
+    !BottomLeft(10, 10)
+    !BottomRight(-10, 10)
+    OnEnterPressed:
+      *self:parent():submit()
+  OnLoad:
+    *ep.console(self)
+
+Frame epColorBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+  !Size(400, 300)
+  !Center
+  !Artwork:
+    FontString(epLabelFont, text: 'Color:'):
+      !TopLeft(220, -34)
+    Texture $parentColorTexture(.colortexture):
+      !Size(64, 19)
+      !TopLeft(260, -32)
+  ColorSelect $parentWheel(epControl, .wheel, enableMouse):
+    !Size(198, 148)
+    !TopLeft(11, -32)
+    ColorWheelTexture:
+      !Size(128, 128)
+      !TopLeft(10, -10)
+    ColorWheelThumbTexture(file: 'Interface\Buttons\UI-ColorPicker-Buttons'):
+      !Size(10, 10)
+      !TexCoords(0, 0.15625, 0, 0.625)
+    ColorValueTexture:
+      !Size(32, 128)
+      !TopLeft(152, -10)
+    ColorValueThumbTexture(file: 'Interface\Buttons\UI-ColorPicker-Buttons'):
+      !Size(48, 14)
+      !TexCoords(0.25, 1.0, 0.0, 0.875)
+    OnColorSelect:
+      *self:GetParent():set()
+  EditBox $parentRValue(epSpinner, .rvalue):
+    !Size(54, 19)
+    !TopLeft(260, -57)
+    !Artwork:
+      FontString(epLabelFont, text: 'Red:'):
+        !Left(x: -40)
+    OnLoad:
+      *ep.spinner(self, {minimum=0, maximum=255, onchange={ep.colorbrowser.update, self:GetParent(), 'r'}})
+  EditBox $parentGValue(epSpinner, .gvalue):
+    !Size(54, 19)
+    !TopLeft(225, -95)
+    !Artwork:
+      FontString(epLabelFont, text: 'Green:'):
+        !Left(x: -30)
+    OnLoad:
+      *ep.spinner(self, {minimum=0, maximum=255, onchange={ep.colorbrowser.update, self:GetParent(), 'g'}})
+  EditBox $parentBValue(epSpinner, .bvalue):
+    !Size(54, 19)
+    !TopLeft(255, -118)
+    !Artwork:
+      FontString(epLabelFont, text: 'Blue:'):
+        !Left(x: -40)
+    OnLoad:
+      *ep.spinner(self, {minimum=0, maximum=255, onchange={ep.colorbrowser.update, self:GetParent(), 'b'}})
+  EditBox $parentAValue(epSpinner, .avalue):
+    !Size(54, 19)
+    !TopLeft(255, -141)
+    !Artwork:
+      FontString(epLabelFont, text: 'Alpha:'):
+        !Left(x: -40)
+    OnLoad:
+      *ep.spinner(self, {minimum=0, maximum=255, onchange={ep.colorbrowser.update, self:GetParent(), 'a'}})
+  EditBox $parentHexValue(epEditBox, .hexvalue):
+    !Size(64, 19)
+    !TopLeft(260, -164)
+    !Artwork:
+      FontString(epLabelFont, text: 'Hex:'):
+        !Left(x: -40)
+  OnLoad:
+    *ep.colorbrowser(self)
+
+Button epDrawerButton(virtual):
+  !Size(18, 18)
+  !Border:
+    Texture(epControlEdgeR):
+      !TopRight(10, 4)
+      !BottomRight(10, -3)
+  !HitRectInsets(-2, -2, -2, -2)
+
+Frame epDrawer(^UIParent, frameStrata: DIALOG):
+  !Size(400, 200)
+  !Top
+  Frame $parentRibbon(epPanel, .ribbon):
+    !Size(198, 37)
+    !TopLeft
+    Button $parentToggle(.toggle):
+      !TopLeft(9, -19)
+      !Size(10, 10)
+      !HitRectInsets(-3, -3, -13, -3)
+      NormalTexture(epDownIcon)
+      HighlightTexture(epDownHighlightedIcon, alphaMode: ADD)
+      DisabledTexture(epDownDisabledButton)
+    Button $parentHome(epDrawerButton, .home):
+      !TopLeft(26, -10)
+      NormalTexture(epHomeIcon)
+      HighlightTexture(epHomeHighlightedIcon, alphaMode: ADD)
+      DisabledTexture(epHomeDisabledIcon)
+      OnClick:
+        *epHome:display()
+    Button $parentBackpack(epDrawerButton, .backpack):
+      !TopLeft(50, -10)
+      NormalTexture(epBackpackIcon)
+      HighlightTexture(epBackpackHighlightedIcon, alphaMode: ADD)
+      DisabledTexture(epBackpackDisabledIcon)
+    Button $parentCharacter(epDrawerButton, .character):
+      !TopLeft(74, -10)
+      NormalTexture(epShieldIcon)
+      HighlightTexture(epShieldHighlightedIcon, alphaMode: ADD)
+      DisabledTexture(epShieldDisabledIcon)
+    Button $parentBook(epDrawerButton, .book):
+      !TopLeft(98, -10)
+      NormalTexture(epBookIcon)
+      HighlightTexture(epBookHighlightedIcon, alphaMode: ADD)
+      DisabledTexture(epBookDisabledIcon)
+    Button $parentHelp(epDrawerButton, .help):
+      !TopLeft(122, -10)
+      NormalTexture(epHelpIcon)
+      HighlightTexture(epHelpHighlightedIcon, alphaMode: ADD)
+      DisabledTexture(epHelpDisabledIcon)
+    Button $parentReload(epDrawerButton, .reload):
+      !TopLeft(146, -10)
+      NormalTexture(epReloadIcon)
+      HighlightTexture(epReloadHighlightedIcon, alphaMode: ADD)
+      DisabledTexture(epReloadDisabledIcon)
+    Button $parentPause(epDrawerButton, .pause):
+      !TopLeft(170, -10)
+      !Size(18, 18)
+      !HitRectInsets(-2, -2, -2, -2)
+      NormalTexture(epPauseIcon)
+      HighlightTexture(epPauseHighlightedIcon, alphaMode: ADD)
+      DisabledTexture(epPauseDisabled)
+    OnLoad:
+      *ep.drawer(self)
+
+Frame epHome(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+  !Size(400, 300)
+  !Center
+  Frame $parentTabs(epTabbedFrame, .tabs):
+    !TopLeft(10, -31)
+    !BottomRight(-10, 10)
+    Frame $parentSummary(.summary, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentModules(.modules, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentSettings(.settings, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentLogs(.logs, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentAbout(.about, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    OnLoad:
+      *ep.tabbedframe(self, {
+      *  {label='Summary', client='Summary'},
+      *  {label='Modules', client='Modules'},
+      *  {label='Settings', client='Settings'},
+      *  {label='Logs', client='Logs'},
+      *  {label='About', client='About'}
+      *}, {show_bottom_border=true})
+  OnLoad:
+    *ep.home(self)
+
+Button epIconBrowserButton(epIconBox, virtual):
+  OnClick:
+    *if IsControlKeyDown() then
+    *  d(self.icon..': '..self.texture:GetTexture())
+    *else
+    *  epIconBrowser:select(self.icon)
+    *end
+  OnLoad:
+    *ep.iconbrowserbutton(self)
+  OnMouseWheel:
+    *epIconBrowserScrollBar:move(-delta)
+
+Frame epIconBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+  !Size(222, 312)
+  !Center
+  Frame $parentContainer(.container):
+    !TopLeft(10, -31)
+    !BottomRight(-33, 33)
+    OnMouseWheel:
+      *epIconBrowserScrollBar:move(-delta)
+  Frame $parentBackdrop(epControlEdge, .backdrop, hidden):
+    !TopLeft(10, -31)
+    !BottomRight(-33, 33)
+  Slider $parentScrollBar(epVerticalSlider, .scrollbar):
+    !TopRight(-10, -47)
+    !BottomRight(-10, 49)
+    OnLoad:
+      *ep.slider(self, {ep.iconbrowser.update, self:GetParent()})
+  Button $parentSet(epDropBox, .set_dropbox, text: 'All Sets'):
+    !BottomLeft(10, 10)
+    !BottomRight(-125, 10)
+    OnLoad:
+      *ep.dropbox(self, {
+      *  callback = {ep.iconbrowser.set_set, self:GetParent()},
+      *  items = {{'all', 'All Sets'}},
+      *  value = 'all',
+      *})
+  Button $parentCategory(epDropBox, .category_dropbox, text: 'All Icons'):
+    !Size(111, 19)
+    !BottomRight(-10, 10)
+    OnClick:
+      *self.menu:toggle()
+  OnLoad:
+    *ep.iconbrowser(self)
+
+Frame epIconCursor(hidden):
+  OnLoad:
+    *ep.iconcursor(self)
+  OnUpdate:
+    *self:update()
+
+Button epRibbonButton(epIconBox, virtual):
+  OnClick:
+    *self.ribbon:manipulate(self, 'click', button)
+  OnDragStart:
+    *self.ribbon:manipulate(self, 'drag', button)
+  OnDragStop:
+    *self.ribbon:manipulate(self, 'drop')
+  OnDoubleClick:
+    *self.ribbon:manipulate(self, 'dblclick', button)
+  OnEnter:
+    *self.ribbon:manipulate(self, 'enter')
+  OnLeave:
+    *self.ribbon:manipulate(self, 'leave')
+  OnLoad:
+    *self:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
+    *self:RegisterForDrag('LeftButton', 'RightButton')
+    *ep.ribbonbutton(self)
+
+Frame epRibbon(epPanel, virtual):
+  !Size(200, 42)
+  Frame $parentContainer(.container):
+    !TopLeft(27, -10)
+    !BottomRight(-10, 10)
+  Frame $parentBackdrop(epControlEdge, .backdrop, hidden):
+    !TopLeft(27, -10)
+    !BottomRight(-10, 10)
+  OnLoad:
+    *ep.ribbon(self)
+
+Frame epTestRibbon(epRibbon, ^UIParent, hidden):
+  !Center
+  OnLoad:
+    *ep.ribbon(self)
+    *--self:display()
+
+
+Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+  !Size(400, 400)
+  !Center
+  Button $parentButton(epButton, text: 'Test This'):
+    !Size(80, 19)
+    !TopLeft(12, -32)
+  CheckButton $parentCheckBox(epCheckBox, text: 'enabled'):
+    !TopLeft(12, -55)
+  Button $parentDropBox(epDropBox):
+    !Size(110, 19)
+    !TopLeft(12, -75)
+    OnLoad:
+      *ep.dropbox(self, {default = 'nn', items = {
+      *  {'nn', 'None'}, {'bk', 'Back'}, {'bh', 'Both Hands'}
+      *}})
+  EditBox $parentComboBox(epComboBox):
+    !Size(110, 19)
+    !TopLeft(12, -98)
+    OnLoad:
+      *ep.combobox(self, {default = 'nn', items = {
+      *  {'nn', 'None'}, {'bk', 'Back'}, {'bh', 'Both Hands'}
+      *}})
+  Button $parentIconBox(epIconBox):
+    !TopLeft(100, -32)
+    OnLoad:
+      *ep.iconbox(self, {enable_browsing=true})
+      *self.texture:SetTexture('interface\\icons\\inv_sword_109')
+  Button $parentColorSpot(epColorSpot):
+    !TopLeft(150, -32)
+  Frame $parentList(epListBuilder):
+    !Size(200, 19)
+    !TopLeft(180, -32)
+  Button $parentMultiButton(epMultiButton, text: 'Save'):
+    !Size(100, 19)
+    !TopLeft(180, -55)
+    OnLoad:
+      *ep.multibutton(self, {
+      *  items = {
+      *    {label = 'Discard', callback = function() d('Discard selected.') end}
+      *  }
+      *})
+  Frame $parentTree(epTree):
+    !Size(180, 170)
+    !TopLeft(240, -121)
+    OnLoad:
+      *ep.tree(self, {items=ep.testitems, default_expansion=1})
+  Frame $parentEditArea(epEditArea):
+    !Size(200, 120)
+    !TopLeft(12, -121)
+  EditBox $parentEditBox(epEditBox):
+    !Size(160, 19)
+    !TopLeft(12, -245)
+    OnLoad:
+      *ep.editbox(self, 'label', true)
+  EditBox $parentSpinner(epSpinner):
+    !Size(80, 19)
+    !TopLeft(12, -268)
+  EditBox $parentValueSpinner(epSpinner):
+    !Size(140, 19)
+    !TopLeft(12, -291)
+    OnLoad:
+      *ep.spinner(self, {values={'alpha', 'beta', 'gamma', 'delta'}, value='alpha'})
+  Frame $parentGrid(epGrid):
+    !TopLeft(12, -314)
+    !BottomRight(-12, 12)
+    OnLoad:
+      *ep.grid(self, {header = true, data = ep.testdata, cells = {
+      *  {control = 'checkbox'},
+      *  {field = 'id', title = 'Id', width = 60},
+      *  {field = 'name', title = 'Name', width = 80},
+      *  {field = 'description', title = 'Description', relwidth = 0.75},
+      *  {field = 'value', title = 'Value', relwidth = 0.25}}})
+  OnLoad:
+    *ep.basepanel(self, {
+    *    title = 'Test',
+    *    resizable = true,
+    *    minsize = {300, 300},
+    *    maxsize = {800, 800},
+    *    initsize = {600, 600},
+    *})
+
+
+Frame epLocation(^UIParent):
+  !Size(300, 300)
+  !TopLeft(20, -110)
+  !Artwork:
+    FontString $parentText(epNormalFont, .text, justifyH: LEFT, justifyV: TOP, setAllPoints):
+      !Color(1.0, 1.0, 1.0)
+  OnUpdate:
+    *self.text:SetText(ep.describe_location())
+    *--[[local flags = {}
+    *if IsIndoors() then tinsert(flags, 'Indoors') end
+    *if IsFlying() then tinsert(flags, 'Flying') end
+    *if IsMounted() then tinsert(flags,'Mounted') end
+    *if IsSwimming() then tinsert(flags, 'Swimming') end
+    *local x, y = GetPlayerMapPosition('player')
+    *local stats = {}
+    *tinsert(stats, 'MapID: '..GetCurrentMapAreaID())
+    *tinsert(stats, 'MapZone: '..GetCurrentMapZone())
+    *tinsert(stats, 'Level: '..GetCurrentMapDungeonLevel()..' of '..GetNumDungeonMapLevels())
+    *tinsert(stats, 'Position: '..format('%d   %d', math.floor(x * 10000), math.floor(y * 10000)))
+    *tinsert(stats, 'Facing: '..format('%0.3f', GetPlayerFacing()))
+    *tinsert(stats, '')
+    *tinsert(stats, 'Zone: '..GetZoneText())
+    *tinsert(stats, 'Subzone: '..GetSubZoneText())
+    *tinsert(stats, 'Real zone: '..GetRealZoneText())
+    *if #flags > 0 then
+    *    tinsert(stats, '')
+    *    tinsert(stats, table.concat(flags, ' '))
+    *end
+    *local px, py = ep.proper_loc()
+    *if type(px) ~= 'nil' then
+    *   local dx, dy = ep.proper_loc(true)
+    *   tinsert(stats, '')
+    *   tinsert(stats, 'Proper loc: '..px..', '..py)
+    *   tinsert(stats, 'Decimal loc: '..format('%0.5f, %0.5f', dx, dy))
+    *end
+    *self.text:SetText(table.concat(stats, '\n'))]]

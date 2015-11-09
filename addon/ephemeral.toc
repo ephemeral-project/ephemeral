@@ -1,0 +1,20 @@
+## Interface: 60200
+## Title: Ephemeral 2.0 (alpha)
+## Version: 2.0-alpha
+## SavedVariables: ephemeral
+## X-Ephemeral-Compatibility: 20201
+## X-Ephemeral-Module[1]: name=ephemeral-network, path=ep.network, version=1
+## X-Ephemeral-Module[2]: name=ephemeral-spatial, path=ep.spatial, version=1
+## X-Ephemeral-Module[3]: name=ephemeral-items, path=ep.items, version=1
+support.lua
+core.lua
+network.lua
+spatial.lua
+regions.lua
+ui.lua
+ui.xml
+controls.lua
+controls.xml
+panels.lua
+panels.xml
+ephemeral.lua

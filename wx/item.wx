@@ -1,0 +1,172 @@
+Button epItemIcon(epIconBox, virtual):
+  OnClick:
+    *self.container:manipulate(self, 'click', button)
+  OnDragStart:
+    *self.container:manipulate(self, 'drag', button)
+  OnDragStop:
+    *self.container:manipulate(self, 'drop')
+  OnDoubleclick:
+    *self.container:manipulate(self, 'dblclick', button)
+  OnEnter:
+    *self.container:manipulate(self, 'enter')
+  OnLeave:
+    *self.container:manipulate(self, 'leave')
+  OnLoad:
+    *self:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
+    *self:RegisterForDrag('LeftButton', 'RightButton')
+    *ep.iconbox(self)
+  OnMouseWheel:
+    *local scrollbar = self:GetParent().scrollbar
+    *if scrollbar then
+    *  scrollbar:move(-delta)
+    *end
+
+Frame epItemCollector(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
+  !Size(207, 354)
+  !Center
+  !Artwork:
+    FontString $parentText(epNormalFont, .text, justifyH: LEFT, justifyV: MIDDLE, maxLines: 2):
+      !Size(y: 38)
+      !TopLeft(52, -31)
+      !TopRight(-10, -31)
+  Button $parentIcon(epIconBox, .icon):
+    !TopLeft(10, -31)
+    OnLoad:
+      *ep.iconbox(self, {enable_browsing=true})
+  Frame $parentContainer(.container):
+    !TopLeft(10, -73)
+    !BottomRight(-33, 33)
+  Frame $parentBackdrop(epControlEdge, .backdrop, hidden):
+    !TopLeft(10, -73)
+    !BottomRight(-33, 33)
+  Slider $parentScrollBar(epVerticalSlider, .scrollbar):
+    !TopRight(-10, -89)
+    !BottomRight(-10, 49)
+    OnLoad:
+      *ep.slider(self, {ep.item.collector.update, self:GetParent()})
+  EditBox $parentSearch(epEditBox, .search):
+    !BottomLeft(10, 10)
+    !BottomRight(-94, 10)
+    OnLoad:
+      *ep.editbox(self, 'search')
+  Button $parentOptions(epDropBox, .options, text: 'Backpack'):
+    !Size(80, 19)
+    !BottomRight(-10, 10)
+    OnClick:
+      *self.menu:toggle()
+  OnLoad:
+    *ep.item.collector(self)
+
+Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
+  !Size(410, 330)
+  !Center
+  Button $parentIcon(epIconBox, .f_icon):
+    !Size(42, 42)
+    !TopLeft(10, -31)
+    OnClick:
+      *epIconBrowser:display({self.set, self}, self:parent())
+  EditBox $parentName(epEditBox, .f_name):
+    !TopLeft(56, -31)
+    !TopRight(-114, -31)
+    OnLoad:
+      *ep.editbox(self, 'name')
+    OnTabPressed:
+      *self:parent().f_creator:SetFocus()
+  Button $parentClass(epDropBox, .f_class):
+    !Size(100, 19)
+    !TopRight(-10, -31)
+    OnLoad:
+      *ep.dropbox(self, {default = 'it', items = ep.item.class_menu})
+  EditBox $parentCreator(epEditBox, .f_creator):
+    !TopLeft(56, -54)
+    !TopRight(-114, -54)
+    OnLoad:
+      *ep.editbox(self, 'creator')
+    OnTabPressed:
+      *self:parent().facets:SetFocus()
+  Button $parentQuality(epDropBox, .f_quality):
+    !Size(100, 19)
+    !TopRight(-10, -54)
+    OnLoad:
+      *ep.dropbox(self, {default = 'c', items = ep.item.quality_menu,
+      *  tooltip = 'Optional indication.'})
+  EditBox $parentFacets(epEditBox, .f_facets):
+    !TopLeft(10, -77)
+    !TopRight(-114, -77)
+    OnLoad:
+      *ep.editbox(self, 'facets')
+  Button $parentSound(epDropBox, .f_sound):
+    !Size(100, 19)
+    !TopRight(-10, -77)
+    OnLoad:
+      *ep.dropbox(self, {default = 'it', items = ep.item.sound_menu})
+  Frame $parentTabs(epTabbedFrame, .tabs):
+    !TopLeft(10, -100)
+    !BottomRight(-10, 56)
+    Frame $parentDescription(epEditAreaBase, .f_description, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+      OnLoad:
+        *ep.editarea(self, 'Click here to edit the description.')
+    Frame $parentAppearance(epEditAreaBase, .f_appearance, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+      OnLoad:
+        *ep.editarea(self, 'Click here to edit the appearance.')
+    Frame $parentCapabilities(hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentScripts(hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentProperties(.properties, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    OnLoad:
+      *ep.tabbedframe(self, {
+      *  {label='Description', client='Description'},
+      *  {label='Appearance', client='Appearance'},
+      *  {label='Capabilities', client='Capabilities'},
+      *  {label='Scripts', client='Scripts'},
+      *  {label='Properties', client='Properties'},
+      *})
+  CheckButton $parentEquippable(epCheckBox, .f_equippable, text: 'equippable:'):
+    !BottomLeft(10, 35)
+    OnClick:
+      *local slot = self:parent().f_slot
+      *if self:GetChecked() then
+      *  slot:enable()
+      *else
+      *  slot.value = 'nn'
+      *  slot:disable(true)
+      *end
+  Button $parentSlot(epDropBox, .f_slot):
+    !Size(110, 19)
+    !BottomLeft(89, 33)
+    OnLoad:
+      *ep.dropbox(self, {default = 'nn', items = ep.item.slot_menu})
+  Button $parentCategory(epDropBox, .f_category):
+    !Size(140, 19)
+    !BottomRight(-10, 33)
+    !Artwork:
+      FontString(epLeftLabel, text: 'category:')
+    OnLoad:
+      *ep.dropbox(self, {default = 'it'})
+  CheckButton $parentStackable(epCheckBox, .f_stackable, text: 'stackable'):
+    !BottomLeft(10, 11)
+  CheckButton $parentDisabled(epCheckBox, .f_disabled, text: 'disabled'):
+    !BottomLeft(89, 11)
+  CheckButton $parentProtected(epCheckBox, .f_protected, text: 'protected'):
+    !BottomLeft(162, 11)
+  Button $parentActions(epMultiButton, .actions, text: 'Save'):
+    !Size(100, 19)
+    !BottomRight(-10, 11)
+    OnClick:
+      *self:parent():save()
+    OnLoad:
+      *local parent = self:GetParent()
+      *ep.multibutton(self, {items = {
+      *  {label = 'Discard', callback = {parent.discard, parent}}
+      *}})
+  OnLoad:
+    *ep.item.editor(self)

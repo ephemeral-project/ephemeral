@@ -1,0 +1,5 @@
+*.py[c|o]
+*.sw*
+node_modules
+wow
+mount

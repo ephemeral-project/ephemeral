@@ -1,0 +1,804 @@
+%textures = 'Interface\AddOns\ephemeral\textures'
+
+Button epButton(epControl, virtual):
+  !Size(y: 19)
+  HighlightTexture(epControlHighlight, alphaMode: ADD)
+  PushedTexture(epControlHighlight, alphaMode: ADD)
+  ButtonText:
+    !Center(0, 0)
+  !PushedTextOffset(0, 0)
+  !NormalFont(epLabelFont)
+  !HighlightFont(epHighlightFont)
+  OnLoad:
+    *ep.button(self)
+
+CheckButton epCheckBox(virtual):
+  !Size(16, 16)
+  NormalTexture(file: '%textures\box-empty'):
+    !TopLeft(-4, 4)
+    !BottomRight(4, -4)
+    !TexCoords(0.03125, 0.96875, 0.03125, 0.96875)
+  CheckedTexture(file: '%textures\check'):
+    !TopLeft(-4, 4)
+    !BottomRight(4, -4)
+    !TexCoords(0.03125, 0.96875, 0.03125, 0.96875)
+  HighlightTexture(epControlHighlight):
+    !TopLeft(1, -1)
+    !BottomRight(-1, 1)
+  ButtonText:
+    !Anchor(point: LEFT, relativePoint: RIGHT, x: 4, y: 0)
+  !PushedTextOffset(0, 0)
+  !NormalFont(epLabelFont, LEFT)
+  !HighlightFont(epHighlightFont, LEFT)
+  OnLoad:
+    *ep.checkbox(self)
+
+CheckButton epReversedCheckBox(epCheckBox, virtual):
+  ButtonText:
+    !Anchor(point: RIGHT, relativePoint: LEFT, x: -4, y: 0)
+  !NormalFont(epLabelFont, RIGHT)
+  !HighlightFont(epHighlightFont, RIGHT)
+  OnLoad:
+    *ep.checkbox(self, true)
+
+Button epColorSpot(epControl, virtual):
+  !Size(16, 16)
+  HighlightTexture(epControlHighlight)
+  !Border:
+    Texture $parentColor(.spot):
+      !TopLeft(2, -2)
+      !BottomRight(-2, 2)
+  !Artwork:
+    Texture $parentT:
+      !Size(y: 2)
+      !TopLeft(2, -2)
+      !TopRight(-2, -2)
+      !Color(0.82, 0.76, 0.61, 1.0)
+    Texture $parentR:
+      !Size(x: 2)
+      !TopRight(-2, -2)
+      !BottomRight(-2, 2)
+      !Color(0.82, 0.76, 0.61, 1.0)
+    Texture $parentB:
+      !Size(y: 2)
+      !BottomLeft(2, 2)
+      !BottomRight(-2, 2)
+      !Color(0.82, 0.76, 0.61, 1.0)
+    Texture $parentL:
+      !Size(x: 2)
+      !TopLeft(2, -2)
+      !BottomLeft(2, 2)
+      !Color(0.82, 0.76, 0.61, 1.0)
+  OnLoad:
+    *ep.colorspot(self)
+
+EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
+  !Size(y: 19)
+  !TextInsets(5, 22, 0, 0)
+  Button $parentOpener:
+    !Size(19, 19)
+    !TopRight
+    !Border:
+      Texture(epArrowDownBg):
+        !Size(17, 17)
+        !TopRight(-1, -1)
+    !Artwork:
+      Texture(epControlInnerEdgeR):
+        !TopRight(-12, -1)
+        !BottomRight(-12, 1)
+    HighlightTexture(epControlHighlight, alphaMode: ADD):
+      !Size(17, 17)
+      !TopRight(-1, -1)
+    OnClick:
+      *self:GetParent():open()
+  OnEnterPressed:
+    *self:select(self:GetText())
+  OnEscapePressed:
+    *self:select(self:GetText())
+  OnEditFocusGained:
+    *self:HighlightText()
+  OnEditFocusLost:
+    *self:HighlightText(0, 0)
+  OnLoad:
+    *self.combobox(self)
+
+Button epDropBox(epControl, virtual):
+  !Size(y: 19)
+  ButtonText $parentText:
+    !Left(5, 0)
+  !PushedTextOffset(0, 0)
+  !NormalFont(epNormalFont, LEFT)
+  !HighlightFont(epHighlightFont, LEFT)
+  !Border:
+    Texture(epArrowDownBg):
+      !Size(17, 17)
+      !TopRight(-1, -1)
+  !Artwork:
+    Texture(epControlInnerEdgeR):
+      !TopRight(-12, -1)
+      !BottomRight(-12, 1)
+  HighlightTexture(epStandardHighlight):
+    !Size(17, 17)
+    !TopRight(-1, -1)
+  OnClick:
+    *self:open()
+  OnLoad:
+    *ep.dropbox(self)
+
+Frame epEditAreaBase(virtual):
+  !Border:
+    FontString $parentInnerLabel(epInnerLabelFont, .innerlabel, justifyH: LEFT, hidden):
+      !TopLeft(6, -6)
+      !TopRight(-6, -6)
+  ScrollFrame $parentScrolled(epScrollFrame, .scrollframe):
+    !TopLeft(6, -6)
+    !BottomRight(-6, 6)
+    ScrollChild:
+      EditBox $parentText(font: epNormalFont, letters: 2048, +multiline, -autoFocus):
+        OnCursorChanged:
+          *self:GetParent():GetParent():update_cursor(x, y)
+        OnEditFocusGained:
+          *self:GetParent():GetParent().innerlabel:Hide()
+        OnEditFocusLost:
+          *self:GetParent():GetParent():_focus_lost()
+        OnEscapePressed:
+          *self:ClearFocus()
+        OnMouseWheel:
+          *self:GetParent().scrollbar:move(-delta)
+    OnLoad:
+      *ep.scrollframe(self, {managed=true})
+  OnLoad:
+    *ep.editarea(self)
+  OnMouseDown:
+    *if not self.disabled and button == 'LeftButton' then
+    *  self.editbox:SetFocus()
+    *end
+
+Frame epEditArea(inherits: 'epControl,epEditAreaBase', virtual)
+
+EditBox epEditBox(epControl, font: epNormalFont, -autoFocus, virtual):
+  !Size(y: 19)
+  !Border:
+    FontString $parentInnerLabel(epInnerLabel, .innerlabel, hidden)
+  !TextInsets(5, 4, 0, 1)
+  Button $parentClear(.clear_button, hidden):
+    !Size(20, 20)
+    !TopRight(0, 1)
+    NormalTexture(file: '%textures\close-normal'):
+      !Size(20, 20)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    HighlightTexture(file: '%textures\close-highlight'):
+      !Size(20, 20)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    OnClick:
+      *self:GetParent():set_value('')
+  OnEnterPressed:
+    *self:ClearFocus()
+  OnEscapePressed:
+    *self:ClearFocus()
+  OnEditFocusGained:
+    *self.innerlabel:Hide()
+  OnEditFocusLost:
+    *self:_focus_lost()
+  OnLoad:
+    *ep.editbox(self)
+
+EditBox epInlineEditBox(epEditBox, virtual):
+  OnEditFocusGained:
+    *self.eb_editing = true
+    *self:EnableDrawLayer('BACKGROUND')
+    *self:EnableDrawLayer('BORDER')
+  OnEditFocusLost:
+    *self.eb_editing = nil
+    *self:DisableDrawLayer('BACKGROUND')
+    *self:DisableDrawLayer('BORDER')
+  OnEnter:
+    *if not self.eb_editing then
+    *  self:EnableDrawLayer('BACKGROUND')
+    *  self:EnableDrawLayer('BORDER')
+    *end
+  OnLeave:
+    *if not self.eb_editing then
+    *  self:DisableDrawLayer('BACKGROUND')
+    *  self:DisableDrawLayer('BORDER')
+    *end
+  OnShow:
+    *self:DisableDrawLayer('BACKGROUND')
+    *self:DisableDrawLayer('BORDER')
+
+Frame epGrid(epControl, virtual):
+  Frame $parentHeader(.header, hidden):
+    !Size(y: 19)
+    !TopLeft(1, -1)
+    !TopRight(-1, -1)
+    !Background:
+      Texture(epControlBackground, setAllPoints)
+    !Border:
+      Texture(epControlEdgeB):
+        !BottomLeft(0, -6)
+        !BottomRight(0, -6)
+  Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
+    !TopRight(0, -13)
+    !BottomRight(0, 13)
+    OnLoad:
+      *ep.slider(self, {ep.grid.update, self:GetParent()})
+  OnLoad:
+    *ep.grid(self)
+  OnSizeChanged:
+    *if self.resize then
+    *  self:resize()
+    *end
+
+Button epGridHeader(virtual):
+  !Size(y: 18)
+  ButtonText $parentText:
+    !Left(0, 0)
+  !PushedTextOffset(0, 0)
+  !NormalFont(epNormalFont, LEFT)
+  !HighlightFont(epHighlightFont, LEFT)
+  HighlightTexture(epControlHighlight, alphaMode: ADD):
+    !TopLeft(-4, 0)
+    !BottomRight(-4, 0)
+  !Border:
+    Texture(epControlInnerEdgeR, .edge):
+      !TopRight(2, 0)
+      !BottomRight(2, 0)
+    Texture(epSlightHighlight, .slight_highlight, hidden):
+      !TopLeft(-4, 0)
+      !BottomRight(-4, 0)
+  !Artwork:
+    Texture(epArrowDown, .arrow, hidden):
+      !Right(-4, 0)
+  OnClick:
+    *self:click(button)
+  OnEnter:
+    *self:enter()
+  OnLeave:
+    *self:leave()
+  OnLoad:
+    *ep.gridheader(self)
+
+Frame epGridRow(virtual):
+  !Background:
+    Texture $parentDiff(.diff, alphaMode: ADD, setAllPoints, hidden):
+      !Color(0.8, 0.8, 0.8, 0.03)
+  !Border:
+    Texture $parentHighlight(epControlHighlight, .highlight, setAllPoints, hidden)
+  OnEnter:
+    *self:enter()
+  OnLeave:
+    *self:leave()
+  OnLoad:
+    *ep.gridrow(self)
+  OnMouseUp:
+    *self:manipulate(button)
+  OnMouseWheel:
+    *self.grid.scrollbar:move(-delta)
+
+Frame epGridCell(virtual):
+  !Size(y: 13)
+  !Artwork:
+    FontString $parentText(epNormalFont, .text, justifyH: LEFT, justifyV: MIDDLE):
+      !TopLeft
+      !BottomRight(0, 1)
+  OnEnter:
+    *self.row:enter()
+  OnLeave:
+    *self.row:leave()
+  OnLoad:
+    *ep.gridcell(self)
+  OnMouseUp:
+    *self.row:manipulate(button)
+  OnMouseWheel:
+    *self.row.grid.scrollbar:move(-delta)
+
+Button epIconBox(epControl, virtual):
+  !Size(38, 38)
+  HighlightTexture(epControlHighlight)
+  !Border:
+    Texture $parentIcon(.texture):
+      !TopLeft(2, -2)
+      !BottomRight(-2, 2)
+      !TexCoords(0.05, 0.95, 0.05, 0.95)
+  !Artwork:
+    Texture $parentT:
+      !Size(y: 2)
+      !TopLeft(2, -2)
+      !TopRight(-2, -2)
+      !Color(0.82, 0.76, 0.61, 1.0)
+    Texture $parentR:
+      !Size(x: 2)
+      !TopRight(-2, -2)
+      !BottomRight(-2, 2)
+      !Color(0.82, 0.76, 0.61, 1.0)
+    Texture $parentB:
+      !Size(y: 2)
+      !BottomLeft(2, 2)
+      !BottomRight(-2, 2)
+      !Color(0.82, 0.76, 0.61, 1.0)
+    Texture $parentL:
+      !Size(x: 2)
+      !TopLeft(2, -2)
+      !BottomLeft(2, 2)
+      !Color(0.82, 0.76, 0.61, 1.0)
+  OnLoad:
+    *ep.iconbox(self)
+  OnClick:
+    *self:browse()
+
+Button epListEntry(virtual):
+  !Size(y: 17)
+  HighlightTexture(epControlHighlight, alphaMode: ADD)
+  PushedTexture(epControlHighlight, alphaMode: ADD)
+  ButtonText:
+    !Center(0, 1)
+  !PushedTextOffset(0, 0)
+  !NormalFont(epLabelFont)
+  !HighlightFont(epHighlightFont)
+
+Frame epListBuilder(epControl, virtual):
+  !Size(y: 19)
+  Button $parentAdd(.add):
+    !Size(20, 20)
+    !TopRight(0, 1)
+    NormalTexture(file: '%textures\plus-normal'):
+      !Size(20, 20)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    HighlightTexture(file: '%textures\plus-highlight'):
+      !Size(20, 20)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    OnClick:
+      *self:GetParent():open()
+  Frame $parentEntries(.entries):
+    !TopLeft(1, -1)
+    !BottomRight(-20, 1)
+  Frame $parentEditor(epControlEdge, .editor, hidden):
+    !Size(190, 25)
+    !TopLeft(0, -18)
+    Backdrop(bgFile: '%textures\panel-background', +tile):
+      BackgroundInsets:
+        AbsInset(left: 1, right: 1, top: 1, bottom: 1)
+      TileSize:
+        AbsValue(val: 128)
+    EditBox $parentText(epComboBox, .text):
+      !Size(100, 19)
+      !TopLeft(3, -3)
+      OnLoad:
+        *ep.combobox(self, {})
+    Button $parentColor(epColorSpot, .color):
+      !Right(-36)
+    Button $parentSave(.save):
+      !Size(20, 20)
+      !Right(-16)
+      NormalTexture(file: '%textures\plus-normal'):
+        !Size(20, 20)
+        !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+      HighlightTexture(file: '%textures\plus-highlight'):
+        !Size(20, 20)
+        !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+      OnClick:
+        *self:GetParent():GetParent():save()
+    Button $parentCancel(.cancel):
+      !Size(20, 20)
+      !Right(0)
+      NormalTexture(file: '%textures\close-normal'):
+        !Size(20, 20)
+        !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+      HighlightTexture(file: '%textures\close-highlight'):
+        !Size(20, 20)
+        !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+      OnClick:
+        *self:GetParent():GetParent():cancel()
+  OnLoad:
+    *ep.listbuilder(self)
+
+Button epMenuButton(virtual):
+  !Size(128, 13)
+  ButtonText $parentText:
+    !Left(0, 0)
+  !PushedTextOffset(0, 0)
+  !NormalFont(epLabelFont, LEFT)
+  !HighlightFont(epHighlightFont, LEFT)
+  !Background:
+    Texture(setAllPoints):
+      !Color(1.0, 0.0, 0.0, 0.0)
+  !Border:
+    Texture $parentHighlight(epControlHighlight, hidden):
+      !TopLeft(-2, 0)
+      !BottomRight(2, 0)
+  !Artwork:
+    Texture $parentCheck(file: '%textures\box-empty'):
+      !Size(20, 20)
+      !Left(-4, 0)
+      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    Texture $parentArrow(epArrowRight):
+      !Right(7, 0)
+  OnClick:
+    *self:activate()
+  OnEnter:
+    *self:enter()
+  OnLeave:
+    *self:leave()
+  OnLoad:
+    *ep.menubutton(self)
+  OnMouseWheel:
+    *local scrollbar = self.frame.scrollbar
+    *if scrollbar and scrollbar:IsShown() then
+    *  scrollbar:move(-delta)
+    *end
+
+Frame epMenu(epControlEdge, frameStrata: FULLSCREEN, virtual):
+  Backdrop(bgFile: '%textures\panel-background', +tile):
+    BackgroundInsets:
+      AbsInset(left: 1, right: 1, top: 1, bottom: 1)
+    TileSize:
+      AbsValue(val: 128)
+  !Border:
+    Texture(epControlBackground):
+      !Color(0.75, 0.63, 0.4, 0.2)
+  OnLoad:
+    *ep.menu(self)
+
+Frame epMessageFrameBase(virtual):
+  ScrollingMessageFrame $parentMessages(.messages, maxLines: 999999, fade: 0, displayDuration: 65526.0):
+    FontString $parentFont(epNormalFont, justifyH: LEFT)
+    !TopLeft(5, -4)
+    !BottomRight(-18, 6)
+    OnMouseWheel:
+      *self:GetParent().scrollbar:move(-delta)
+  Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
+    !TopRight(0, -13)
+    !BottomRight(0, 13)
+    OnLoad:
+      *ep.slider(self, {ep.messageframe.scroll, self:GetParent()}, 3)
+  OnLoad:
+    *ep.messageframe(self)
+
+Frame epMessageFrame(inherits: 'epControl,epMessageFrameBase', virtual)
+
+Button epMultiButton(epControl, virtual):
+  !Size(y: 19)
+  Button $parentOpener(.opener):
+    !Size(19, 19)
+    !TopRight
+    !Border:
+      Texture(epArrowDownBg):
+        !Size(17, 17)
+        !TopRight(-1, -1)
+    !Artwork:
+      Texture(epControlInnerEdgeR):
+        !TopRight(-12, -1)
+        !BottomRight(-12, 1)
+    HighlightTexture(epControlHighlight, alphaMode: ADD):
+      !Size(17, 17)
+      !TopRight(-1, -1)
+    PushedTexture(epControlHighlight, alphaMode: ADD):
+      !Size(17, 17)
+      !TopRight(-1, -1)
+    OnClick:
+      *self:GetParent():open()
+  ButtonText:
+    !Center(-9, 0)
+  HighlightTexture(epControlHighlight, alphaMode: ADD):
+    !BottomRight(-19, 1)
+  PushedTexture(epControlHighlight, alphaMode: ADD):
+    !BottomRight(-19, 1)
+  !PushedTextOffset(0, 0)
+  !NormalFont(epNormalFont)
+  !HighlightFont(epHighlightFont)
+  OnLoad:
+    *ep.multibutton(self)
+
+ScrollFrame epScrollFrame(virtual):
+  Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
+    !TopRight(6, -7)
+    !BottomRight(6, 7)
+    OnLoad:
+      *ep.slider(self, {ep.scrollframe.update_scroll, self:GetParent()}, nil, 0.15)
+  OnLoad:
+    *ep.scrollframe(self)
+  OnMouseWheel:
+    *self.scrollbar:move(-delta)
+  OnScrollRangeChanged:
+    *self:update(xrange, yrange)
+  OnSizeChanged:
+    *if self.managed then
+    *  self.childframe:SetWidth(self:GetWidth() - 20)
+    *end
+
+EditBox epSpinner(epControl, font: epNormalFont, -autoFocus, virtual):
+  !Size(y: 19)
+  !TextInsets(5, 22, 0, 1)
+  !Artwork:
+    Texture(epControlInnerEdgeR):
+      !TopRight(-12, -1)
+      !BottomRight(-12, 1)
+    Texture(epControlInnerEdgeB):
+      !Size(17, 12)
+      !TopRight(-1, -4)
+  Button $parentMore(.more):
+    !Size(19, 9)
+    !TopRight
+    !Background:
+      Texture(epControlBackground):
+        !TopLeft(1, -1)
+        !BottomRight(-1, 0)
+    HighlightTexture(epStandardHighlight):
+      !TopLeft(1, -1)
+      !BottomRight(-1, 0)
+    OnClick:
+      *self:GetParent():spin(1, IsShiftKeyDown())
+    OnMouseWheel:
+      *self:GetParent():spin(delta)
+  Button $parentLess(.less):
+    !Size(19, 9)
+    !BottomRight
+    !Background:
+      Texture(epControlBackground):
+        !TopLeft(1, 0)
+        !BottomRight(-1, 1)
+    HighlightTexture(epStandardHighlight):
+      !TopLeft(1, 0)
+      !BottomRight(-1, 1)
+    OnClick:
+      *self:GetParent():spin(-1, IsShiftKeyDown())
+    OnMouseWheel:
+      *self:GetParent():spin(delta)
+  OnEnterPressed:
+    *self:set(self:GetText())
+  OnEscapePressed:
+    *self:set(self:GetText())
+  OnEditFocusGained:
+    *self:HighlightText()
+  OnEditFocusLost:
+    *self:HighlightText(0, 0)
+  OnLoad:
+    *ep.spinner(self)
+  OnMouseWheel:
+    *self:spin(delta)
+
+StatusBar epStatusBar(epControl, virtual):
+  BarTexture $parentBar(epControlHighlight)
+  OnLoad:
+    *ep.statusbar(self)
+
+Button epTabButton(virtual):
+  !Size(y: 21)
+  ButtonText:
+    !Center(0, 0)
+  !PushedTextOffset(0, 0)
+  HighlightTexture(epControlHighlight):
+    !TopLeft(0, -1)
+    !BottomRight(0, 1)
+  !NormalFont(epLabelFont)
+  !HighlightFont(epHighlightFont)
+  !Background:
+    Texture $parentBackground(epControlBackground, hidden):
+      !TopLeft(0, -1)
+      !BottomRight(0, 1)
+      !Color(0.75, 0.63, 0.4, 0.1)
+  !Border:
+    Texture $parentBorder(epControlInnerEdgeR):
+      !TopRight(7, -1)
+      !BottomRight(7, 1)
+    Texture $parentBottomBorder(epControlInnerEdgeB, .bottomborder, hidden):
+      !BottomLeft(-1, -6)
+      !BottomRight(1, -6)
+  OnClick:
+    *self.frame:select(self.id)
+  OnLoad:
+    *ep.tabbutton(self)
+
+Frame epTabbedFrame(virtual):
+  !Background:
+    Texture(epControlBackground):
+      !TopLeft(1, -20)
+      !BottomRight(-1, 1)
+      !Color(0.75, 0.63, 0.4, 0.1)
+  !Border:
+    Texture(epControlEdgeTL):
+      !TopLeft(-6, 6)
+    Texture $parentTR(epControlEdgeTR, .tf_tr):
+      !TopRight(6, 6)
+    Texture $parentT(epControlEdgeT):
+      !TopLeft(6, 6)
+      !Anchor(point: TOPRIGHT, relativeTo: $parentTR, relativePoint: TOPLEFT)
+    Texture(epControlEdgeL):
+      !TopLeft(-6, -6)
+      !BottomLeft(-6, 6)
+    Texture(epControlEdgeTR):
+      !TopRight(6, -14)
+    Texture(epControlEdgeR):
+      !TopRight(6, -26)
+      !BottomRight(6, 6)
+    Texture(epControlEdgeBL):
+      !BottomLeft(-6, -6)
+    Texture(epControlEdgeB):
+      !BottomLeft(6, -6)
+      !BottomRight(-6, -6)
+    Texture(epControlEdgeBR):
+      !BottomRight(6, -6)
+    Texture $parentSide(epControlEdgeR, .tf_side, hidden):
+      !Anchor(point: TOPRIGHT, relativeTo: $parentTR, x: 0, y: -12)
+      !Anchor(point: BOTTOMRIGHT, relativeTo: $parentTR, x: 0, y: -14)
+    Texture $parentRightCorner(epControlInnerEdgeBL, .tf_rc):
+      !TopRight(-100, -15)
+    Texture $parentRightCornerH(epControlEdgeT):
+      !Anchor(point: TOPLEFT, relativeTo: $parentRightCorner, relativePoint: TOPRIGHT, x: 0, y: 1)
+      !TopRight(-6, 1)
+    Texture $parentRightCornerV(epControlEdgeR, .tf_rc_v):
+      !Anchor(point: TOPRIGHT, relativeTo: $parentRightCorner, relativePoint: TOPRIGHT, x: 1, y: 14)
+      !Anchor(point: BOTTOMRIGHT, relativeTo: $parentRightCorner, relativePoint: TOPRIGHT, x: 1, y: 0)
+    Texture $parentLeftCorner(epControlInnerEdgeBR, .tf_lc, hidden):
+      !TopLeft(100, -13)
+    Texture $parentLeftCornerH(epControlEdgeT, .tf_lc_h, hidden):
+      !TopLeft(1, -14)
+      !Anchor(point: TOPRIGHT, relativeTo: $parentLeftCorner, relativePoint: TOPLEFT, x: 0, y: -14)
+    Texture $parentLeftCornerV(epControlEdgeL, .tf_lc_v, hidden):
+      !Anchor(point: TOPLEFT, relativeTo: $parentLeftCorner, relativePoint: TOPLEFT, x: -1, y: 14)
+      !Anchor(point: BOTTOMLEFT, relativeTo: $parentLeftCorner, relativePoint: TOPLEFT, x: -1, y: 0)
+  OnLoad:
+    *ep.tabbedframe(self)
+
+Button epTreeButton(virtual):
+  !Size(128, 13)
+  ButtonText $parentText(.text):
+    !Left(0, 0)
+  !PushedTextOffset(0, 0)
+  !NormalFont(epLabelFont, LEFT)
+  !HighlightFont(epHighlightFont, LEFT)
+  !Background:
+    Texture(setAllPoints):
+      !Color(1.0, 0.0, 0.0, 0.0)
+  !Border:
+    Texture $parentHighlight(epControlHighlight, .highlight, hidden):
+      !TopLeft(-2, 0)
+      !BottomRight(2, 0)
+  Button $parentArrow(.arrow, hidden):
+    !Size(20, 20)
+    !Left(-7, -1)
+    NormalTexture(epArrowRight)
+    OnClick:
+      *self:GetParent():open_or_close()
+    OnEnter:
+      *self:GetParent():enter()
+    OnLeave:
+      *self:GetParent():leave()
+    OnMouseWheel:
+      *self:GetParent():scroll(delta)
+  OnClick:
+    *self:select()
+  OnEnter:
+    *self:enter()
+  OnLeave:
+    *self:leave()
+  OnLoad:
+    *ep.treebutton(self)
+  OnMouseWheel:
+    *self:scroll(delta)
+
+Frame epTree(epControl, virtual):
+  Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
+    !TopRight(0, -13)
+    !BottomRight(0, 13)
+    Onload:
+      *ep.slider(self, {ep.tree.update, self:GetParent()})
+  OnLoad:
+    *ep.tree(self)
+  OnSizeChanged:
+    *if self.resize then
+    *  self:resize()
+    *end
+
+Slider epVerticalScrollBar(orientation: VERTICAL, valueStep: 1, virtual):
+  !Size(16, 16)
+  ThumbTexture $parentThumb(file: '%textures\thumb-vertical'):
+    !Size(20, 20)
+    !HitRectInsets(2, 2, 2, 2)
+    !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+  !Border:
+    Texture(file: '%textures\control-edge'):
+      !Size(12, 12)
+      !TopLeft(-6, 12)
+      !BottomLeft(-6, -12)
+      !TexCoords(0, 0.1875, 0.1875, 0.8125)
+  Button $parentLess(.less):
+    !Size(16, 16)
+    !Anchor(point: BOTTOM, relativePoint: TOP, x: 0, y: -3)
+    NormalTexture(epArrowUpBg)
+    HighlightTexture(epControlHighlight)
+    !Border:
+      Texture(epControlEdgeB):
+        !Size(14, 12)
+        !Anchor(point: TOP, relativePoint: BOTTOM, x: 0, y: 6)
+    OnMouseUp:
+      *if button == 'LeftButton' or button == 'RightButton' then
+      *  self:GetParent():move(-1, (IsShiftKeyDown() or button == 'RightButton'))
+      *end
+  Button $parentMore(.more):
+    !Size(16, 16)
+    !Anchor(point: TOP, relativePoint: BOTTOM, x: 0, y: 3)
+    NormalTexture(epArrowDownBg)
+    HighlightTexture(epControlHighlight)
+    !Border:
+      Texture(epControlEdgeT):
+        !Size(14, 12)
+        !Anchor(point: BOTTOM, relativePoint: TOP, x: 0, y: -6)
+    OnMouseUp:
+      *if button == 'LeftButton' or button == 'RightButton' then
+      *  self:GetParent():move(1, (IsShiftKeyDown() or button == 'RightButton'))
+      *end
+  OnLoad:
+    *ep.slider(self)
+  OnMouseWheel:
+    *self:move(-delta)
+  OnValueChanged:
+    *if self.update then
+    *  self:update(value)
+    *end
+
+Slider epVerticalSlider(orientation: VERTICAL, valueStep: 1, virtual):
+  !Size(x: 19)
+  ThumbTexture $parentThumb(file: '%textures\thumb-vertical'):
+    !Size(23, 23)
+    !HitRectInsets(2, 2, 2, 2)
+    !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+  !Border:
+    Texture(epControlEdgeTL):
+      !TopLeft(-6, 22)
+    Texture(epControlEdgeT):
+      !TopLeft(6, 22)
+      !TopRight(-6, 22)
+    Texture(epControlEdgeTR):
+      !TopRight(6, 22)
+    Texture(epControlEdgeL):
+      !TopLeft(-6, 10)
+      !BottomLeft(-6, -10)
+    Texture(epControlEdgeR):
+      !TopRight(6, 10)
+      !BottomRight(6, -10)
+    Texture(epControlEdgeBL):
+      !BottomLeft(-6, -22)
+    Texture(epControlEdgeB):
+      !BottomLeft(6, -22)
+      !BottomRight(-6, -22)
+    Texture(epControlEdgeBR):
+      !BottomRight(6, -22)
+  Button $parentLess(.less):
+    !Size(19, 19)
+    !Anchor(point: BOTTOM, relativePoint: TOP, x: 0, y: -3)
+    NormalTexture(epArrowUpBg):
+      !Size(17, 17)
+    HighlightTexture(epControlHighlight):
+      !Size(17, 17)
+    !Border:
+      Texture(epControlEdgeB):
+        !Size(17, 12)
+        !Anchor(point: TOP, relativePoint: BOTTOM, x: 0, y: 6)
+    OnMouseUp:
+      *if button == 'LeftButton' or button == 'RightButton' then
+      *  self:GetParent():move(-1, (IsShiftKeyDown() or button == 'RightButton'))
+      *end
+  Button $parentMore(.more):
+    !Size(19, 19)
+    !Anchor(point: TOP, relativePoint: BOTTOM, x: 0, y: 3)
+    NormalTexture(epArrowDownBg):
+      !Size(17, 17)
+    HighlightTexture(epControlHighlight):
+      !Size(17, 17)
+    !Border:
+      Texture(epControlEdgeT):
+        !Size(17, 12)
+        !Anchor(point: BOTTOM, relativePoint: TOP, x: 0, y: -6)
+    OnMouseUp:
+      *if button == 'LeftButton' or button == 'RightButton' then
+      *  self:GetParent():move(1, (IsShiftKeyDown() or button == 'RightButton'))
+      *end
+  OnLoad:
+    *ep.slider(self)
+  OnMouseWheel:
+    *self:move(-delta)
+  OnValueChanged:
+    *if self.update then
+    *  self:update(value)
+    *end

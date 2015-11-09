@@ -1,0 +1,8 @@
+<Bindings>
+  <Binding name="CONSOLE" description="Display Console" header="EPHEMERAL" runOnUp="true">
+    epConsole:display()
+  </Binding>
+  <Binding name="RELOADUI" description="Reload UI">
+    ReloadUI()
+  </Binding>
+</Bindings>

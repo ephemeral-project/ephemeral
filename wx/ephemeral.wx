@@ -1,0 +1,23 @@
+
+
+Frame epHome(snPanel, ^UIParent, frameStrata: DIALOG, hidden):
+  !Size(410, 330)
+  !Center
+  Frame $parentTabs(snTabbedFrame, .tabs):
+    !TopLeft(10, -31)
+    !BottomRight(-10, 10)
+    Frame $parentSummary(.summary, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentModules(.modules, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    Frame $parentSettings(.settings, hidden):
+      !TopLeft(0, -20)
+      !BottomRight
+    OnLoad:
+      *sn.tabbedframe(self, {
+      *  {label='Summary', client='Summary'},
+      *  {label='Modules', client='Modules'},
+      *  {label='Settings', client='Settings'}
+      *})
