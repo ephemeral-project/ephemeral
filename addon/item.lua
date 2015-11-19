@@ -30,14 +30,14 @@ ep.items = ep.module{
       ephemeral.item.locations = {}
     end
 
-    ep.item.loc_backpack = 'b:'..ep.character.guid
-    if not ephemeral.item.locations[ep.item.loc_backpack] then
-      ephemeral.item.locations[ep.item.loc_backpack] = {n = 0, i = 0}
+    ep.item.locBackpack = 'b:'..ep.character.guid
+    if not ephemeral.item.locations[ep.item.locBackpack] then
+      ephemeral.item.locations[ep.item.locBackpack] = {n = 0, i = 0}
     end
 
-    ep.item.loc_equipment = 'e:'..ep.character.guid
-    if not ephemeral.item.locations[ep.item.loc_equipment] then
-      ephemeral.item.locations[ep.item.loc_equipment] = {n = 0, i = 0}
+    ep.item.locEquipment = 'e:'..ep.character.guid
+    if not ephemeral.item.locations[ep.item.locEquipment] then
+      ephemeral.item.locations[ep.item.locEquipment] = {n = 0, i = 0}
     end
   end,
 
@@ -50,7 +50,7 @@ ep.item = ep.define('ep.item', ep.entity, {
   cl = 'it',
   title = 'Item',
 
-  class_menu = {{'it', 'Item'}, {'bk', 'Book'}},
+  classMenu = {{'it', 'Item'}, {'bk', 'Book'}},
 
   qualities = {
     Poor = 'p', p = 'Poor',
@@ -62,12 +62,12 @@ ep.item = ep.define('ep.item', ep.entity, {
     Artifact = 'a', a = 'Artifact',
   },
 
-  quality_menu = {
+  qualityMenu = {
     {'p', 'Poor'}, {'c', 'Common'}, {'u', 'Uncommon'}, {'r', 'Rare'},
     {'e', 'Epic'}, {'l', 'Legendary'}, {'a', 'Artifact'}
   },
 
-  equivalent_to = function(item)
+  equivalentTo = function(item)
     return false;
   end,
 
@@ -99,7 +99,7 @@ ep.item.collectoricon = ep.control('ep.item.collectoricon', 'epItemIcon', ep.ico
 
 ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
   collectors = {},
-  default_icon = 'cnwow38',
+  defaultIcon = 'cnwow38',
 
   initialize = function(self, id)
     self.id = id
@@ -123,7 +123,7 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
     self.rows = 0
 
     self.options.menu = ep.menu('epItemCollectorOptionsMenu', self.options, {
-      callback = {self.select_option, self},
+      callback = {self.selectOption, self},
       location = {anchor = self.options, x = 0, y = -18},
       width = self.options
     })
@@ -159,9 +159,9 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
 
   filter = function(self)
     self.count = self.items.i + 1
-    self:_update_scrollbar()
+    self:_updateScrollbar()
     self:update(0)
-    self:update_text()
+    self:updateText()
   end,
 
   layout = function(self)
@@ -205,19 +205,19 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
           if shifted then
 
           elseif ep.selection.button == button then
-            ep.clear_selection()
+            ep.clearSelection()
           else
-            self:drop_item(ep.selection, button)
+            self:dropItem(ep.selection, button)
           end
         elseif movement == 'RightButton' then
-          ep.items.clear_selection()
+          ep.items.clearSelection()
         end
       elseif button.item then
         if movement == 'LeftButton' then
           if shifted then
-            self:select_split(button)
+            self:selectSplit(button)
           else
-            ep.claim_selection(button.item.ic, {
+            ep.claimSelection(button.item.ic, {
               button = button,
               item = button.item
             })
@@ -246,13 +246,13 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
     else
       self.backdrop:Hide()
       self:layout()
-      self:_update_scrollbar()
+      self:_updateScrollbar()
       self:update()
       self.container:Show()
     end
   end,
 
-  select_option = function(self, value)
+  selectOption = function(self, value)
 
   end,
 
@@ -260,17 +260,17 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
     self.context, self.location = context, location
     self.items = ephemeral.item.locations[location]
 
-    self.icon:set(context.icon or self.default_icon)
-    if context.icon_callback then
-      self.icon_callback = context.icon_callback
+    self.icon:set(context.icon or self.defaultIcon)
+    if context.iconCallback then
+      self.iconCallback = context.iconCallback
       self.icon:enable()
     else
-      self.icon_callback = nil
+      self.iconCallback = nil
       self.icon:disable()
     end
-    self.icon_tooltip = context.icon_tooltip
+    self.iconTooltip = context.iconTooltip
 
-    self:set_title(context.title or 'Container')
+    self:setTitle(context.title or 'Container')
     self.options:SetText(context.button or 'Options')
 
     self:filter()
@@ -300,7 +300,7 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
     end
   end,
 
-  update_text = function(self, count)
+  updateText = function(self, count)
     local count, noun = count or self.items.n, 'items'
     if count == 1 then
       noun = 'item'
@@ -308,7 +308,7 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
     self.text:SetText(format("%s's Backpack\n|c003f3f3f%d %s|r", ep.character.name, count, noun))
   end,
 
-  _update_scrollbar = function(self)
+  _updateScrollbar = function(self)
     self.scrollbar:SetMinMaxValues(0, max(0, ceil(self.count / self.cols) - self.rows))
   end
 })
@@ -356,11 +356,11 @@ ep.item.editor = ep.panel('ep.item.editor', 'epItemEditor', {
   show = function(self, item, location)
     item = item or {}
     self.f_icon:set(item.ic)
-    self.f_name:set_value(item.nm or '')
+    self.f_name:setValue(item.nm or '')
     self.f_quality:select(item.qu)
-    self.f_creator:set_value(item.cr or '')
-    self.tabs.f_description:set_value(item.ds or '')
-    self.tabs.f_appearance:set_value(item.ap or '')
+    self.f_creator:setValue(item.cr or '')
+    self.tabs.f_description:setValue(item.ds or '')
+    self.tabs.f_appearance:setValue(item.ap or '')
     self.f_stackable:check(item.st or false)
     self.f_disabled:check(item.di or false)
     self.f_protected:check(item.pt or false)

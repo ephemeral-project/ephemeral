@@ -127,20 +127,20 @@ Button epDropBox(epControl, virtual):
 
 Frame epEditAreaBase(virtual):
   !Border:
-    FontString $parentInnerLabel(epInnerLabelFont, .innerlabel, justifyH: LEFT, hidden):
+    FontString $parentInnerLabel(epInnerLabelFont, .innerLabel, justifyH: LEFT, hidden):
       !TopLeft(6, -6)
       !TopRight(-6, -6)
-  ScrollFrame $parentScrolled(epScrollFrame, .scrollframe):
+  ScrollFrame $parentScrolled(epScrollFrame, .scrollFrame):
     !TopLeft(6, -6)
     !BottomRight(-6, 6)
     ScrollChild:
       EditBox $parentText(font: epNormalFont, letters: 2048, +multiline, -autoFocus):
         OnCursorChanged:
-          *self:GetParent():GetParent():update_cursor(x, y)
+          *self:GetParent():GetParent():updateCursor(x, y)
         OnEditFocusGained:
-          *self:GetParent():GetParent().innerlabel:Hide()
+          *self:GetParent():GetParent().innerLabel:Hide()
         OnEditFocusLost:
-          *self:GetParent():GetParent():_focus_lost()
+          *self:GetParent():GetParent():_focusLost()
         OnEscapePressed:
           *self:ClearFocus()
         OnMouseWheel:
@@ -159,9 +159,9 @@ Frame epEditArea(inherits: 'epControl,epEditAreaBase', virtual)
 EditBox epEditBox(epControl, font: epNormalFont, -autoFocus, virtual):
   !Size(y: 19)
   !Border:
-    FontString $parentInnerLabel(epInnerLabel, .innerlabel, hidden)
+    FontString $parentInnerLabel(epInnerLabel, .innerLabel, hidden)
   !TextInsets(5, 4, 0, 1)
-  Button $parentClear(.clear_button, hidden):
+  Button $parentClear(.clearButton, hidden):
     !Size(20, 20)
     !TopRight(0, 1)
     NormalTexture(file: '%textures\close-normal'):
@@ -171,34 +171,34 @@ EditBox epEditBox(epControl, font: epNormalFont, -autoFocus, virtual):
       !Size(20, 20)
       !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
     OnClick:
-      *self:GetParent():set_value('')
+      *self:GetParent():setValue('')
   OnEnterPressed:
     *self:ClearFocus()
   OnEscapePressed:
     *self:ClearFocus()
   OnEditFocusGained:
-    *self.innerlabel:Hide()
+    *self.innerLabel:Hide()
   OnEditFocusLost:
-    *self:_focus_lost()
+    *self:_focusLost()
   OnLoad:
     *ep.editbox(self)
 
 EditBox epInlineEditBox(epEditBox, virtual):
   OnEditFocusGained:
-    *self.eb_editing = true
+    *self._editing = true
     *self:EnableDrawLayer('BACKGROUND')
     *self:EnableDrawLayer('BORDER')
   OnEditFocusLost:
-    *self.eb_editing = nil
+    *self._editing = nil
     *self:DisableDrawLayer('BACKGROUND')
     *self:DisableDrawLayer('BORDER')
   OnEnter:
-    *if not self.eb_editing then
+    *if not self._editing then
     *  self:EnableDrawLayer('BACKGROUND')
     *  self:EnableDrawLayer('BORDER')
     *end
   OnLeave:
-    *if not self.eb_editing then
+    *if not self._editing then
     *  self:DisableDrawLayer('BACKGROUND')
     *  self:DisableDrawLayer('BORDER')
     *end
@@ -243,7 +243,7 @@ Button epGridHeader(virtual):
     Texture(epControlInnerEdgeR, .edge):
       !TopRight(2, 0)
       !BottomRight(2, 0)
-    Texture(epSlightHighlight, .slight_highlight, hidden):
+    Texture(epSlightHighlight, .slightHighlight, hidden):
       !TopLeft(-4, 0)
       !BottomRight(-4, 0)
   !Artwork:
@@ -494,7 +494,7 @@ ScrollFrame epScrollFrame(virtual):
     !TopRight(6, -7)
     !BottomRight(6, 7)
     OnLoad:
-      *ep.slider(self, {ep.scrollframe.update_scroll, self:GetParent()}, nil, 0.15)
+      *ep.slider(self, {ep.scrollframe.updateScroll, self:GetParent()}, nil, 0.15)
   OnLoad:
     *ep.scrollframe(self)
   OnMouseWheel:
@@ -503,7 +503,7 @@ ScrollFrame epScrollFrame(virtual):
     *self:update(xrange, yrange)
   OnSizeChanged:
     *if self.managed then
-    *  self.childframe:SetWidth(self:GetWidth() - 20)
+    *  self.childFrame:SetWidth(self:GetWidth() - 20)
     *end
 
 EditBox epSpinner(epControl, font: epNormalFont, -autoFocus, virtual):
@@ -581,7 +581,7 @@ Button epTabButton(virtual):
     Texture $parentBorder(epControlInnerEdgeR):
       !TopRight(7, -1)
       !BottomRight(7, 1)
-    Texture $parentBottomBorder(epControlInnerEdgeB, .bottomborder, hidden):
+    Texture $parentBottomBorder(epControlInnerEdgeB, .bottomBorder, hidden):
       !BottomLeft(-1, -6)
       !BottomRight(1, -6)
   OnClick:
@@ -659,7 +659,7 @@ Button epTreeButton(virtual):
     !Left(-7, -1)
     NormalTexture(epArrowRight)
     OnClick:
-      *self:GetParent():open_or_close()
+      *self:GetParent():openOrClose()
     OnEnter:
       *self:GetParent():enter()
     OnLeave:

@@ -1,4 +1,4 @@
-local attach_tooltip = ep.attach_tooltip
+local attachTooltip = ep.attachTooltip
 local band = bit.band
 local fieldsort = ep.fieldsort
 local floor = math.floor
@@ -10,7 +10,7 @@ ep.button = ep.control('ep.button', 'epButton', ep.basecontrol, 'button', {
   initialize = function(self, tooltip)
     self.tooltip = tooltip
     if tooltip then
-      attach_tooltip(self, tooltip)
+      attachTooltip(self, tooltip)
     end
   end,
 
@@ -36,7 +36,7 @@ ep.checkbox = ep.control('ep.checkbox', 'epCheckBox', ep.basecontrol, 'checkbox'
 
     self.tooltip = tooltip
     if tooltip then
-      attach_tooltip(self, tooltip)
+      attachTooltip(self, tooltip)
     end
   end,
 
@@ -63,7 +63,7 @@ ep.checkbox = ep.control('ep.checkbox', 'epCheckBox', ep.basecontrol, 'checkbox'
     self:SetAlpha(1.0)
   end,
 
-  _grid_set = function(self, value)
+  _gridSet = function(self, value)
     self:SetChecked(value)
   end
 })
@@ -88,6 +88,7 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
     self.sorted = specification.sorted
     self.tooltip = specification.tooltip
     self.values = {}
+
     if specification.prefix then
       self.prefix = tint:format('label', specification.prefix..': ')
     end
@@ -104,9 +105,10 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
     if specification.items then
       self:populate(specification.items, self.default, specification.value)
     end
+
     if tooltip then
       tooltip.location = {anchor = self, hook = 'BOTTOMLEFT', x = 10, y = -2}
-      attach_tooltip(self, tooltip)
+      attachTooltip(self, tooltip)
     end
   end,
 
@@ -115,14 +117,16 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
     if self.values[value] then
       self:remove(value)
     end
+
     self.values[value] = label or value
     if position then
       tinsert(self.items, position, item)
     else
       tinsert(self.items, item)
     end
+
     if self.sorted then
-      sort(self.items, self._sort_by_label)
+      sort(self.items, self._sortByLabel)
     end
     self.menu.built = false
   end,
@@ -140,7 +144,7 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
     if value then
       self:select(value, true)
     elseif self:GetText() == '' then
-      self:set_text(self.value)
+      self:setText(self.value)
     end
     self:Enable()
   end,
@@ -167,7 +171,7 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
 
     self.menu.built = false
     if self.sorted then
-      sort(items, self._sort_by_label)
+      sort(items, self._sortByLabel)
     end
 
     self.default = default
@@ -204,19 +208,19 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
       if quiet ~= true and self.callback then
         invoke(self.callback, value, self)
       end
-      self:set_text(value)
+      self:setText(value)
     end
   end,
 
-  set_text = function(self, value)
+  setText = function(self, value)
     self:SetText(self.prefix..self.values[value])
   end,
 
-  _grid_set = function(self, value)
+  _gridSet = function(self, value)
     self:select(value, true)
   end,
 
-  _sort_by_label = function(first, second)
+  _sortByLabel = function(first, second)
     return first.label < second.label
   end
 })
@@ -240,8 +244,9 @@ ep.combobox = ep.control('ep.combobox', 'epComboBox', ep.dropbox, 'editbox', {
     if not quiet and self.callback then
       invoke(self.callback, value, self)
     end
+
     if self.values[value] then
-      self:set_text(value)
+      self:setText(value)
     else
       self:SetText(value)
     end
@@ -251,20 +256,23 @@ ep.combobox = ep.control('ep.combobox', 'epComboBox', ep.dropbox, 'editbox', {
 
 ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
   initialize = function(self, label, locked, tooltip)
-    self.editbox = self.scrollframe:GetScrollChild()
+    self.editbox = self.scrollFrame:GetScrollChild()
     self.label = label
     self.tooltip = tooltip
+
     if locked then
       self:lock(true)
     end
+
     if label then
-      self.innerlabel:SetText(self.label)
+      self.innerLabel:SetText(self.label)
       if self.editbox:GetText() == '' then
-        self.innerlabel:Show()
+        self.innerLabel:Show()
       end
     end
+
     if tooltip then
-      attach_tooltip(self, tooltip)
+      attachTooltip(self, tooltip)
     end
   end,
 
@@ -272,6 +280,7 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
     local position = (unmoved) and self.editbox:GetCursorPosition() or nil
     self.editbox:SetCursorPosition(self.editbox:GetNumLetters())
     self.editbox:Insert(content)
+
     if position then
       self.editbox:SetCursorPosition(position)
     end
@@ -281,12 +290,15 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
     self.disabled = true
     self.editbox:ClearFocus()
     self:SetAlpha(0.6)
+
     if saved then
-      self.ea_text = self.editbox:GetText()
+      self._savedText = self.editbox:GetText()
     end
+
     if cleared then
       self.editbox:SetText('')
     end
+
     self.editbox:EnableKeyboard(false)
     self.editbox:EnableMouse(false)
   end,
@@ -294,17 +306,19 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
   enable = function(self, cleared)
     self.disabled = nil
     self:SetAlpha(1.0)
+
     if cleared then
       self.editbox:SetText('')
-    elseif self.ea_text then
-      self.editbox:SetText(self.ea_text)
-      self.ea_text = nil
+    elseif self._savedText then
+      self.editbox:SetText(self._savedText)
+      self._savedText = nil
     end
+
     self.editbox:EnableKeyboard(true)
     self.editbox:EnableMouse(true)
   end,
 
-  get_value = function(self)
+  getValue = function(self)
     return self:GetText()
   end,
 
@@ -312,33 +326,33 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
     self.editbox:EnableKeyboard(not locked)
   end,
 
-  set_value = function(self, value)
+  setValue = function(self, value)
     self.editbox:SetText(value or '')
     if #self.editbox:GetText() == 0 then
       if self.label then
-        self.innerlabel:Show()
+        self.innerLabel:Show()
       end
     else
-      self.innerlabel:Hide()
+      self.innerLabel:Hide()
     end
   end,
 
-  update_cursor = function(self, x, y)
-    local offset, height, y = self.scrollframe:GetVerticalScroll(), self:GetHeight() - 26, abs(y)
+  updateCursor = function(self, x, y)
+    local offset, height, y = self.scrollFrame:GetVerticalScroll(), self:GetHeight() - 26, abs(y)
     if y < offset then
-      self.scrollframe:scroll(y)
+      self.scrollFrame:scroll(y)
     elseif y > (offset + height) then
-      self.scrollframe:scroll(y - height)
+      self.scrollFrame:scroll(y - height)
     end
   end,
 
-  _focus_lost = function(self)
+  _focusLost = function(self)
     self.editbox:HighlightText(0, 0)
     if self.label then
       if self.editbox:GetText() == '' then
-        self.innerlabel:Show()
+        self.innerLabel:Show()
       else
-        self.innerlabel:Hide()
+        self.innerLabel:Hide()
       end
     end
   end
@@ -349,43 +363,53 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
     self.clearable = clearable
     self.label = label
     self.tooltip = tooltip
+
     if self.label then
-      self.innerlabel:SetText(self.label)
+      self.innerLabel:SetText(self.label)
       if self:GetText() == '' then
-        self.innerlabel:Show()
+        self.innerLabel:Show()
       end
     end
+
     if self.clearable and self:GetText() ~= '' then
-      self.clear_button:Show()
+      self.clearButton:Show()
     end
+
     if tooltip then
-      attach_tooltip(self, tooltip)
+      attachTooltip(self, tooltip)
     end
   end,
 
   append = function(self, content, unmoved)
     local position = nil
-    if #content > 0 then
-      if unmoved then
-        position = self:GetCursorPosition()
-      end
-      self:SetCursorPosition(self:GetNumLetters())
-      self:Insert(content)
-      if position then
-        self:SetCursorPosition(position)
-      end
+    if #content = 0 then
+      return
+    end
+
+    if unmoved then
+      position = self:GetCursorPosition()
+    end
+
+    self:SetCursorPosition(self:GetNumLetters())
+    self:Insert(content)
+
+    if position then
+      self:SetCursorPosition(position)
     end
   end,
 
   disable = function(self, cleared, saved)
     self:ClearFocus()
     self:SetAlpha(0.6)
+
     if saved then
-      self.eb_text = self:GetText()
+      self._savedText = self:GetText()
     end
+
     if cleared then
       self:SetText('')
     end
+
     self:EnableKeyboard(false)
     self:EnableMouse(false)
   end,
@@ -394,59 +418,62 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
     self:SetAlpha(1.0)
     if cleared then
       self:SetText('')
-    elseif self.eb_text then
-      self:SetText(self.eb_text)
-      self.eb_text = nil
+    elseif self._savedText then
+      self:SetText(self._savedText)
+      self._savedText = nil
     end
+
     self:EnableKeyboard(true)
     self:EnableMouse(true)
   end,
 
-  get_value = function(self)
+  getValue = function(self)
     return self:GetText()
   end,
 
-  set_value = function(self, value)
+  setValue = function(self, value)
     local original = self:GetText()
     self:SetText(value or '')
+
     if #self:GetText() == 0 then
-      self.clear_button:Hide()
+      self.clearButton:Hide()
       if self.label and self:HasFocus() then
-        self.innerlabel:Show()
+        self.innerLabel:Show()
       end
     else
-      self.innerlabel:Hide()
+      self.innerLabel:Hide()
       if self.clearable then
-        self.clear_button:Show()
+        self.clearButton:Show()
       end
     end
     return original
   end,
 
-  _grid_set = function(self, value)
-    self:set_value(value)
+  _gridSet = function(self, value)
+    self:setValue(value)
   end,
 
-  _focus_lost = function(self)
+  _focusLost = function(self)
     self:HighlightText(0, 0)
     if self.label then
       if self:GetText() == '' then
-        self.innerlabel:Show()
+        self.innerLabel:Show()
       else
-        self.innerlabel:Hide()
+        self.innerLabel:Hide()
       end
     end
+
     if self.clearable then
       if self:GetText() == '' then
-        self.clear_button:Hide()
+        self.clearButton:Hide()
       else
-        self.clear_button:Show()
+        self.clearButton:Show()
       end
     end
     self:event(':changed', self)
   end,
 
-  _value_changed = function(self)
+  _valueChanged = function(self)
     self:event(':changed', self)
   end
 })
@@ -467,19 +494,20 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
   initialize = function(self, params)
     params = params or {}
     self.alternated = (params.alternated ~= false)
-    self.default_sort = params.default_sort
+    self.defaultSort = params.defaultSort
     self.hpadding = params.hpadding or params.padding or 2
     self.offset = 0
-    self.resize_to_fit = params.resize_to_fit
+    self.resizeToFit = params.resizeToFit
     self.total = 0
     self.unselectable = params.unselectable
     self.vpadding = params.vpadding or params.padding or 1
 
     if params.header then
-      self.headers, self.headers_by_field = {}, {}
+      self.headers, self.headersByField = {}, {}
       self.header:Show()
       self.scrollbar:SetPoint('TOPRIGHT', self, 'TOPRIGHT', 0, -32)
     end
+
     if params.cells then
       self:construct(params.cells)
       self:build()
@@ -511,29 +539,30 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
       clearance = clearance + 19
     end
 
-    self.rowcount = floor((self:GetHeight() - clearance) / self.rowheight)
-    self.rowwidth = self:GetWidth() - 17
-    space = self.rowwidth - self.exactwidth - padding
+    self.rowCount = floor((self:GetHeight() - clearance) / self.rowHeight)
+    self.rowWidth = self:GetWidth() - 17
+    space = self.rowWidth - self.exactWidth - padding
 
     total, offset = 0, self.hpadding
     for i = 1, #cells do
       cell = cells[i]
-      if cell.relwidth then
-        cell.width = floor(space * cell.relwidth)
+      if cell.relWidth then
+        cell.width = floor(space * cell.relWidth)
         total = total + cell.width
       end
-      if not cell.staticwidth then
+      if not cell.staticWidth then
         cell.cwidth = cell.width - padding
        end
        cell.hoffset = offset + self.hpadding
        offset = offset + cell.width
     end
+
     if total < space then
       cell.width = cell.width + (space - total)
     end
 
     offset = (self.header and 20 or 1) + self.vpadding
-    for i = 1, self.rowcount do
+    for i = 1, self.rowCount do
       row = self.rows[i]
       if not row then
         row = ep.gridrow(self.name..'r'..i, self, self, i)
@@ -544,19 +573,21 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
       row.visible = true
       row:layout()
     end
+
     if self.headers then
       for i = 1, #self.headers do
         self.headers[i]:layout()
       end
     end
-    for i = self.rowcount + 1, #self.rows do
+
+    for i = self.rowCount + 1, #self.rows do
       row = self.rows[i]
       row.visible = nil
       row:Hide()
     end
 
-    if self.resize_to_fit then
-      row = self.rows[self.rowcount]
+    if self.resizeToFit then
+      row = self.rows[self.rowCount]
       point = {row:GetPoint()}
       offset = abs(point[5]) + row:GetHeight() + 3
       if offset < self:GetHeight() then
@@ -567,18 +598,19 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
 
   construct = function(self, cells)
     local hpadding, control, header = self.hpadding * 2
-    self.rowheight, self.exactwidth = 13, 0
+    self.rowHeight, self.exactWidth = 13, 0
 
     for i, cell in ipairs(cells) do
       if not cell.title then
         cell.unsortable = true
       end
+
       control = self.controls[cell.control]
       if control then
         cell.control = control
         if control.height then
           cell.cheight = control.height
-          self.rowheight = max(self.rowheight, control.height)
+          self.rowHeight = max(self.rowHeight, control.height)
         end
         if control.width then
           cell.width = control.width + hpadding
@@ -587,58 +619,60 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
           cell.width = cell.width + hpadding
         end
         if cell.width then
-          self.exactwidth = self.exactwidth + cell.width
+          self.exactWidth = self.exactWidth + cell.width
         end
       else
         cell.control = nil
         if cell.width then
           cell.width = cell.width + hpadding
-          self.exactwidth = self.exactwidth + cell.width
+          self.exactWidth = self.exactWidth + cell.width
         end
       end
+
       cell.field = cell.field or i
       if self.headers then
         header = ep.gridheader(self.name..'h'..i, self.header, self, i, cell)
-        self.headers[i], self.headers_by_field[cell.field] = header, header
+        self.headers[i], self.headersByField[cell.field] = header, header
       end
     end
 
     for i, cell in ipairs(cells) do
       if cell.cheight then
-        cell.voffset = max(0, floor((self.rowheight - cell.cheight) / 2)) + self.vpadding
+        cell.voffset = max(0, floor((self.rowHeight - cell.cheight) / 2)) + self.vpadding
       else
-        cell.cheight = self.rowheight
+        cell.cheight = self.rowHeight
         cell.voffset = self.vpadding
       end
     end
 
     self.cells = cells
     self.rows = {}
-    self.rowheight = self.rowheight + (self.vpadding * 2)
+    self.rowHeight = self.rowHeight + (self.vpadding * 2)
   end,
 
   load = function(self, data)
     self.data = data
     self.total = #self.data
-    self:_update_scrollbar()
+    self:_updateScrollbar()
     self:update(0)
   end,
 
   resize = function(self)
     self:build()
-    self:_update_scrollbar()
+    self:_updateScrollbar()
     self:update()
   end,
 
   sort = function(self, field, descending)
     if self.headers then
-      if self.current_sort then
-        self.headers_by_field[self.current_sort[1]]:clear_sort()
+      if self.currentSort then
+        self.headersByField[self.currentSort[1]]:clearSort()
       end
-      self.current_sort = {field, descending}
-      self.headers_by_field[field]:set_sort(descending)
+      self.currentSort = {field, descending}
+      self.headersByField[field]:setSort(descending)
     end
-    fieldsort(self.data, {field, descending}, self.default_sort)
+
+    fieldsort(self.data, {field, descending}, self.defaultSort)
     self:update()
   end,
 
@@ -646,7 +680,7 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
     offset = floor(offset or self.scrollbar:GetValue())
     if self.scrollbar:GetValue() == offset then
       if self.generator then
-        self:_generate_data()
+        self:_generateData()
         offset = 0
       end
       if self.data then
@@ -664,11 +698,11 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
     end
   end,
 
-  _generate_data = function(self)
+  _generateData = function(self)
   end,
 
-  _update_scrollbar = function(self)
-    self.scrollbar:SetMinMaxValues(0, max(0, self.total - self.rowcount))
+  _updateScrollbar = function(self)
+    self.scrollbar:SetMinMaxValues(0, max(0, self.total - self.rowCount))
   end
 })
 
@@ -677,7 +711,7 @@ ep.gridcell = ep.control('ep.gridcell', 'epGridCell', ep.baseframe, nil, {
     self.row = row
   end,
 
-  _grid_set = function(self, value)
+  _gridSet = function(self, value)
     self.text:SetText(value)
   end
 })
@@ -688,18 +722,20 @@ ep.gridheader = ep.control('ep.gridheader', 'epGridHeader', ep.button, nil, {
     self.cell = cell
     self.grid = grid
     self.id = id
+
     if cell.title then
       self:SetText(cell.title)
     end
+
     if cell.unsortable then
       self:Disable()
     end
   end,
 
-  clear_sort = function(self)
+  clearSort = function(self)
     self.sorting = nil
     self.arrow:Hide()
-    self.slight_highlight:Hide()
+    self.slightHighlight:Hide()
   end,
 
   click = function(self, button)
@@ -727,7 +763,7 @@ ep.gridheader = ep.control('ep.gridheader', 'epGridHeader', ep.button, nil, {
   leave = function(self)
   end,
 
-  set_sort = function(self, descending)
+  setSort = function(self, descending)
     self.sorting = descending
     if descending then
       self.arrow:SetTexture('Interface\\AddOns\\ephemeral\\textures\\arrow-down')
@@ -735,36 +771,38 @@ ep.gridheader = ep.control('ep.gridheader', 'epGridHeader', ep.button, nil, {
       self.arrow:SetTexture('Interface\\AddOns\\ephemeral\\textures\\arrow-up')
     end
     self.arrow:Show()
-    self.slight_highlight:Show()
+    self.slightHighlight:Show()
   end
 })
 
 ep.gridrow = ep.control('ep.gridrow', 'epGridRow', ep.baseframe, nil, {
   initialize = function(self, grid, id)
-    local instance, cell_name, constructor
+    local instance, cellName, constructor
     self.grid = grid
     self.id = id
     self.cells = {}
+
     for i, cell in ipairs(grid.cells) do
-      cell_name = self.name..'c'..i
+      cellName = self.name..'c'..i
       if cell.control then
         constructor = cell.control.constructor
-        if constructor.for_grid then
-          instance = constructor:for_grid(cell_name, self, cell)
+        if constructor.forGrid then
+          instance = constructor:forGrid(cellName, self, cell)
         else
-          instance = constructor(cell_name, self)
+          instance = constructor(cellName, self)
         end
         instance.row = row
       else
-        instance = ep.gridcell(cell_name, self, self)
+        instance = ep.gridcell(cellName, self, self)
       end
       instance.cell = cell
       self.cells[i] = instance
     end
+
     if grid.alternated and band(id, 1) ~= 1 then
       self.diff:Show()
     end
-    self:SetHeight(grid.rowheight)
+    self:SetHeight(grid.rowHeight)
   end,
 
   enter = function(self)
@@ -772,7 +810,7 @@ ep.gridrow = ep.control('ep.gridrow', 'epGridRow', ep.baseframe, nil, {
   end,
 
   layout = function(self)
-    self:SetWidth(self.grid.rowwidth)
+    self:SetWidth(self.grid.rowWidth)
     for i, instance in ipairs(self.cells) do
       if instance.cell.cwidth then
         instance:SetWidth(instance.cell.cwidth)
@@ -795,7 +833,7 @@ ep.gridrow = ep.control('ep.gridrow', 'epGridRow', ep.baseframe, nil, {
     if self.data then
       for i, instance in ipairs(self.cells) do
         if instance.cell.field then
-          instance:_grid_set(self.data[instance.cell.field])
+          instance:_gridSet(self.data[instance.cell.field])
         end
       end
       self:Show()
@@ -822,11 +860,11 @@ ep.iconbox = ep.control('ep.iconbox', 'epIconBox', ep.button, nil, {
     end
 
     self.anchor = params.anchor or self
-    self.enable_browsing = params.enable_browsing
+    self.enableBrowsing = params.enableBrowsing
   end,
 
   browse = function(self)
-    if self.enable_browsing then
+    if self.enableBrowsing then
       epIconBrowser:display({self.set, self}, self.anchor)
     end
   end,
@@ -865,7 +903,7 @@ ep.iconbox = ep.control('ep.iconbox', 'epIconBox', ep.button, nil, {
     end
   end,
 
-  _grid_set = function(self, value)
+  _gridSet = function(self, value)
     self:set(value)
   end
 })
@@ -991,6 +1029,7 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
         padding = 0
       end
     end
+
     if hasspots then
       offset, padding = offset + 15, padding - 15
       if padding < 0 then
@@ -998,6 +1037,7 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
         padding = 0
       end
     end
+
     if hasarrows then
       padding = padding - 6
       if padding < 0 then
@@ -1005,6 +1045,7 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
         padding = 0
       end
     end
+
     if scrolled and (width - 15) >= widest then
       width = width - 15
     end
@@ -1026,6 +1067,7 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
     if scrolled and (width - 15) >= widest then
       width = width + 15
     end
+
     self:SetWidth(width + 10)
     self.built = true
   end,
@@ -1041,7 +1083,7 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
     end
   end,
 
-  closeall = function(self)
+  closeAll = function(self)
     if #self.menus >= 1 then
       self.menus[1]:close()
     end
@@ -1058,23 +1100,24 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
         return
       end
     elseif type(self.width) == 'table' then
-      if not self.savedwidth or self.savedwidth ~= self.width:GetWidth() then
+      if not self.savedWidth or self.savedWidth ~= self.width:GetWidth() then
         self:build()
         if not self.built then
           return
         end
       end
     end
+
     if self.scrollbar and self.scrollbar:IsShown() then
       self.scrollbar:SetValue(0)
     end
 
-    local menucount = #self.menus
+    local menuCount = #self.menus
     if self.ancestor then
-      if menucount > self.ancestor.depth then
+      if menuCount > self.ancestor.depth then
         self.menus[self.ancestor.depth + 1]:close()
       end
-    elseif menucount > 0 then
+    elseif menuCount > 0 then
       self.menus[1]:close()
     end
 
@@ -1191,17 +1234,20 @@ ep.menubutton = ep.control('ep.menubutton', 'epMenuButton', ep.button, nil, {
       else
         self.font:SetTextColor(unpack(tint.label))
       end
+
       if self.item.checkable then
         self.checkbox:Show()
         self:check(self.item.checked)
       else
         self.checkbox:Hide()
       end
+
       if self.item.submenu then
         self.arrow:Show()
       else
         self.arrow:Hide()
       end
+
       if self.item.disabled then
         self:disable()
       else
@@ -1236,7 +1282,7 @@ ep.messageframe = ep.control('ep.messageframe', 'epMessageFrame', ep.basecontrol
     self.messages:SetScrollOffset(self.range - offset)
   end,
 
-  set_font_object = function(self, font)
+  setFontObject = function(self, font)
     self.messages:SetFontObject(font)
   end
 })
@@ -1246,16 +1292,18 @@ ep.multibutton = ep.control('ep.multibutton', 'epMultiButton', ep.basecontrol, '
     if not params then
       return
     end
-    self.tooltip = params.tooltip
+
     self.menu = ep.menu(self.name..'Menu', self, {
       items = params.items,
       location = {anchor = self, x = 0, y = -18},
       window = params.window or 8,
       width = self,
     })
+
+    self.tooltip = params.tooltip
     if tooltip then
       tooltip.location = {anchor = self, hook = 'BOTTOMLEFT', x = 10, y = -2}
-      attach_tooltip(self, tooltip)
+      attachTooltip(self, tooltip)
     end
   end,
 
@@ -1285,7 +1333,7 @@ ep.scrollframe = ep.control('ep.scrollframe', 'epScrollFrame', ep.basecontrol, '
     self.hideable = specification.hideable or false
     self.managed = specification.managed or false
     self.resizable = specification.resizable or false
-    self.childframe, self.scrollbar = self:GetScrollChild(), self:child('ScrollBar')
+    self.childFrame, self.scrollbar = self:GetScrollChild(), self:child('ScrollBar')
   end,
 
   scroll = function(self, value)
@@ -1309,20 +1357,20 @@ ep.scrollframe = ep.control('ep.scrollframe', 'epScrollFrame', ep.basecontrol, '
       if self.hideable then
         self.scrollbar:Hide()
         if self.resizable then
-          self.childframe:SetWidth(self.childframe:GetWidth() + 20)
+          self.childFrame:SetWidth(self.childFrame:GetWidth() + 20)
         end
       end
     else
       if self.hideable then
         if self.resizable then
-          self.childframe:SetWidth(self.childframe:GetWidth() - 20)
+          self.childFrame:SetWidth(self.childFrame:GetWidth() - 20)
         end
         self.scrollbar:Show()
       end
     end
   end,
 
-  update_scroll = function(self, value)
+  updateScroll = function(self, value)
     self:SetVerticalScroll(value)
   end
 })
@@ -1367,11 +1415,13 @@ ep.slider = ep.control('ep.slider', 'epSlider', ep.basecontrol, 'slider', {
     else
       self.less:Enable()
     end
+
     if value >= max then
       self.more:Disable()
     else
       self.more:Enable()
     end
+
     if self.callback then
       invoke(self.callback, value, self)
     end
@@ -1386,7 +1436,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
       self.value = params.value
       self.values = params.values
       if self.value then
-        self:set_value(self.value)
+        self:setValue(self.value)
       else
         self.offset = 1
         self.value = self.values[1]
@@ -1401,7 +1451,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
       self.step = params.step or 1
       self.validator = params.validator
       self.value = params.value or 0
-      self:set_value(self.value)
+      self:setValue(self.value)
     end
 
     self.onchange = params.onchange
@@ -1413,7 +1463,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
 
     self.tooltip = params.tooltip
     if self.tooltip then
-      attach_tooltip(self, self.tooltip)
+      attachTooltip(self, self.tooltip)
     end
   end,
 
@@ -1440,7 +1490,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
   enable = function(self, value)
     self:SetAlpha(1.0)
     if value then
-      self:set_value(value)
+      self:setValue(value)
     else
       self:update()
     end
@@ -1458,7 +1508,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
     self.more:EnableMouseWheel(true)
   end,
 
-  set_value = function(self, value)
+  setValue = function(self, value)
     self:ClearFocus()
     if self.values then
       local offset = ep.index(self.values, value)
@@ -1480,6 +1530,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
       end
       self.value = value
     end
+
     if self.onchange then
       invoke(self.onchange, self.value, self)
     end
@@ -1514,6 +1565,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
         self.value = value
       end
     end
+
     if self.onchange then
       invoke(self.onchange, self.value, self)
     end
@@ -1530,8 +1582,8 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
     end
   end,
 
-  _grid_set = function(self, value)
-    self:set_value(value)
+  _gridSet = function(self, value)
+    self:setValue(value)
   end
 })
 
@@ -1541,7 +1593,7 @@ ep.tabbutton = ep.control('ep.tabbutton', 'epTabButton', ep.button, nil, {
     self.border = self:child('Border')
     self.frame = frame
     self.id = id
-    self.bottomborder:SetVertexColor(1, 1, 1, 0.5)
+    self.bottomBorder:SetVertexColor(1, 1, 1, 0.5)
   end,
 
   toggle = function(self, active)
@@ -1549,15 +1601,15 @@ ep.tabbutton = ep.control('ep.tabbutton', 'epTabButton', ep.button, nil, {
       self.background:Show()
       self:SetNormalFontObject(epTitleFont)
       self:Disable()
-      if self.frame.show_bottom_border then
-        self.bottomborder:Show()
+      if self.frame.showBottomBorder then
+        self.bottomBorder:Show()
       end
     else
       self.background:Hide()
       self:SetNormalFontObject(epLabelFont)
       self:Enable()
-      if self.frame.show_bottom_border then
-        self.bottomborder:Hide()
+      if self.frame.showBottomBorder then
+        self.bottomBorder:Hide()
       end
     end
   end
@@ -1567,7 +1619,7 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
   initialize = function(self, items, params)
     params = params or {}
     self.callback = params.callback
-    self.show_bottom_border = params.show_bottom_border
+    self.showBottomBorder = params.showBottomBorder
     self.sorted = params.sorted
 
     self.items = {}
@@ -1586,9 +1638,11 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
     if type(item) ~= 'table' then
       item = {label = item}
     end
+
     if item.client and type(item.client) == 'string' then
       item.client = self:child(item.client)
     end
+
     if offset and offset >= 1 and offset <= #self.items then
       tinsert(self.items, offset, item)
       if self.tab >= offset then
@@ -1607,6 +1661,7 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
         self.tabs[i] = ep.tabbutton(self.name..i, self, i, self)
       end
     end
+
     if self.sorted then
       sort(self.items, self.sort)
     end
@@ -1618,17 +1673,20 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
         tab.index = i
         tab:SetText(item.label)
         tab:SetWidth((tab:GetTextWidth() * 1.03) + 18)
+
         if item.disabled then
           tab:disable()
         else
           tab:enable()
         end
+
         tab:SetPoint('TOPLEFT', self, 'TOPLEFT', offset, 0)
         tab:Show()
         offset = offset + tab:GetWidth() + 1
         index = index + 1
       end
     end
+
     if index <= tabs then
       for i = index, tabs do
         self.tabs[i]:Hide()
@@ -1649,6 +1707,7 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
         end
       end
     end
+
     if type(id) == 'number' and id >= 1 and id <= #self.items then
       return id
     end
@@ -1658,9 +1717,11 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
     if type(item) ~= 'table' then
       item = {label = item}
     end
+
     if item.client and type(item.client) == 'string' then
       item.client = _G[item.client]
     end
+
     if offset >= 1 and offset <= #self.items then
       update(self.items[offset], item)
       self:build()
@@ -1679,6 +1740,7 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
         item.client = self:child(item.client)
       end
     end
+
     self.items, self.tab = items, 0
     self:build()
   end,
@@ -1701,6 +1763,7 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
     if type(id) ~= 'number' or id == self.tab or self.items[id].disabled then
       return
     end
+
     if self.tab > 0 then
       tab = self.tabs[self.tab]
       if self.items[tab.index].client then
@@ -1723,6 +1786,7 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
       self.tf_side:Show()
       self.tf_rc_v:SetPoint('TOPRIGHT', self.tf_rc, 'TOPRIGHT', 1, 14)
     end
+
     if id > 1 then
       self.tf_lc:SetPoint('TOPLEFT', tab, 'BOTTOMLEFT', -6, 6)
       self.tf_lc:Show()
@@ -1771,29 +1835,29 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
   initialize = function(self, params)
     params = params or {}
     self.callback = params.callback
-    self.default_expansion = params.default_expansion or 0
-    self.expand_on_select = params.expand_on_select
+    self.defaultExpansion = params.defaultExpansion or 0
+    self.expandOnSelect = params.expandOnSelect
     self.flat = params.flat
-    self.no_default_selection = params.no_default_selection
-    self.resize_to_fit = params.resize_to_fit
+    self.noDefaultSelection = params.noDefaultSelection
+    self.resizeToFit = params.resizeToFit
 
     self.buttons = {}
-    self.button_count = 0
-    self.button_width = 0
+    self.buttonCount = 0
+    self.buttonWidth = 0
     self.offset = 0
     self.scrolling = false
     self.selection = nil
     self.sequence = nil
 
-    self:construct_buttons()
+    self:constructButtons()
     if params.items then
       self:populate(params.items)
     end
   end,
 
-  construct_buttons = function(self)
-    self.button_count = floor((self:GetHeight() - 8) / 13)
-    for i = 1, self.button_count do
+  constructButtons = function(self)
+    self.buttonCount = floor((self:GetHeight() - 8) / 13)
+    for i = 1, self.buttonCount do
       local button = self.buttons[i]
       if button then
         button:Show()
@@ -1803,7 +1867,7 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
         self.buttons[i] = button
       end
     end
-    for i = self.button_count + 1, #self.buttons do
+    for i = self.buttonCount + 1, #self.buttons do
       self.buttons[i]:Hide()
     end
   end,
@@ -1831,11 +1895,9 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
   end,
 
   disable = function(self, deselect)
-
   end,
 
   enable = function(self, selection)
-
   end,
 
   open = function(self, idx)
@@ -1857,7 +1919,7 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
 
   populate = function(self, items, expansion)
     local stack, level, item, row, idx
-    expansion = expansion or self.default_expansion
+    expansion = expansion or self.defaultExpansion
 
     self.items = items
     self.sequence = {}
@@ -1869,7 +1931,7 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
       stack[1].idx = stack[1].idx + 1
       if item then
         row = {item=item, idx=idx, indent=#stack - 1}
-        if item.selected or (idx == 1 and not self.no_default_selection) then
+        if item.selected or (idx == 1 and not self.noDefaultSelection) then
           self.selection = row
         end
         if not self.flat and item.items and row.indent + 1 <= expansion then
@@ -1889,7 +1951,7 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
   end,
 
   resize = function(self)
-    self:construct_buttons()
+    self:constructButtons()
     if self.sequence then
       self:update()
     end
@@ -1899,7 +1961,7 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
     local row = self.sequence[idx]
     if row then
       self.selection = row
-      if self.expand_on_select then
+      if self.expandOnSelect then
         self:open(row.idx)
       end
       if quiet ~= true and self.callback then
@@ -1910,31 +1972,31 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
   end,
 
   update = function(self, offset)
-    self:_update_scrollbar()
+    self:_updateScrollbar()
     if self.scrolling then
       offset = floor(offset or self.scrollbar:GetValue())
       if self.scrollbar:GetValue() == offset then
         self.offset = offset
-        self.button_width = self:GetWidth() - 27
+        self.buttonWidth = self:GetWidth() - 27
       else
         self.scrollbar:SetValue(offset)
         return
       end
     else
       self.offset = 0
-      self.button_width = self:GetWidth() - 10
+      self.buttonWidth = self:GetWidth() - 10
     end
 
-    for i = 1, self.button_count do
+    for i = 1, self.buttonCount do
       self.buttons[i]:update(self.sequence[i + self.offset])
     end
   end,
 
-  _update_scrollbar = function(self)
+  _updateScrollbar = function(self)
     local rows = #self.sequence
-    if rows > self.button_count then
+    if rows > self.buttonCount then
       self.scrolling = true
-      self.scrollbar:SetMinMaxValues(0, max(0, rows - self.button_count))
+      self.scrollbar:SetMinMaxValues(0, max(0, rows - self.buttonCount))
       self.scrollbar:Show()
     else
       self.scrolling = false
@@ -1961,7 +2023,7 @@ ep.treebutton = ep.control('ep.treebutton', 'epTreeButton', ep.button, nil, {
     end
   end,
 
-  open_or_close = function(self)
+  openOrClose = function(self)
     if self.row.open then
       self.frame:close(self.row.idx, self.id)
     else
@@ -2009,7 +2071,7 @@ ep.treebutton = ep.control('ep.treebutton', 'epTreeButton', ep.button, nil, {
         self.highlight:Hide()
         self:UnlockHighlight()
       end
-      self:SetWidth(self.frame.button_width)
+      self:SetWidth(self.frame.buttonWidth)
       self:Show()
     else
       self:Hide()

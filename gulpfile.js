@@ -33,6 +33,33 @@ function constructWxTask(taskname, filename) {
   })
 }
 
+function constructTestTask(taskname, filename) {
+  gulp.task(taskname, function(cb) {
+    exec('lua ' + filename, {cwd: 'tests'}, function(err, stdout, stderr) {
+      console.log(stdout)
+      console.log(stderr)
+      cb(err)
+    })
+  })
+}
+
+var testfiles = glob.sync('tests/test_*.lua')
+var testtasks = []
+
+for(var i = 0, l = testfiles.length; i < l; i++) {
+  var taskname = path.basename(testfiles[i], '.lua')
+  constructTestTask(taskname, path.basename(testfiles[i]))
+  testtasks.push(taskname)
+}
+
+function executeTest(filename, cb) {
+  exec('lua ' + filename, {cwd: 'tests'}, function(err, stdout, stderr) {
+    console.log(stdout)
+    console.log(stderr)
+    cb(err)
+  })
+}
+
 var wxfiles = glob.sync('wx/*.wx')
 for(var i = 0, l = wxfiles.length; i < l; i++) {
   constructWxTask(path.basename(wxfiles[i]), wxfiles[i])
@@ -79,3 +106,7 @@ gulp.task('watch', function() {
   }
   gulp.watch('addon/*.lua', ['lua'])
 })
+
+gulp.task('test',
+  sequence(testtasks)
+)

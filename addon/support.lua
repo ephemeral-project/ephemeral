@@ -1,4 +1,5 @@
 local concat = table.concat
+local floor = math.floor
 local fmod = math.fmod
 local format = string.format
 local tinsert = table.insert
@@ -8,8 +9,8 @@ local sort = table.sort
 local strrep = string.rep
 
 local promises = {}
-local _prototype_registries = {}
-local _pseudoid_chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+local prototypeRegistries = {}
+local _pseudoidChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 ep = {}
 ephemeral = {}
@@ -47,6 +48,7 @@ function ep.debug(message, objects, stacktrace)
   if type(message) == 'table' then
     message = message[1]:format(select(2, unpack(message)))
   end
+
   lines[1] = format('[%s] %s', date('%H:%M:%S'), message)
   if objects then
     for i, object in ipairs(objects) do
@@ -56,12 +58,14 @@ function ep.debug(message, objects, stacktrace)
       end
     end
   end
+
   if stacktrace then
     tinsert(lines, '  stack trace:')
     for line in ep.itersplit(debugstack(2), '\n') do
       tinsert(lines, '    '..line)
     end
   end
+
   lines = concat(lines, '\n')
   if epConsole then
     epConsole:log(lines)
@@ -200,7 +204,7 @@ function ep.prototype(...)
     return value
   end
 
-  for attr, container in pairs(_prototype_registries) do
+  for attr, container in pairs(prototypeRegistries) do
     id = rawget(proto, attr)
     if id then
       container[id] = proto
@@ -214,7 +218,7 @@ function ep.attempt(func, ...)
   if status then
     return result
   else
-    return exception('Exception', result)
+    return ep.exception('Exception', result)
   end
 end
 
@@ -372,19 +376,20 @@ function ep.freeze(object, naive)
     if not naive and object.freeze then
       object, implementation = object:freeze()
     end
+
     idx = 1
     for field, value in pairs(object) do
       if type(value) == 'table' then
         stype, svalue = 't', ep.freeze(value, naive)
       else
-        stype, svalue = ep._freeze_scalar(value)
+        stype, svalue = ep._freezeScalar(value)
       end
       chunks[idx] = format('%s:%s%d:%s', field, stype, #svalue, svalue)
       idx = idx + 1
     end
     representation = format('$%s$%s', implementation, concat(chunks, ';'))
   elseif type(object) ~= 'nil' then
-    stype, svalue = ep._freeze_scalar(object)
+    stype, svalue = ep._freezeScalar(object)
     representation = format('$+$%s:%s', stype, svalue)
   else
     return ''
@@ -554,7 +559,7 @@ function ep.promise(source, topic, invocation)
 end
 
 function ep.pseudoid()
-  local d, e, f, r = date('!*t'), _pseudoid_chars, random(62), random(62)
+  local d, e, f, r = date('!*t'), _pseudoidChars, random(62), random(62)
   return (e:sub(f, f)..e:sub(d.year - 2000, d.year - 2000)..e:sub(d.month, d.month)..
     e:sub(d.day, d.day)..e:sub(d.hour + 1, d.hour + 1)..e:sub(d.min + 1, d.min + 1)..
     e:sub(d.sec + 1, d.sec + 1)..e:sub(r, r))
@@ -621,8 +626,8 @@ function ep.remove(tbl, value)
   return tbl
 end
 
-function ep.repr(object, str_limit, naive)
-  local objtype, str_limit, representation, length = type(object), limit or 100
+function ep.repr(object, strLimit, naive)
+  local objtype, strLimit, representation, length = type(object), limit or 100
   if objtype == 'table' then
     if object.repr and not naive then
       representation = object:repr()
@@ -635,7 +640,7 @@ function ep.repr(object, str_limit, naive)
     if ep.empty(object) then
       return tag..' {}'
     else
-     return format('%s {\n%s}\n', tag, ep.reprtable(object, nil, nil, nil, str_limit, naive))
+     return format('%s {\n%s}\n', tag, ep.reprtable(object, nil, nil, nil, strLimit, naive))
     end
   elseif objtype == 'function' then
     return format('function(0x%s)', tostring(object):sub(11))
@@ -643,8 +648,8 @@ function ep.repr(object, str_limit, naive)
     return format('userdata(0x%s)', tostring(object):sub(11))
   elseif objtype == 'string' then
     length = #object
-    if str_limit >= 1 and length >= str_limit then
-      return format("'%s' (%d)", object:sub(1, str_limit - 10), length)
+    if strLimit >= 1 and length >= strLimit then
+      return format("'%s' (%d)", object:sub(1, strLimit - 10), length)
     else
       return format("'%s'", object)
     end
@@ -653,7 +658,7 @@ function ep.repr(object, str_limit, naive)
   end
 end
 
-function ep.reprtable(object, indent, spacing, roots, str_limit, naive)
+function ep.reprtable(object, indent, spacing, roots, strLimit, naive)
   local text, prefix, value, tag, subtable, length, representation = ''
   indent, spacing, roots = indent or 1, spacing or '  ', roots or {[object] = '(root)'}
 
@@ -677,14 +682,14 @@ function ep.reprtable(object, indent, spacing, roots, str_limit, naive)
           if ep.empty(value) then
             representation = format('%s[%s] = %s {}\n', prefix, key, tag)
           else
-            subtable = ep.reprtable(value, indent + 1, spacing, roots, str_limit, naive)
+            subtable = ep.reprtable(value, indent + 1, spacing, roots, strLimit, naive)
             representation = format('%s[%s] = %s {\n%s%s}\n', prefix, key, tag, subtable, prefix)
           end
         end
       end
       text = text..representation
     else
-      text = text..format('%s[%s] = %s\n', prefix, tostring(key), ep.repr(value, str_limit, naive))
+      text = text..format('%s[%s] = %s\n', prefix, tostring(key), ep.repr(value, strLimit, naive))
     end
   end
   return text
@@ -822,7 +827,7 @@ function ep.thaw(obj, naive)
   if position then
     implementation, obj = obj:sub(2, position - 1), obj:sub(position + 1)
     if implementation == '+' then
-      return ep._thaw_scalar(ep.split(obj, ':', 1))
+      return ep._thawScalar(ep.split(obj, ':', 1))
     end
   else
     return nil
@@ -842,7 +847,7 @@ function ep.thaw(obj, naive)
     if ftype == 't' then
       object[field] = ep.thaw(value)
     else
-      object[field] = ep._thaw_scalar(ftype, value)
+      object[field] = ep._thawScalar(ftype, value)
     end
     position = position + vlength + 1
   end
@@ -892,11 +897,11 @@ function ep.weaktable(mode)
   return setmetatable({}, {__mode = mode})
 end
 
-function ep._declare_prototype_registry(attr, container)
-  _prototype_registries[attr] = container
+function ep._declarePrototypeRegistry(attr, container)
+  prototypeRegistries[attr] = container
 end
 
-function ep._freeze_scalar(scalar)
+function ep._freezeScalar(scalar)
   local ftype, stype, svalue = type(scalar)
   if ftype == 'boolean' then
     stype, svalue = 'b', scalar and 't' or 'f'
@@ -910,20 +915,7 @@ function ep._freeze_scalar(scalar)
   return stype, svalue
 end
 
-function ep._run_tests(tests)
-  local results = {}
-  for name in ep.iterkeys(tests, true) do
-    status, result = pcall(tests[name])
-    if status then
-      tinsert(results, name..': completed')
-    else
-      tinsert(results, format('%s: failed (%s)', name, result))
-    end
-  end
-  return results
-end
-
-function ep._thaw_scalar(token, value)
+function ep._thawScalar(token, value)
   if token == 'b' then
     return (value == 't')
   elseif token == 'n' then

@@ -19,7 +19,7 @@ end
 
 ep.location = ep.define('ep.location', ep.entity, {
   detect = function(self, px, py)
-    local box = self._detection_box
+    local box = self._detectionBox
     if px >= box[1] and py >= box[2] and px <= box[3] and py <= box[4] then
       if self.dd and not IsIndoors() then
         return false
@@ -38,7 +38,7 @@ ep.location = ep.define('ep.location', ep.entity, {
   end,
 
   locate = function(self, px, py)
-    local box = self._location_box
+    local box = self._locationBox
     if px >= box[1] and py >= box[2] and px <= box[3] and py <= box[4] then
       if self.ld and not IsIndoors() then
         return false
@@ -56,15 +56,15 @@ ep.location = ep.define('ep.location', ep.entity, {
     return false
   end,
 
-  _prepare_location = function(self)
-    if not self._location_box then
+  _prepareLocation = function(self)
+    if not self._locationBox then
       local lw, lh = floor(self.lw / 2), floor(self.lh / 2)
-      self._location_box = {self.cx - lw, self.cy - lh, self.cx + lw, self.cy + lh};
+      self._locationBox = {self.cx - lw, self.cy - lh, self.cx + lw, self.cy + lh};
     end
 
-    if self.dt  and not self._detection_box then
+    if self.dt  and not self._detectionBox then
       local dw, dh = floor(self.dw / 2), floor(self.dh / 2)
-      self._detection_box = {self.cx - dw, self.cy - dh, self.cx + dw, self.cy + dh};
+      self._detectionBox = {self.cx - dw, self.cy - dh, self.cx + dw, self.cy + dh};
     end
   end
 })
@@ -82,22 +82,23 @@ ep.spatial = ep.module{
   version = 1,
 
   regions = {},
+  specialZones = {},
   zones = {},
 
-  registered_locations = {},
-  located_instances = {},
-  detected_instances = {},
+  registeredLocations = {},
+  locatedInstances = {},
+  detectedInstances = {},
 
   deploy = function(self)
-    self._tick_frame = CreateFrame('Frame')
-    self._tick_processor = self:_construct_processor()
-    --self._tick_frame:SetScript('OnUpdate', self._tick_processor)
+    self._tickFrame = CreateFrame('Frame')
+    self._tickProcessor = self:_constructProcessor()
+    --self._tickFrame:SetScript('OnUpdate', self._tick_processor)
   end,
 
-  player_location = function(self)
+  getPlayerLocation = function(self)
     local mid, rgid, candidates = GetCurrentMapAreaID()
 
-    candidates = self.special_zones[mid]
+    candidates = self.specialZones[mid]
     if candidates then
       rgid = candidates[GetSubZoneText()]
       if not rgid then
@@ -124,13 +125,13 @@ ep.spatial = ep.module{
   end,
 
   register = function(self, location, instance)
-    local locations = self.registered_locations[location.rg]
+    local locations = self.registeredLocations[location.rg]
     if not locations then
       locations = {}
-      self.registered_locations[location.rg] = locations
+      self.registeredLocations[location.rg] = locations
     end
 
-    location:_prepare_location()
+    location:_prepareLocation()
 
     local id = location.tg or location.id
     if locations[id] then
@@ -140,16 +141,16 @@ ep.spatial = ep.module{
     end
   end,
 
-  _construct_processor = function(self)
+  _constructProcessor = function(self)
     local floor = math.floor
 
-    local get_mapid, get_subzone, get_levelid, get_position, set_zone =
+    local getMapID, getSubzone, getLevelID, getPosition, setZone =
           GetCurrentMapAreaID, GetSubZoneText, GetCurrentMapDungeonLevel,
           GetPlayerMapPosition, SetMapToCurrentZone
 
-    local regions, zones, special_zones, locations =
-          self.regions, self.zones, self.special_zones,
-          self.registered_locations
+    local regions, zones, specialZones, locations =
+          self.regions, self.zones, self.specialZones,
+          self.registeredLocations
 
     local ticks, interval = 0, 0.5
 
@@ -164,20 +165,20 @@ ep.spatial = ep.module{
       if WorldMapFrame:IsShown() then
         return
       end
-      set_zone()
+      setZone()
 
-      local mapid = get_mapid()
-      local candidates, rg, sc, lcid, id = special_zones[mapid]
+      local mapid = getMapID()
+      local candidates, rg, sc, lcid, id = specialZones[mapid]
 
       if candidates then
-        rg = candidates[get_subzone()]
+        rg = candidates[getSubzone()]
         if not rg then
           rg = candidates['*']
         end
       else
         candidates = zones[mapid]
         if candidates then
-          rg = candidates[get_levelid()]
+          rg = candidates[getLevelID()]
         end
       end
 
@@ -186,11 +187,11 @@ ep.spatial = ep.module{
         sc = regions[rg].sc
       end
 
-      local located, detected, newly_located, newly_detected =
-            self.located_instances, self.detected_instances, {}, {}
+      local located, detected, newlyLocated, newlyDetected =
+            self.locatedInstances, self.detectedInstances, {}, {}
 
       if candidates and sc then
-        local px, py = get_position('player')
+        local px, py = getPosition('player')
         px, py = floor((px / sc) * 1000), floor((py / sc) * 1000)
 
         for lcid, candidate in pairs(candidates) do
@@ -198,20 +199,20 @@ ep.spatial = ep.module{
           if location:locate(px, py) then
             for id, instance in pairs(instances) do
               if located[id] then
-                located[id], newly_located[id] = nil, {instance, location}
+                located[id], newlyLocated[id] = nil, {instance, location}
                 instance:located('tick', location)
               else
-                newly_located[id] = {instance, location}
+                newlyLocated[id] = {instance, location}
                 instance:located('start', location)
               end
             end
           elseif location.dt and location:detect(px, py) then
             for id, instance in pairs(instances) do
               if detected[id] then
-                detected[id], newly_detected[id] = nil, {instance, location}
+                detected[id], newlyDetected[id] = nil, {instance, location}
                 instance:detected('tick', location)
               else
-                newly_detected[id] = {instance, location}
+                newlyDetected[id] = {instance, location}
                 instance:detected('start', location)
               end
             end
@@ -219,12 +220,12 @@ ep.spatial = ep.module{
         end
       end
 
-      self.located_instances = newly_located
+      self.locatedInstances = newlyLocated
       for id, entry in pairs(located) do
         entry[1]:located('end', entry[2])
       end
 
-      self.detected_instances = newly_detected
+      self.detectedInstances = newlyDetected
       for id, entry in pairs(detected) do
         entry[1]:detected('end', entry[2])
       end
@@ -232,7 +233,7 @@ ep.spatial = ep.module{
   end
 }
 
-function ep.describe_location()
+function ep.describeLocation()
   local stats = {}
   local x, y = GetPlayerMapPosition('player')
   tinsert(stats, 'Zone: '..GetZoneText())
@@ -243,7 +244,7 @@ function ep.describe_location()
   tinsert(stats, 'Position: '..format('%d %d', floor(x * 10000), floor(y * 10000)))
   tinsert(stats, 'Facing: '..format('%0.3f', GetPlayerFacing()))
 
-  local rgid, px, py = ep.spatial:player_location()
+  local rgid, px, py = ep.spatial:getPlayerLocation()
   if rgid then
     tinsert(stats, '')
     tinsert(stats, 'RegionID: '..rgid)

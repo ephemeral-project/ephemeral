@@ -183,7 +183,7 @@ Frame epHome(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       *  {label='Settings', client='Settings'},
       *  {label='Logs', client='Logs'},
       *  {label='About', client='About'}
-      *}, {show_bottom_border=true})
+      *}, {showBottomBorder=true})
   OnLoad:
     *ep.home(self)
 
@@ -215,16 +215,16 @@ Frame epIconBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !BottomRight(-10, 49)
     OnLoad:
       *ep.slider(self, {ep.iconbrowser.update, self:GetParent()})
-  Button $parentSet(epDropBox, .set_dropbox, text: 'All Sets'):
+  Button $parentSet(epDropBox, .setDropbox, text: 'All Sets'):
     !BottomLeft(10, 10)
     !BottomRight(-125, 10)
     OnLoad:
       *ep.dropbox(self, {
-      *  callback = {ep.iconbrowser.set_set, self:GetParent()},
+      *  callback = {ep.iconbrowser.setSet, self:GetParent()},
       *  items = {{'all', 'All Sets'}},
       *  value = 'all',
       *})
-  Button $parentCategory(epDropBox, .category_dropbox, text: 'All Icons'):
+  Button $parentCategory(epDropBox, .categoryDropbox, text: 'All Icons'):
     !Size(111, 19)
     !BottomRight(-10, 10)
     OnClick:
@@ -299,7 +299,7 @@ Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
   Button $parentIconBox(epIconBox):
     !TopLeft(100, -32)
     OnLoad:
-      *ep.iconbox(self, {enable_browsing=true})
+      *ep.iconbox(self, {enableBrowsing=true})
       *self.texture:SetTexture('interface\\icons\\inv_sword_109')
   Button $parentColorSpot(epColorSpot):
     !TopLeft(150, -32)
@@ -319,7 +319,7 @@ Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !Size(180, 170)
     !TopLeft(240, -121)
     OnLoad:
-      *ep.tree(self, {items=ep.testitems, default_expansion=1})
+      *ep.tree(self, {items=ep.testitems, defaultExpansion=1})
   Frame $parentEditArea(epEditArea):
     !Size(200, 120)
     !TopLeft(12, -121)
@@ -363,7 +363,7 @@ Frame epLocation(^UIParent):
     FontString $parentText(epNormalFont, .text, justifyH: LEFT, justifyV: TOP, setAllPoints):
       !Color(1.0, 1.0, 1.0)
   OnUpdate:
-    *self.text:SetText(ep.describe_location())
+    *self.text:SetText(ep.describeLocation())
     *--[[local flags = {}
     *if IsIndoors() then tinsert(flags, 'Indoors') end
     *if IsFlying() then tinsert(flags, 'Flying') end

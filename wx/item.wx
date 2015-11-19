@@ -32,7 +32,7 @@ Frame epItemCollector(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
   Button $parentIcon(epIconBox, .icon):
     !TopLeft(10, -31)
     OnLoad:
-      *ep.iconbox(self, {enable_browsing=true})
+      *ep.iconbox(self, {enableBrowsing=true})
   Frame $parentContainer(.container):
     !TopLeft(10, -73)
     !BottomRight(-33, 33)
@@ -76,7 +76,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Size(100, 19)
     !TopRight(-10, -31)
     OnLoad:
-      *ep.dropbox(self, {default = 'it', items = ep.item.class_menu})
+      *ep.dropbox(self, {default = 'it', items = ep.item.classMenu})
   EditBox $parentCreator(epEditBox, .f_creator):
     !TopLeft(56, -54)
     !TopRight(-114, -54)
@@ -88,7 +88,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Size(100, 19)
     !TopRight(-10, -54)
     OnLoad:
-      *ep.dropbox(self, {default = 'c', items = ep.item.quality_menu,
+      *ep.dropbox(self, {default = 'c', items = ep.item.qualityMenu,
       *  tooltip = 'Optional indication.'})
   EditBox $parentFacets(epEditBox, .f_facets):
     !TopLeft(10, -77)
@@ -99,7 +99,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Size(100, 19)
     !TopRight(-10, -77)
     OnLoad:
-      *ep.dropbox(self, {default = 'it', items = ep.item.sound_menu})
+      *ep.dropbox(self, {default = 'it', items = ep.item.soundMenu})
   Frame $parentTabs(epTabbedFrame, .tabs):
     !TopLeft(10, -100)
     !BottomRight(-10, 56)
@@ -144,7 +144,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Size(110, 19)
     !BottomLeft(89, 33)
     OnLoad:
-      *ep.dropbox(self, {default = 'nn', items = ep.item.slot_menu})
+      *ep.dropbox(self, {default = 'nn', items = ep.item.slotMenu})
   Button $parentCategory(epDropBox, .f_category):
     !Size(140, 19)
     !BottomRight(-10, 33)

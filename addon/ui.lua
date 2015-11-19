@@ -5,8 +5,8 @@ local floor = math.floor
 local invoke = ep.invoke
 local schedule = ep.schedule
 
-local _pending_control_args = {}
-local _reference_frames = {
+local _pendingControlArgs = {}
+local _referenceFrames = {
   button = 'GameMenuButtonContinue',
   checkbox = 'AudioOptionsSoundPanelEnableSound',
   editbox = 'ChatFrame1EditBox',
@@ -20,16 +20,16 @@ ep.controltype = ep.copy(ep.metatype)
 ep.controltype.__call = function(proto, object, ...)
   local referrent, initializer, arguments
   if type(object) == 'string' then
-    _pending_control_args[object] = {select(2, ...)}
+    _pendingControlArgs[object] = {select(2, ...)}
     return CreateFrame(proto.__ftype, object, (...), proto.__fbase)
   end
 
   setmetatable(object, proto)
   if object.GetName then
     rawset(object, 'name', object:GetName())
-    arguments = _pending_control_args[object.name]
+    arguments = _pendingControlArgs[object.name]
     if arguments then
-      _pending_control_args[object.name] = nil
+      _pendingControlArgs[object.name] = nil
     end
   end
 
@@ -93,6 +93,7 @@ ep.basecontrol = ep.prototype('ep.basecontrol', {
     else
       return
     end
+
     self:ClearAllPoints()
     self:SetPoint(edge, anchor, hook, x, y)
   end,
@@ -101,6 +102,7 @@ ep.basecontrol = ep.prototype('ep.basecontrol', {
     if rawget(self, '__prototypical') then
       return ep.metatype.repr(self)
     end
+
     if self.__name then
      return format("[%s('%s')]", self.__name, self.name)
     else
@@ -125,6 +127,7 @@ ep.basecontrol = ep.prototype('ep.basecontrol', {
     else
       self.events = {[event] = {invocation}}
     end
+
     if not event:find(':', 1, true) then
       self:SetScript(event, function(self, ...)
         self:event(event, ...)
@@ -147,8 +150,8 @@ ep.basecontrol = ep.prototype('ep.basecontrol', {
 
 function ep.control(name, declaration, base, modelname, properties)
   local ctl = ep.prototype(name, base or ep.basecontrol, properties or {}, ep.controltype)
-  if _reference_frames[modelname] then
-    modelname = _reference_frames[modelname]
+  if _referenceFrames[modelname] then
+    modelname = _referenceFrames[modelname]
   end
 
   if modelname then
@@ -169,16 +172,16 @@ end
 
 ep.baseframe = ep.control('ep.baseframe', 'epFrame', ep.basecontrol, 'frame', {
   initialize = function(self)
-    self:initialize_background()
+    self:initializeBackground()
   end,
 
-  initialize_background = function(self)
+  initializeBackground = function(self)
     self.background:SetTexture('Interface\\AddOns\\ephemeral\\textures\\panel-background', true)
-    self:scale_background()
-    self:SetScript('OnSizeChanged', self.scale_background)
+    self:scaleBackground()
+    self:SetScript('OnSizeChanged', self.scaleBackground)
   end,
 
-  scale_background = function(self)
+  scaleBackground = function(self)
     self.background:SetTexCoord(0, self:GetWidth() / 128, 0, self:GetHeight() / 128)
   end
 })
@@ -191,8 +194,8 @@ ep.basepanel = ep.control('ep.basepanel', 'epPanel', ep.baseframe, nil, {
 
     strata = self:GetFrameStrata()
     self.anchor:SetFrameStrata(strata)
-    self.iconify_button:SetFrameStrata(strata)
-    self.close_button:SetFrameStrata(strata)
+    self.iconifyButton:SetFrameStrata(strata)
+    self.closeButton:SetFrameStrata(strata)
 
     self:SetMovable(features.movable ~= false)
     if features.movable == false then
@@ -206,7 +209,7 @@ ep.basepanel = ep.control('ep.basepanel', 'epPanel', ep.baseframe, nil, {
       self.titletexture:Hide()
       self.title:Hide()
       self.hr:SetPoint('TOPRIGHT', self, 'TOPRIGHT', 0, -7)
-      self.close_button:Hide()
+      self.closeButton:Hide()
     end
 
     if features.style == 'handlebar' then
@@ -219,18 +222,18 @@ ep.basepanel = ep.control('ep.basepanel', 'epPanel', ep.baseframe, nil, {
         self.anchor:SetSize(20, 20)
       end
       if features.closeable then
-        self.close_button:ClearAllPoints()
-        self.close_button:SetPoint('BOTTOMLEFT', self, 'BOTTOMLEFT', 4, 4)
-        self.close_button:Show()
+        self.closeButton:ClearAllPoints()
+        self.closeButton:SetPoint('BOTTOMLEFT', self, 'BOTTOMLEFT', 4, 4)
+        self.closeButton:Show()
         self.anchor:SetHitRectInsets(0, 0, 0, 20)
       end
     elseif features.style == 'plain' then
       self.anchor:Hide()
     end
 
-    self:initialize_background()
+    self:initializeBackground()
     if features.iconifiable then
-      self.iconify_button:Show()
+      self.iconifyButton:Show()
     end
 
     self:SetResizable(features.resizable == true)
@@ -267,11 +270,11 @@ ep.basepanel = ep.control('ep.basepanel', 'epPanel', ep.baseframe, nil, {
     self:Hide()
   end,
 
-  set_title = function(self, title)
+  setTitle = function(self, title)
     self.title:SetText(title)
   end,
 
-  start_resizing = function(self, direction)
+  startResizing = function(self, direction)
     local width, height = self:GetWidth(), self:GetHeight()
     if direction == 'horizontal' then
       self:SetMinResize(self.p_minw, height)
@@ -291,18 +294,20 @@ ep.basepanel = ep.control('ep.basepanel', 'epPanel', ep.baseframe, nil, {
     self:StartSizing()
   end,
 
-  stop_resizing = function(self)
+  stopResizing = function(self)
     self.p_resizing = nil
     self:StopMovingOrSizing()
+
     if self.p_stepw then
       local width, height = ceil(self:GetWidth()), ceil(self:GetHeight())
       self:SetWidth(self.p_minw + (floor((width - self.p_stepmw) / self.p_stepw) * self.p_stepw))
       self:SetHeight(self.p_minh + (floor((height - self.p_stepmh) / self.p_steph) * self.p_steph))
     end
+
     if self.p_onresize then
       invoke(self.p_onresize, self, 'after')
     end
-    self:scale_background()
+    self:scaleBackground()
   end
 })
 
@@ -406,18 +411,18 @@ ep.icon = ep.pseudotype{
     end
   end,
 
-  deploy_iconsets = function(self)
+  deployIconsets = function(self)
     if empty(self.icons) then
       for name, module in pairs(ep.modules) do
         if module.category == 'iconset' then
-          self:_deploy_iconset(module)
+          self:_deployIconset(module)
         end
       end
       return true
     end
   end,
 
-  filter_sequence = function(self, category, set)
+  filterSequence = function(self, category, set)
     local categories = self.levels[category]
     if category and category ~= 'ii' and not categories then
       categories = {[category] = true}
@@ -437,7 +442,7 @@ ep.icon = ep.pseudotype{
     return sequence
   end,
 
-  iter_sequence = function(self, sequence, offset)
+  iterSequence = function(self, sequence, offset)
     local idx, span, id = 1
     while sequence[idx] do
       if offset <= sequence[idx][1] then
@@ -478,15 +483,15 @@ ep.icon = ep.pseudotype{
     epIconBrowser:display(callback, anchor, set, category)
   end,
 
-  _deploy_iconset = function(self, module)
-    local iconset, token = ep.deploy_module(module)
+  _deployIconset = function(self, module)
+    local iconset, token = ep.deployModule(module)
     if not exceptional(iconset) then
       token = iconset.token
       self.sets[token] = iconset
       ep.update(iconset.icons, iconset.prefixes)
       self.icons[token] = iconset.icons
       if #self.sequence > 0 then
-        self:_merge_sequence(iconset.sequence, iconset.official)
+        self:_mergeSequence(iconset.sequence, iconset.official)
       else
         self.sequence = iconset.sequence
       end
@@ -495,7 +500,7 @@ ep.icon = ep.pseudotype{
     end
   end,
 
-  _merge_sequence = function(self, additions, prepend)
+  _mergeSequence = function(self, additions, prepend)
     local precedence, index, cmp = self.precedence, ep.index
     before = function(left, right)
       return index(precedence, left) > index(precedence, right)
@@ -575,7 +580,7 @@ ep.tint = ep.pseudotype{
     end
     if style == 'all' then
       return {color=color, r=floor(color[1] * 255), g=floor(color[2] * 255),
-        b=floor(color[3] * 255), a=floor(color[4] * 255), hex=self:to_hex(color)}
+        b=floor(color[3] * 255), a=floor(color[4] * 255), hex=self:toHex(color)}
     elseif style == 'token' then
       return format('|c%02x%02x%02x%02x', color[4] * 255, color[1] * 255,
         color[2] * 255, color[3] * 255)
@@ -588,27 +593,29 @@ ep.tint = ep.pseudotype{
     return ep.tint(color, 'token')..content..'|r'
   end,
 
-  from_hex = function(value, style)
+  fromHex = function(value, style)
     local alpha = 1.0
     if #value == 8 then
       alpha = tonumber(value:sub(1, 2), 16) / 255
       value = value:sub(3)
     end
+
     return ep.tint({tonumber(value:sub(1, 2), 16) / 255,
       tonumber(value:sub(3, 4), 16) / 255,
       tonumber(value:sub(5, 6), 16) / 255, alpha}, style)
   end,
 
-  from_rgb = function(value, style)
+  fromRGB = function(value, style)
     local alpha = 1.0
     if #value == 4 then
       alpha = value[4] / 255
     end
+
     return ep.tint({value[1] / 255, value[2] / 255, value[3] / 255,
       alpha}, style)
   end,
 
-  to_hex = function(self, color)
+  toHex = function(self, color)
     local alpha = color[4] or 1.0
     return format('%02x%02x%02x%02x', alpha * 255, color[1] * 255, color[2] * 255,
       color[3] * 255)
@@ -656,12 +663,12 @@ ep.tint = ep.pseudotype{
 }
 
 ep.tooltip = ep.control('ep.tooltip', 'epTooltip', ep.baseframe, nil, {
-  default_location = {edge = 'TOPLEFT', hook = 'CENTER'},
+  defaultLocation = {edge = 'TOPLEFT', hook = 'CENTER'},
 
   cancel = function(self, focus)
-    if self._delay_focus == focus then
-      self._delay_invocation.invocation = nil
-      self._delay_focus, self._delay_invocation = nil, nil
+    if self._delayFocus == focus then
+      self._delayInvocation.invocation = nil
+      self._delayFocus, self._delayInvocation = nil, nil
     end
   end,
 
@@ -675,23 +682,24 @@ ep.tooltip = ep.control('ep.tooltip', 'epTooltip', ep.baseframe, nil, {
         return
       end
     end
+
     if GetMouseFocus() == focus then
-      self._delay_focus = focus
+      self._delayFocus = focus
       invocation = function()
-        self._delay_focus, self._delay_invocation = nil, nil
+        self._delayFocus, self._delayInvocation = nil, nil
         if GetMouseFocus() == focus then
           self:display(aspects, true)
         end
       end
-      self._delay_invocation = schedule(invocation, delay, 1)
+      self._delayInvocation = schedule(invocation, delay, 1)
     end
   end,
 
-  display = function(self, aspects, already_delayed)
+  display = function(self, aspects, alreadyDelayed)
     local offset, width = 10, 0
     if type(aspects) == 'string' then
       aspects = {c = aspects}
-    elseif aspects.delay and not already_delayed then
+    elseif aspects.delay and not alreadyDelayed then
       return self:delay(aspects.delay, aspects)
     elseif aspects.generator then
       invoke(aspects.generator, aspects)
@@ -789,7 +797,7 @@ ep.tooltip = ep.control('ep.tooltip', 'epTooltip', ep.baseframe, nil, {
 
     self:SetWidth(width + 20)
     self:SetHeight(offset + 10)
-    self:position(aspects.location, self.default_location)
+    self:position(aspects.location, self.defaultLocation)
     self:Show()
   end,
 
@@ -801,19 +809,22 @@ ep.tooltip = ep.control('ep.tooltip', 'epTooltip', ep.baseframe, nil, {
   end
 })
 
-function ep.attach_tooltip(control, aspects)
+function ep.attachTooltip(control, aspects)
   if not (control:GetScript('onenter') or control:GetScript('onleave')) then
     if type(aspects) == 'string' then
       aspects = {c = aspects}
     end
+
     if not aspects.location then
       aspects.location = control
     elseif not aspects.location.anchor then
       aspects.location.anchor = control
     end
+
     control:SetScript('onenter', function(self)
       epTooltip:display(aspects)
     end)
+
     control:SetScript('onleave', function(self)
       epTooltip:hide(self)
     end)

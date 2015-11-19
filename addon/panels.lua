@@ -35,8 +35,8 @@ ep.colorbrowser = ep.panel('ep.colorbrowser', 'epColorBrowser', {
 ep.console = ep.panel('ep.console', 'epConsole', {
   initialize = function(self)
     self.interpreter, self.debuglog = self:children('TabsInterpreter', 'TabsLog')
-    self.interpreter:set_font_object(epConsoleFont)
-    self.debuglog:set_font_object(epConsoleFont)
+    self.interpreter:setFontObject(epConsoleFont)
+    self.debuglog:setFontObject(epConsoleFont)
     self:super():initialize({
       title = 'Console',
       resizable = true,
@@ -73,7 +73,7 @@ ep.console = ep.panel('ep.console', 'epConsole', {
   end,
 
   submit = function(self)
-    local text, result = ep.strip(self.input:set_value(''))
+    local text, result = ep.strip(self.input:setValue(''))
     if text then
       self.input:AddHistoryLine(text)
       self.interpreter:append('>> '..text, ep.tint.console)
@@ -199,11 +199,11 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
     self.icons = 0
     self.rows = 0
 
-    self.category_dropbox.menu = ep.menu('epIconBrowserCategoryMenu', self.category_dropbox, {
-      callback = {self.set_category, self},
+    self.categoryDropbox.menu = ep.menu('epIconBrowserCategoryMenu', self.categoryDropbox, {
+      callback = {self.setCategory, self},
       items = self.categories,
-      location = {anchor = self.category_dropbox, x = 0, y = -18},
-      width = self.category_dropbox,
+      location = {anchor = self.categoryDropbox, x = 0, y = -18},
+      width = self.categoryDropbox,
     })
   end,
 
@@ -219,9 +219,9 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
   end,
 
   display = function(self, callback, anchor, category, set)
-    if ep.icon:deploy_iconsets() then
+    if ep.icon:deployIconsets() then
       for token in iterkeys(ep.icon.sets, true) do
-        self.set_dropbox:add(token, ep.icon.sets[token].title)
+        self.setDropbox:add(token, ep.icon.sets[token].title)
       end
     end
     if #self.buttons == 0 then
@@ -241,14 +241,14 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
     category, set = category or self.category, set or self.set
     if category ~= self.category or set ~= self.set then
       self.category, self.set = category, set
-      self.sequence = ep.icon:filter_sequence(category, set)
+      self.sequence = ep.icon:filterSequence(category, set)
       if #self.sequence > 0 then
         self.count = self.sequence[#self.sequence][1]
       else
         self.count = 0
       end
-      self:_update_dropboxes()
-      self:_update_scrollbar()
+      self:_updateDropboxes()
+      self:_updateScrollbar()
       self:update(0)
     end
   end,
@@ -291,7 +291,7 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
     else
       self.backdrop:Hide()
       self:layout()
-      self:_update_scrollbar()
+      self:_updateScrollbar()
       self:update()
       self.container:Show()
     end
@@ -305,13 +305,13 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
     end
   end,
 
-  set_category = function(self, category)
+  setCategory = function(self, category)
     if category ~= self.category then
       self:filter(category)
     end
   end,
 
-  set_set = function(self, set)
+  setSet = function(self, set)
     if set ~= self.set then
       self:filter(nil, set)
     end
@@ -320,7 +320,7 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
   update = function(self, offset)
     offset = floor(offset or self.scrollbar:GetValue())
     if self.scrollbar:GetValue() == offset then
-      local iterator, button, icon = ep.icon:iter_sequence(self.sequence, (offset * self.cols) + 1)
+      local iterator, button, icon = ep.icon:iterSequence(self.sequence, (offset * self.cols) + 1)
       for i = 1, self.icons do
         button, icon = self.buttons[i], iterator()
         if icon then
@@ -336,11 +336,11 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
     end
   end,
 
-  _update_dropboxes = function(self)
-    self.category_dropbox:SetText(ep.icon.categories[self.category].title)
+  _updateDropboxes = function(self)
+    self.categoryDropbox:SetText(ep.icon.categories[self.category].title)
   end,
 
-  _update_scrollbar = function(self)
+  _updateScrollbar = function(self)
     self.scrollbar:SetMinMaxValues(0, max(0, ceil(self.count / self.cols) - self.rows))
   end
 })

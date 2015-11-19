@@ -5,7 +5,7 @@ Frame epRoot:
   OnEvent:
     *ep.event(event, ...)
   OnLoad:
-    *ep.subscribe('PLAYER_LOGIN', function() ep.schedule(ep._bootstrap_ephemeral, 1, 1) end)
+    *ep.subscribe('PLAYER_LOGIN', function() ep.schedule(ep._bootstrapEphemeral, 1, 1) end)
 
 Font epFont(font: '%fonts\petrock.ttf', virtual):
   !Color(0.0, 0.0, 0.0, 1.0)
@@ -362,7 +362,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' then
       *  self:GetParent():StopMovingOrSizing()
       *end
-  Button $parentIconify(.iconify_button, hidden):
+  Button $parentIconify(.iconifyButton, hidden):
     !Size(20, 20)
     !TopRight(-22, -6)
     NormalTexture(file: '%textures\iconify-normal'):
@@ -373,7 +373,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
     OnClick:
       *self:GetParent():iconify()
-  Button $parentClose(.close_button):
+  Button $parentClose(.closeButton):
     !Size(20, 20)
     !TopRight(-6, -6)
     NormalTexture(file: '%textures\close-normal'):
@@ -401,11 +401,11 @@ Frame epPanel(epFrame, enableMouse, virtual):
     OnMouseDown:
       *local frame = self:GetParent()
       *if button == 'LeftButton' and frame:IsResizable() then
-      *  frame:start_resizing('vertical')
+      *  frame:startResizing('vertical')
       *end
     OnMouseUp:
       *if button == 'LeftButton' then
-      *  self:GetParent():stop_resizing()
+      *  self:GetParent():stopResizing()
       *end
   Button $parentHorizontalResize(.hr, hidden):
     !Size(9, 9)
@@ -424,11 +424,11 @@ Frame epPanel(epFrame, enableMouse, virtual):
     OnMouseDown:
       *local frame = self:GetParent()
       *if button == 'LeftButton' and frame:IsResizable() then
-      *  frame:start_resizing('horizontal')
+      *  frame:startResizing('horizontal')
       *end
     OnMouseUp:
       *if button == 'LeftButton' then
-      *  self:GetParent():stop_resizing()
+      *  self:GetParent():stopResizing()
       *end
   Button $parentFullResizeOne(hidden):
     !Size(20, 9)
@@ -442,11 +442,11 @@ Frame epPanel(epFrame, enableMouse, virtual):
     OnMouseDown:
       *local frame = self:GetParent()
       *if button == 'LeftButton' and frame:IsResizable() then
-      *  frame:start_resizing('full')
+      *  frame:startResizing('full')
       *end
     OnMouseUp:
       *if button == 'LeftButton' then
-      *  self:GetParent():stop_resizing()
+      *  self:GetParent():stopResizing()
       *end
   Button $parentFullResizeTwo(hidden):
     !Size(9, 11)
@@ -460,11 +460,11 @@ Frame epPanel(epFrame, enableMouse, virtual):
     OnMouseDown:
       *local frame = self:GetParent()
       *if button == 'LeftButton' and frame:IsResizable() then
-      *  frame:start_resizing('full')
+      *  frame:startResizing('full')
       *end
     OnMouseUp:
       *if button == 'LeftButton' then
-      *  self:GetParent():stop_resizing()
+      *  self:GetParent():stopResizing()
       *end
 
 Frame epTooltip(epFrame, frameStrata: TOOLTIP, hidden):
