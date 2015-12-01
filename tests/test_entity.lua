@@ -44,4 +44,32 @@ function tests.test_entities()
   assert(cmpMap(i1.__instance, i2.__instance))
 end
 
+function tests.test_instancestore()
+  local container = {}
+  local store = ep.instancestore({
+    container = container,
+    indexes = {
+      al = {type = 'boolean'},
+      cl = {type = 'value'},
+      et = {type = 'value'},
+      module = {type = 'prefix', attr = 'et'}
+    }
+  })
+
+  assert(store:get('id') == nil)
+
+  local e1 = ep.entity({cl = 'class', tg = 'module:tag', ev = 1})
+  local t1 = e1({iv = 2})
+  store:put(t1)
+
+  assert(store:get(t1.id) == t1)
+
+  store.instances = {}
+  assert(store:get(t1.id) ~= t1)
+  print(ep.repr(store:get(t1.id)))
+  assert(store:get(t1.id).id == t1.id)
+
+
+end
+
 runTests('entity.lua', tests, true)

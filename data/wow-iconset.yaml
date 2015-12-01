@@ -1,7 +1,10 @@
-name: Spine Iconset - WOW Icons
-version: 10000
+addon_name: Ephemeral Iconset - WoW Icons
+addon_directory: ephemeral-iconset-wow
+title: WOW Icons
+version: 1
 token: wow
-title: WoW Icons
+module: ephemeral:iconset-wow
+path: ep.iconsets.wow
 official: true
 candidate_prefixes:
   - inv_

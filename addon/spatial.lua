@@ -17,7 +17,7 @@ ep.scl = function()
   end
 end
 
-ep.location = ep.define('ep.location', ep.entity, {
+ep.location = ep.entities:define('ep.location', ep.entity, {
   detect = function(self, px, py)
     local box = self._detectionBox
     if px >= box[1] and py >= box[2] and px <= box[3] and py <= box[4] then
@@ -76,7 +76,7 @@ function ept()
   ep.spatial:register(ep.ex1(), ep.ix1())
 end
 
-ep.spatial = ep.module{
+ep.spatial = {
   name = 'ephemeral:spatial',
   description = '',
   version = 1,
@@ -89,10 +89,17 @@ ep.spatial = ep.module{
   locatedInstances = {},
   detectedInstances = {},
 
+  activate = function(self)
+    --self._tickFrame:SetScript('OnUpdate', self._tick_processor)
+  end,
+
+  deactivate = function(self)
+    self._tickFrame:SetScript('OnUpdate', nil)
+  end,
+
   deploy = function(self)
     self._tickFrame = CreateFrame('Frame')
     self._tickProcessor = self:_constructProcessor()
-    --self._tickFrame:SetScript('OnUpdate', self._tick_processor)
   end,
 
   getPlayerLocation = function(self)

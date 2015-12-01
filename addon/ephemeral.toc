@@ -2,12 +2,17 @@
 ## Title: Ephemeral 2.0 (alpha)
 ## Version: 2.0-alpha
 ## SavedVariables: ephemeral
-## X-Ephemeral-Compatibility: 20201
-## X-Ephemeral-Module[1]: name=ephemeral-network, path=ep.network, version=1
-## X-Ephemeral-Module[2]: name=ephemeral-spatial, path=ep.spatial, version=1
-## X-Ephemeral-Module[3]: name=ephemeral-items, path=ep.items, version=1
+## X-Ephemeral-Compatibility: 20000
+## X-Ephemeral-Module[1]: name=ephemeral:characterization, path=ep.characterization, version=1
+## X-Ephemeral-Module[2]: name=ephemeral:entities, path=ep.entities, version=1
+## X-Ephemeral-Module[3]: name=ephemeral:network, path=ep.network, version=1
+## X-Ephemeral-Module[4]: name=ephemeral:spatial, path=ep.spatial, version=1
+## X-Ephemeral-Module[5]: name=ephemeral:items, path=ep.items, version=1
 support.lua
 core.lua
+module.lua
+character.lua
+entity.lua
 network.lua
 spatial.lua
 regions.lua
@@ -17,4 +22,6 @@ controls.lua
 controls.xml
 panels.lua
 panels.xml
+item.lua
+item.xml
 ephemeral.lua

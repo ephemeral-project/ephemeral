@@ -413,9 +413,11 @@ ep.icon = ep.pseudotype{
 
   deployIconsets = function(self)
     if empty(self.icons) then
-      for name, module in pairs(ep.modules) do
-        if module.category == 'iconset' then
-          self:_deployIconset(module)
+      for name, component in pairs(ep.deployComponents('iconset')) do
+        if not exceptional(component) then
+          self:_deployIconset(name, component)
+        else
+          -- log these
         end
       end
       return true
@@ -483,20 +485,17 @@ ep.icon = ep.pseudotype{
     epIconBrowser:display(callback, anchor, set, category)
   end,
 
-  _deployIconset = function(self, module)
-    local iconset, token = ep.deployModule(module)
-    if not exceptional(iconset) then
-      token = iconset.token
-      self.sets[token] = iconset
-      ep.update(iconset.icons, iconset.prefixes)
-      self.icons[token] = iconset.icons
-      if #self.sequence > 0 then
-        self:_mergeSequence(iconset.sequence, iconset.official)
-      else
-        self.sequence = iconset.sequence
-      end
+  _deployIconset = function(self, name, iconset)
+    local token = iconset.token
+    self.sets[token] = iconset
+
+    ep.update(iconset.icons, iconset.prefixes)
+    self.icons[token] = iconset.icons
+
+    if #self.sequence > 0 then
+      self:_mergeSequence(iconset.sequence, iconset.official)
     else
-      ep.debug('exception during iconset deploy', {iconset})
+      self.sequence = iconset.sequence
     end
   end,
 
@@ -532,6 +531,8 @@ ep.icon = ep.pseudotype{
     end
   end,
 }
+
+ep.iconsets = {}
 
 ep.sound = ep.pseudotype{
   instantiate = function(self, id)

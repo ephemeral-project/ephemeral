@@ -20,9 +20,12 @@ local floor = math.floor
 
 ]]
 
-ep.items = ep.module{
+ep.items = {
   name = 'ephemeral.items',
   deploy = function(self)
+    do
+      return
+    end
     if not ephemeral.item then
       ephemeral.item = {}
     end
@@ -30,12 +33,12 @@ ep.items = ep.module{
       ephemeral.item.locations = {}
     end
 
-    ep.item.locBackpack = 'b:'..ep.character.guid
+    ep.item.locBackpack = 'b:'..ep.character.id
     if not ephemeral.item.locations[ep.item.locBackpack] then
       ephemeral.item.locations[ep.item.locBackpack] = {n = 0, i = 0}
     end
 
-    ep.item.locEquipment = 'e:'..ep.character.guid
+    ep.item.locEquipment = 'e:'..ep.character.id
     if not ephemeral.item.locations[ep.item.locEquipment] then
       ephemeral.item.locations[ep.item.locEquipment] = {n = 0, i = 0}
     end
@@ -46,7 +49,7 @@ ep.items = ep.module{
   }
 }
 
-ep.item = ep.define('ep.item', ep.entity, {
+ep.item = ep.entities:define('ep.item', ep.entity, {
   cl = 'it',
   title = 'Item',
 

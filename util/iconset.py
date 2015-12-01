@@ -1,3 +1,4 @@
+import os
 import sys
 import yaml
 
@@ -51,43 +52,53 @@ categories = [
     ('wands', 'wn'),
 ]
 
+toc_template = """## Interface: 60200
+## Title: %(title)s
+## Version: %(version)s
+## Dependencies: ephemeral
+## LoadOnDemand: 1
+## X-Ephemeral-Compatibility: 20000
+## X-Ephemeral-Module[1]: name=%(module)s, path=%(path)s, version=%(version)s
+## X-Ephemeral-Module[1]-Components: iconset:%(token)s=%(path)s
+iconset.lua
+"""
+
 module_template = """
-ep.%(path)s = ep.module{
-    name = '%(name)s',
-    category = 'iconset',
-    version = %(version)s,
-    token = '%(token)s',
-    title = '%(title)s',
-    official = %(official)s,
-    prefixes = {
+%(path)s = {
+  name = '%(module)s',
+  version = %(version)s,
+  token = '%(token)s',
+  title = '%(title)s',
+  official = %(official)s,
+  prefixes = {
 %(prefixes)s
-    },
-    sequence = {
+  },
+  sequence = {
 %(sequence)s
-    },
-    icons = {
+  },
+  icons = {
 %(icons)s
-    }
+  }
 }
 """
 
 module_templates = {
     False: module_template,
-    True: """ep.%(path)s=ep.module{name='%(name)s',category='iconset',version=%(version)s,token='%(token)s',title='%(title)s',official=%(official)s,prefixes={%(prefixes)s},sequence={%(sequence)s},icons={%(icons)s}}""",
+    True: """%(path)s={name='%(module)s',version=%(version)s,token='%(token)s',title='%(title)s',official=%(official)s,prefixes={%(prefixes)s},sequence={%(sequence)s},icons={%(icons)s}}""",
 }
 
 prefix_templates = {
-    False: "        ['%02d'] = '%s',",
+    False: "    ['%02d'] = '%s',",
     True: "['%02d']='%s',",
 }
 
 sequence_templates = {
-    False: "        {'%s', '%s', %d, %d},",
+    False: "    {'%s', '%s', %d, %d},",
     True: "{'%s','%s',%d,%d},",
 }
 
 icon_templates = {
-    False: "        %s = '%s',",
+    False: "    %s = '%s',",
     True: "%s='%s',",
 }
 
@@ -97,10 +108,10 @@ joiners = {
 }
 
 class Builder(object):
-    def __init__(self, source_filename, target_filename, packed=False):
+    def __init__(self, source_filename, addons_directory, packed=False):
+        self.addons_directory = addons_directory
         self.packed = packed
         self.source_filename = source_filename
-        self.target_filename = target_filename
 
         self.icons = []
         self.prefixes = [None]
@@ -138,19 +149,38 @@ class Builder(object):
 
         joiner = joiners[self.packed]
         module = module_templates[self.packed] % {
-            'path': '_iconset_%s' % self.token,
-            'name': self.specification['name'],
+            'path': self.specification['path'],
+            'module': self.specification['module'],
             'version': self.specification['version'],
             'token': self.token,
-            'title': self.specification.get('title', ''),
+            'title': self.specification['title'],
             'official': ('true' if self.specification.get('official') else 'false'),
             'prefixes': joiner.join(prefixes),
             'sequence': joiner.join(sequence),
             'icons': joiner.join(icons),
         }
 
-        with open(self.target_filename, 'w') as openfile:
+        addon_directory = self.specification['addon_directory']
+
+        target_directory = os.path.join(self.addons_directory, addon_directory)
+        if not os.path.exists(target_directory):
+            os.mkdir(target_directory)
+
+        iconset_filename = os.path.join(target_directory, 'iconset.lua')
+        with open(iconset_filename, 'w') as openfile:
             openfile.write(module.lstrip())
+
+        toc_content = toc_template % {
+            'title': self.specification['addon_name'],
+            'version': self.specification['version'],
+            'module': self.specification['module'],
+            'path': self.specification['path'],
+            'token': self.token,
+        }
+
+        toc_filename = os.path.join(target_directory, addon_directory + '.toc')
+        with open(toc_filename, 'w') as openfile:
+            openfile.write(toc_content)
 
     def _collate_icons(self):
         icons, path_prefix = [], self.specification.get('path_prefix', '')

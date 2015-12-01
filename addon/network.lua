@@ -1,10 +1,10 @@
 local ceil, concat, exception, exceptional, format, freeze, invoke, iterkeys,
       loadComponent, promise, pseudoid, satisfy, schedule, split, subscribe,
-      thaw, unsubscribe, _scheduleInvocation
+      thaw, unsubscribe, scheduleInvocation
     = math.ceil, table.concat, ep.exception, ep.exceptional, string.format,
       ep.freeze, ep.invoke, ep.iterkeys, ep.loadComponent, ep.promise,
       ep.pseudoid, ep.satisfy, ep.schedule, ep.split, ep.subscribe, ep.thaw,
-      ep.unsubscribe, ep._scheduleInvocation
+      ep.unsubscribe, ep.scheduleInvocation
 
 local channel
 local conduit
@@ -60,14 +60,14 @@ local function pollTransmissions()
     if sent >= 1024 then
       if not _pollScheduled then
         _pollScheduled = true
-        _scheduleInvocation({invocation=_pollTransmissions, delta=GetTime() + 1, simple=True})
+        scheduleInvocation({invocation=_pollTransmissions, delta=GetTime() + 1, simple=True})
       end
       break
     end
   end
 end
 
-ep.network = ep.module({
+ep.network = {
   name = 'ephemeral:network',
   version = _networkVersion,
   transmissions = _pendingTransmissions,
@@ -155,7 +155,7 @@ ep.network = ep.module({
       channel.group:synchronize()
     end
   end
-})
+}
 
 transport = ep.prototype('ep.transport', {
   receptions = {},
@@ -353,6 +353,7 @@ conduit = ep.prototype('ep.conduit', transport, {
         self:send(self.peer, self.signature, '!')
       end
       self.conduits[self.id] = nil
+    end
   end,
 
   connect = function(self)

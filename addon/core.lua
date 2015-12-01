@@ -1,32 +1,16 @@
-local clear = ep.clear
-local concat = table.concat
-local exception = ep.exception
-local exceptional = ep.exceptional
-local format = string.format
-local invoke = ep.invoke
-local itersplit = ep.itersplit
-local ref = ep.ref
-local put = ep.put
-local split = ep.split
-local surrogate = ep.surrogate
-local tinsert = table.insert
-local tremove = table.remove
+local clear, concat, exception, exceptional, format, invoke, ref, put,
+      split, surrogate, tinsert, tremove
+    = ep.clear, table.concat, ep.exception, ep.exceptional, string.format, ep.invoke,
+      ep.ref, ep.put, ep.split, ep.surrogate, table.insert, table.remove
 
-local addons = {}
-local components = {}
 local events = {}
 local invocations = ep.pqueue('delta')
-local modules = {}
 
-local _characterGenders = {'unknown', 'male', 'female'}
 local _schedulingTicks = 0
 local _uniqidEntropy = 0
 
-ep.addons = addons
-ep.components = components
 ep.events = events
 ep.invocations = invocations
-ep.modules = modules
 ep.selection = nil
 
 function ep.claimSelection(selection, icon)
@@ -41,84 +25,6 @@ function ep.clearSelection(selection)
   end
 end
 
-function ep.deployModule(module, onlyIfDeployed)
-  local name, addon, result, dependency, version, impl
-  if type(module) == 'string' then
-    name, module = module, modules[module]
-  end
-
-  if not module then
-    if name then
-      return exception('DeployFailed', format("unknown module '%s'", name))
-    else
-      return exception('DeployFailed', 'invalid module specification')
-    end
-  end
-
-  name = module.name
-  if module.deployed then
-    return module.implementation
-  elseif onlyIfDeployed then
-    return exception('DeployRequired', 'requested module not yet deployed')
-  end
-
-  addon = addons[module.addon]
-  if not addon.loaded then
-    result = ep._loadAddon(addon)
-    if exceptional(result) then
-      return result
-    elseif module.deployed then
-      return module.implementation
-    end
-  end
-
-  if module.dependencies then
-    for dependency, version in pairs(module.dependencies) do
-      dependency = modules[dependency]
-      if not dependency then
-        return exception('DeployFailed', 'invalid dependency')
-      elseif dependency.version < version then
-        return exception('DeployFailed', 'invalid dependency version')
-      elseif not dependency.deployed then
-        result = ep.deployModule(dependency)
-        if exceptional(result) then
-          return result
-        end
-      end
-    end
-  end
-
-  impl = ref(module.path)
-  if impl and impl.__modular then
-    module.implementation = impl
-  else
-    return exception('DeployFailed', 'invalid module')
-  end
-
-  version = ephemeral.versions[name]
-  if version then
-    if version < module.version and impl.upgrade then
-      result = impl:upgrade(version)
-      if exceptional(result) then
-        return result
-      end
-    elseif version > module.version then
-      return exception('VersionIssue')
-    end
-  end
-
-  ephemeral.versions[name] = module.version
-  if impl.deploy then
-    result = impl:deploy()
-    if exceptional(result) then
-      return result
-    end
-  end
-
-  module.deployed, module.enabled = true, true
-  return impl
-end
-
 function ep.event(event, ...)
   local subscriptions, invoke, invocation = events[event], invoke
   if subscriptions then
@@ -128,7 +34,7 @@ function ep.event(event, ...)
   end
 end
 
-function ep.ingroup(name, connected)
+function ep.inGroup(name, connected)
   local name, unit = name:lower()
   if GetNumRaidMembers() > 0 then
     for i = 1, GetNumRaidMembers(), 1 do
@@ -148,7 +54,7 @@ function ep.ingroup(name, connected)
   return false
 end
 
-function ep.inguild(name, connected)
+function ep.inGuild(name, connected)
   local name, member, online = name:lower()
   if IsInGuild() then
     for i = 1, GetNumGuildMembers(), 1 do
@@ -161,7 +67,7 @@ function ep.inguild(name, connected)
   return false
 end
 
-function ep.interpret(text)
+function ep.interpretInput(text)
   local tokens, script, err, result, reference
   if text then
     if text == GetBindingKey('RELOADUI') then
@@ -179,7 +85,7 @@ function ep.interpret(text)
         if #result == 1 then
           return result[1]
         elseif #result > 1 then
-          return result
+          return resul
         end
       else
         return exception('LuaError', result[1])
@@ -192,7 +98,7 @@ function ep.interpret(text)
   end
 end
 
-function ep.isfriend(name, connected)
+function ep.isFriend(name, connected)
   local name, friend = name:lower()
   for i = 1, GetNumFriends(), 1 do
     friend = {GetFriendInfo(i)}
@@ -227,31 +133,6 @@ function ep.getItemText(close)
   return item
 end
 
-function ep.loadComponent(class, name)
-  local registrations = components[class]
-  if not (registrations and registrations[name]) then
-    return exception('ComponentNotFound')
-  end
-
-  local component = registrations[name]
-  if type(component) == 'table' then
-    return component
-  end
-
-  local result = ep.deployModule(component)
-  if exceptional(result) then
-    return result
-  end
-
-  component = ref(name)
-  if not component then
-    return exception('ComponentNotFound')
-  end
-
-  registrations[name] = component
-  return component
-end
-
 function ep.getMemoryUsage()
   local stats, report, value, name, title, notes, enabled = {}, {}
   UpdateAddOnMemoryUsage()
@@ -273,11 +154,6 @@ function ep.getMemoryUsage()
     end
   end
   return concat(report, '\n')
-end
-
-function ep.module(ns)
-  ns.__modular = true
-  return ns
 end
 
 function ep.say(message, language)
@@ -306,6 +182,12 @@ function ep.schedule(invocation, interval, limit, immediate)
     epRoot:SetScript('OnUpdate', ep.tick)
   end
   return registration
+end
+
+function ep.scheduleInvocation(registration)
+  if ep.invocations:push(registration) == 1 then
+    epRoot:SetScript('OnUpdate', ep.tick)
+  end
 end
 
 function ep.subscribe(event, invocation)
@@ -367,7 +249,7 @@ function ep.uniqid()
   if _uniqidEntropy <= 0 then
     _uniqidEntropy = 65535
   end
-  return format('%08x%s%04x', time(), ep.character.guid:sub(6), _uniqidEntropy)
+  return format('%08x%s%04x', time(), ep.character.id:sub(6), _uniqidEntropy)
 end
 
 function ep.unsubscribe(ref)
@@ -381,182 +263,206 @@ function ep.unsubscribe(ref)
   end
 end
 
-function ep._bootstrapEphemeral()
-  ep.character = ep._describeCharacter()
-  if ephemeral.characters then
-    ephemeral.characters[ep.character.token] = ep.character
-  else
-    ephemeral.characters = {[ep.character.token] = ep.character}
-  end
+ep.datastore = ep.prototype('ep.datastore', {
+  initialize = function(self, specification)
+    self.indexes = {}
+    self.instances = {}
+    self.instantiator = specification.instantiator
+    self.specification = specification
 
-  ep.designations = {}
-  for token, character in pairs(ephemeral.characters) do
-    ep.designations[character.designation] = token
-  end
+    self.container = self:construct()
+    self:reindex()
+  end,
 
-  if not ephemeral.modules then
-    ephemeral.modules = {}
-  end
-  if not ephemeral.versions then
-    ephemeral.versions = {}
-  end
-
-  ep._enumerateAddons()
-  for name, addon in pairs(ep.addons) do
-    if addon.loaded then
-      ep._loadAddon(addon)
-    end
-  end
-end
-
-function ep._describeCharacter()
-  local guid, guild, realm, character = UnitGUID('player'):sub(8), GetGuildInfo('player'), GetRealmName()
-  character = {
-    class = select(2, UnitClass('player')):lower(),
-    faction = UnitFactionGroup('player'):lower(),
-    designation = format('%s (%s)', UnitName('player'), realm),
-    gender = _characterGenders[UnitSex('player')],
-    guid = guid,
-    guild = guild,
-    name = UnitName('player'),
-    race = select(2, UnitRace('player')):lower(),
-    realm = realm,
-    realmid = guid:sub(1, 4),
-    realmtoken = realm:gsub('%s*', ''):lower(),
-  }
-
-  character.factiontoken = format('%s:%s', character.realmtoken, character.faction)
-  character.token = format('%s:%s', character.realmtoken, character.name:lower())
-  if guild then
-    character.guildtoken = format('%s:%s', character.realmtoken, guild:gsub('%s*', ''):lower())
-  end
-
-  return character
-end
-
-function ep._enumerateAddons()
-  local compatibility
-  for i = 1, GetNumAddOns() do
-    compatibility = tonumber(GetAddOnMetadata(i, 'X-Ephemeral-Compatibility'))
-    if compatibility then
-      ep._parseAddon(i, compatibility)
-    end
-  end
-end
-
-function ep._loadAddon(addon)
-  local loaded, reason, name, module, result
-  if type(addon) == 'string' then
-    addon = addons[addon]
-  end
-
-  if not addon.compatible then
-    return exception('LoadFailed', format("addon '%s' is not compatible", addon))
-  end
-
-  if not addon.loaded then
-    if not addon.loadable then
-      return exception('LoadFailed', format("addon '%s' is not loadable", addon))
+  construct = function(self)
+    if self.specification.container then
+      return self.specification.container
     end
 
-    loaded, reason = LoadAddOn(addon.name)
-    if loaded then
-      addon.loaded = true
-    else
-      return exception('LoadFailed', reason)
+    local container = ref(self.specification.location)
+    if not container then
+      container = {}
+      put(self.specification.location, container)
     end
-  end
+    return container
+  end,
 
-  if not addon.deployed then
-    for name, module in pairs(addon.modules) do
-      if not module.deployed then
-        result = ep.deployModule(module)
-        if exceptional(result) then
-          return result
+  delete = function(self, instance)
+    local id = instance.id or instance
+    self.container[id], self.instances[id] = nil, nil
+  end,
+
+  find = function(self, attrs, singular)
+    local primary, secondaries, unindexed = nil, {}, false
+    for attr, value in pairs(attrs) do
+      local index = self:_getIndex(attr, value)
+      if index then
+        if primary then
+          tinsert(secondaries, index)
+        else
+          primary = index
         end
-      end
-    end
-    addon.deployed = true
-  end
-end
-
-function ep._parseAddon(id, compatibility)
-  local name, title, description, enabled, loadable, addon = GetAddOnInfo(id)
-  addon = {
-    compatible = (ep.version >= compatibility),
-    compatibility = compatibility,
-    description = description,
-    enabled = enabled,
-    loadable = loadable,
-    loaded = IsAddOnLoaded(id) and true or false,
-    modules = {},
-    name = name,
-    title = title,
-  }
-
-  local idx, entry, aspects, module, key, value, dependencies, components = 1
-  while true do
-    entry = 'X-Ephemeral-Module['..idx..']'
-    aspects = GetAddOnMetadata(id, entry)
-    if not aspects then
-      break
-    end
-
-    module = {
-      addon = addon.name,
-      description = GetAddOnMetadata(id, entry..'-Description'),
-    }
-
-    for pair in itersplit(aspects:gsub('%s*', ''), ',') do
-      key, value = split(pair, '=', 1)
-      if key == 'version' then
-        value = tonumber(value)
-      end
-      module[key] = value
-    end
-
-    dependencies = GetAddOnMetadata(id, entry..'-Dependencies')
-    if dependencies then
-      module.dependencies = {}
-      for pair in itersplit(dependencies:gsub('%s*', ''), ',') do
-        key, value = split(pair, '=', 1)
-        module.dependencies[key] = tonumber(value)
+        attrs[attr] = nil
+      else
+        unindexed = true
       end
     end
 
-    components = GetAddOnMetadata(id, entry..'-Components')
-    if components then
-      module.components = {}
-      for pair in itersplit(components:gsub('%s*', ''), ',') do
-        key, value = split(pair, '=', 1)
-        tinsert(module.components, {key, value})
-      end
-    end
-
-    if module.name and module.path then
-      addon.modules[module.name] = module
-      modules[module.name] = module
-      if module.components then
-        for i, component in ipairs(module.components) do
-          key, value = unpack(component)
-          if ep.components[key] then
-            ep.components[key][value] = module.name
-          else
-            ep.components[key] = {[value] = module.name}
+    local candidates, included
+    if #secondaries > 0 then
+      candidates = {}
+      for id, presence in pairs(primary) do
+        included = true
+        for i, secndary in ipairs(secondaries) do
+          if not secondary[id] then
+            included = false
+            break
           end
         end
+        if included then
+          tinsert(candidates, id)
+        end
+      end
+    else
+      candidates = ep.keys(primary)
+    end
+
+    local instance
+    if singular then
+      if #candidates == 1 then
+        instance = self:get(id)
+        if exceptional(instance) then
+          return instance
+        end
+        if unindexed then
+          for attr, value in pairs(attrs) do
+            if instance[attr] ~= value then
+              return nil
+            end
+          end
+        end
+        return instance
+      elseif #candidates == 0 then
+        return nil
+      else
+        return exception('MultipleInstancesFound')
       end
     end
-    idx = idx + 1
-  end
-  addons[addon.name] = addon
-end
 
-function ep._scheduleInvocation(registration)
-  if ep.invocations:push(registration) == 1 then
-    epRoot:SetScript('OnUpdate', ep.tick)
+    local instances = {}
+    for i, id in ipairs(candidates) do
+      instance = self:get(id)
+      if exceptional(instance) then
+        return instance
+      elseif instance then
+        if unindexed then
+          included = true
+          for attr, value in pairs(attrs) do
+            if instance[attr] ~= value then
+              included = false
+              break
+            end
+          end
+          if included then
+            tinsert(instances, instance)
+          end
+        else
+          tinsert(instances, instance)
+        end
+      end
+    end
+    return instances
+  end,
+
+  get = function(self, id)
+    local instance = self.instances[id]
+    if not instance then
+      instance = self.container[id]
+      if instance then
+        instance = self.instantiator(instance)
+        if not exceptional(instance) then
+          self.instances[id] = instance
+        end
+      end
+    end
+    return instance
+  end,
+
+  getData = function(self, id)
+    return self.container[id]
+  end,
+
+  put = function(self, instance)
+    local data = instance:extract()
+    if not (data and data.id) then
+      return exception('InvalidInstance')
+    end
+
+    self.instances[data.id] = instance
+    self.container[data.id] = data
+
+    local indexes = self.specification.indexes
+    if indexes then
+      for attr, index in pairs(indexes) do
+        self:_indexInstance(data.id, data, attr, index)
+      end
+    end
+  end,
+
+  reindex = function(self)
+    local indexes, specification = self.indexes, self.specification.indexes
+    if not specification then
+      return
+    end
+
+    for attr, index in pairs(specification) do
+      indexes[attr] = {}
+    end
+
+    for id, candidate in pairs(self.container) do
+      for attr, index in pairs(specification) do
+        self:_indexInstance(id, candidate, attr, index)
+      end
+    end
+  end,
+
+  _getIndex = function(self, attr, value)
+    local index = self.specification.indexes[attr]
+    if index.type == 'boolean' then
+      return self.indexes[attr]
+    else
+      return self.indexes[attr][value]
+    end
+  end,
+
+  _indexInstance = function(self, id, candidate, attr, index)
+    local indexes, value = self.indexes
+    if index.attr then
+      value = candidate[index.attr]
+    else
+      value = candidate[attr]
+    end
+
+    if value == nil then
+      return
+    elseif index.type == 'boolean' then
+      indexes[attr][id] = true
+      return
+    end
+
+    if index.type == 'prefix' then
+      value, _ = split(value, index.delimiter or ':', 1)
+    elseif index.type == 'suffix' then
+      _, value = split(value, index.delimiter or ':', 1)
+    end
+
+    if indexes[attr][value] then
+      indexes[attr][value][id] = true
+    else
+      indexes[attr][value] = {[id] = true}
+    end
   end
-end
+})
 
 ep.script = ep.prototype('ep.script', {
   environment = {

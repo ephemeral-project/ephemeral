@@ -77,7 +77,7 @@ ep.console = ep.panel('ep.console', 'epConsole', {
     if text then
       self.input:AddHistoryLine(text)
       self.interpreter:append('>> '..text, ep.tint.console)
-      result = ep.interpret(text)
+      result = ep.interpretInput(text)
       if ep.exceptional(result) then
         self.interpreter:append('!! '..result.exception..': '..result.description)
       elseif result then

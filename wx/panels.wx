@@ -344,8 +344,8 @@ Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       *  {control = 'checkbox'},
       *  {field = 'id', title = 'Id', width = 60},
       *  {field = 'name', title = 'Name', width = 80},
-      *  {field = 'description', title = 'Description', relwidth = 0.75},
-      *  {field = 'value', title = 'Value', relwidth = 0.25}}})
+      *  {field = 'description', title = 'Description', relWidth = 0.75},
+      *  {field = 'value', title = 'Value', relWidth = 0.25}}})
   OnLoad:
     *ep.basepanel(self, {
     *    title = 'Test',
@@ -363,7 +363,7 @@ Frame epLocation(^UIParent):
     FontString $parentText(epNormalFont, .text, justifyH: LEFT, justifyV: TOP, setAllPoints):
       !Color(1.0, 1.0, 1.0)
   OnUpdate:
-    *self.text:SetText(ep.describeLocation())
+    *--self.text:SetText(ep.describeLocation())
     *--[[local flags = {}
     *if IsIndoors() then tinsert(flags, 'Indoors') end
     *if IsFlying() then tinsert(flags, 'Flying') end

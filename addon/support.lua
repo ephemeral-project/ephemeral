@@ -1,12 +1,6 @@
-local concat = table.concat
-local floor = math.floor
-local fmod = math.fmod
-local format = string.format
-local tinsert = table.insert
-local tremove = table.remove
-local random = math.random
-local sort = table.sort
-local strrep = string.rep
+local concat, floor, fmod, format, tinsert, tremove, random, sort, strrep
+    = table.concat, math.floor, math.fmod, string.format, table.insert,
+      table.remove, math.random, table.sort, string.rep
 
 local promises = {}
 local prototypeRegistries = {}
@@ -16,7 +10,6 @@ ep = {}
 ephemeral = {}
 
 ep.promises = promises
-ep.version = 20000
 
 function ep.alert(context, message, level)
   if not (context and message) then

@@ -382,7 +382,7 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
 
   append = function(self, content, unmoved)
     local position = nil
-    if #content = 0 then
+    if #content == 0 then
       return
     end
 
@@ -552,9 +552,9 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
       end
       if not cell.staticWidth then
         cell.cwidth = cell.width - padding
-       end
-       cell.hoffset = offset + self.hpadding
-       offset = offset + cell.width
+      end
+      cell.hoffset = offset + self.hpadding
+      offset = offset + cell.width
     end
 
     if total < space then
@@ -566,7 +566,7 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
       row = self.rows[i]
       if not row then
         row = ep.gridrow(self.name..'r'..i, self, self, i)
-        row:SetPoint('TOPLEFT', self, 'TOPLEFT', 1, -(offset + (self.rowheight * (i - 1))))
+        row:SetPoint('TOPLEFT', self, 'TOPLEFT', 1, -(offset + (self.rowHeight * (i - 1))))
         self.rows[i] = row
       end
       row:Show()

@@ -1,19 +1,13 @@
-local exception = ep.exception
-local exceptional = ep.exceptional
-local split = ep.split
+local attrsort, deployModule, exception, exceptional, isderived, split, uniqid
+    = ep.attrsort, ep.deployModule, ep.exception, ep.exceptional, ep.isderived,
+      ep.split, ep.uniqid
 
-local entityCache = ep.weaktable('v')
-local entityDefinitions = {}
+local entityType = ep.copy(ep.metatype)
 
-ep.entityCache = entityCache
-ep.entityDefinitions = entityDefinitions
-
-ep.entitytype = ep.copy(ep.metatype)
-
-ep.entitytype.__call = function(prototype, entity)
+entityType.__call = function(prototype, entity)
   local object = setmetatable({__entity = entity or {}}, prototype)
-
   local referrent, initializer = prototype, rawget(prototype, 'initialize')
+
   while not initializer do
     referrent = rawget(referrent, '__base')
     if referrent then
@@ -29,14 +23,13 @@ ep.entitytype.__call = function(prototype, entity)
   return object
 end
 
-ep.instancetype = {
+local instanceType = {
   __index = function(object, field)
-    local value
     if field:sub(1, 2) == '__' then
       return rawget(object, field)
     end
 
-    value = rawget(object, '__instance')[field]
+    local value = rawget(object, '__instance')[field]
     if value == nil then
       value = rawget(object, '__entity')[field]
     end
@@ -51,134 +44,160 @@ ep.instancetype = {
   end
 }
 
-function ep.define(name, base, proto)
-  proto = proto or {}
-  proto.__name, proto.__base, proto.__prototypical = name, base, true
+ep.entities = {
+  name = 'ephemeral:entities',
+  version = 1,
 
-  proto.__call = function(entity, instance, origin, affinity)
-    instance = instance or {}
-    if not instance.id then
-      instance.id = ep.uniqid()
+  cache = ep.weaktable('v'),
+  definitions = {},
+  entityType = entityType,
+  instanceType = instanceType,
+
+  define = function(self, name, base, proto)
+    proto = proto or {}
+    proto.__name, proto.__base, proto.__prototypical = name, base, true
+
+    proto.__call = function(entity, instance, origin)
+      instance = instance or {}
+      if not instance.id then
+        instance.id = uniqid()
+      end
+
+      instance.cl = entity.cl
+      if not instance.et and entity.tg then
+        instance.et = entity.tg
+      end
+
+      affinity = affinity or entity.at
+      if affinity == 'c' then
+        instance.af = ep.character.guid
+      elseif affinity == 'r' then
+        instance.af = ep.character.realmid
+      end
+
+      local object = setmetatable({__entity=entity, __instance=instance}, instanceType)
+      object:construct(origin)
+      return object
     end
 
-    instance.cl = entity.cl
-    if not instance.et and entity.tg then
-      instance.et = entity.tg
-    end
+    proto.__index = function(object, field)
+      local entity, value, referrent = rawget(object, '__entity')
+      if field == '__entity' then
+        return entity
+      else
+        value = entity[field]
+      end
 
-    affinity = affinity or entity.at
-    if affinity == 'c' then
-      instance.af = ep.character.guid
-    elseif affinity == 'r' then
-      instance.af = ep.character.realmid
-    end
+      if value == nil then
+        value = rawget(object, field)
+      end
 
-    local object = setmetatable({__entity=entity, __instance=instance}, ep.instancetype)
-    object:construct(origin)
-    return object
-  end
-
-  proto.__index = function(object, field)
-    local entity, value, referrent = rawget(object, '__entity')
-    if field == '__entity' then
-      return entity
-    else
-      value = entity[field]
-    end
-
-    if value == nil then
-      value = rawget(object, field)
-    end
-
-    if value == nil then
-      referrent, value = proto, rawget(proto, field)
-      while value == nil do
-        referrent = rawget(referrent, '__base')
-        if referrent then
-          value = rawget(referrent, field)
-        else
-          break
+      if value == nil then
+        referrent, value = proto, rawget(proto, field)
+        while value == nil do
+          referrent = rawget(referrent, '__base')
+          if referrent then
+            value = rawget(referrent, field)
+          else
+            break
+          end
         end
+      end
+
+      if value == nil then
+        value = rawget(getmetatable(proto), field)
+      end
+      return value
+    end
+
+    if proto.cl then
+      self.definitions[proto.cl] = proto
+    end
+
+    return setmetatable(proto, entityType)
+  end,
+
+  deploy = function(self)
+    ep.instances = ep.datastore({
+      location = 'ephemeral.instances',
+      indexes = {
+        af = {type = 'affinity'},
+        al = {type = 'boolean'},
+        cl = {type = 'value'},
+        et = {type = 'value'},
+        module = {type ='prefix', attr = 'et'},
+      },
+      instantiator = function(instance)
+        return self:instantiate(instance, 'storage')
+      end
+    })
+  end,
+
+  enumerateDefinitions = function(self, base, sorted)
+    local candidates = {}
+    for cl, proto in pairs(self.definitions) do
+      if isderived(proto, base) then
+        tinsert(candidates, proto)
       end
     end
 
-    if value == nil then
-      value = rawget(getmetatable(proto), field)
+    if sorted then
+      table.sort(candidates, attrsort('title'))
     end
-    return value
-  end
+    return candidates
+  end,
 
-  if proto.cl then
-    entityDefinitions[proto.cl] = proto
-  end
-  return setmetatable(proto, ep.entitytype)
-end
-
-function ep.enumerateDefinitions(base, sorted)
-  local candidates = {}
-  for cl, proto in pairs(entityDefinitions) do
-    if ep.isderived(proto, base) then
-      tinsert(candidates, proto)
+  instantiate = function(self, instance, origin)
+    local entity = self:load(instance.et or instance.cl)
+    if not exceptional(entity) then
+      return entity(instance, origin)
+    else
+      return entity
     end
-  end
+  end,
 
-  if sorted then
-    table.sort(candidates, ep.attrsort('title'))
-  end
-  return candidates
-end
+  load = function(self, tag, onlyIfDeployed)
+    local entity = self.cache[tag]
+    if entity then
+      return entity
+    end
 
-function ep.loadEntity(tag, onlyIfDeployed)
-  local entity = entityCache[tag]
-  if entity then
-    return entity
-  end
+    local module, name = split(tag, ':', 1)
+    if #module == 0 then
+      local definition = self.definitions[name]
+      if not definition then
+        return exception('InvalidTag')
+      end
 
-  local module, name = split(tag, ':', 1)
-  if #module == 0 then
-    local definition = entityDefinitions[name]
-    if not definition then
+      entity = definition(definition.default or {})
+      self.cache[tag] = entity
+      return entity
+    end
+
+    module = deployModule(module, onlyIfDeployed)
+    if exceptional(module) then
+      return model
+    elseif not module.entities then
+      return exception('InvalidModule')
+    end
+
+    entity = module.entities[name]
+    if not entity then
       return exception('InvalidTag')
     end
 
-    entity = definition(definition.default or {})
-    entityCache[tag] = entity
-    return entity
-  end
+    local definition = self.definitions[entity.cl]
+    if not definition then
+      return exception('InvalidEntity')
+    end
 
-  module = ep.deployModule(module, onlyIfDeployed)
-  if exceptional(module) then
-    return module
-  elseif not module.entities then
-    return exception('InvalidModule')
-  end
-
-  entity = module.entities[name]
-  if not entity then
-    return exception('InvalidTag')
-  end
-
-  local definition = entityDefinitions[entity.cl]
-  if definition then
     entity = definition(entity)
-  else
-    return exception('InvalidEntity')
-  end
-
-  entityCache[tag] = entity
-  return entity
-end
-
-function ep.instantiateEntity(instance, origin)
-  local entity = ep.loadEntity(instance.et or instance.cl)
-  if not exceptional(entity) then
-    return entity(instance, origin)
-  else
+    self.cache[tag] = entity
     return entity
   end
-end
+}
 
-ep.entity = ep.define('ep.entity', nil, {
+ep.entity = ep.entities:define('ep.entity', nil, {
   title = 'Entity',
 
   construct = function(self, origin)
@@ -192,167 +211,5 @@ ep.entity = ep.define('ep.entity', nil, {
   end,
 
   located = function(self, phase, location)
-  end
-})
-
-ep.instancestore = ep.prototype('ep.instancestore', {
-  initialize = function(self, specification)
-    self.indexes = {}
-    self.instances = {}
-    self.specification = specification
-
-    self.container = self:construct()
-    self:reindex()
-  end,
-
-  construct = function(self)
-    local container = ref(self.specification.location)
-    if not container then
-      container = {}
-      put(self.specification.location, container)
-    end
-    return container
-  end,
-
-  delete = function(self, instance)
-    local id = instance.id or instance
-    self.container[id], self.instances[id] = nil, nil
-  end,
-
-  find = function(self, attrs, singular)
-    local primary, secondaries = nil, {}
-    for attr, value in pairs(attrs) do
-      local index = self:_getIndex(attr, value)
-      if index then
-        if primary then
-          tinsert(secondaries, index)
-        else
-          primary = index
-        end
-        attrs[attr] = nil
-      elseif index == false then
-        return {}
-      else
-        return exception('UnindexedAttribute')
-      end
-    end
-
-    local candidates, included
-    if #secondaries > 0 then
-      candidates = {}
-      for id, presence in pairs(primary) do
-        included = true
-        for i, secondary in ipairs(secondaries) do
-          if not secondary[id] then
-            included = false
-            break
-          end
-        end
-        if included then
-          tinsert(candidates, id)
-        end
-      end
-    else
-      candidates = ep.keys(primary)
-    end
-
-    if singular then
-      if #candidates == 1 then
-        return self:get(candidates[1])
-      elseif #candidates == 0 then
-        return nil
-      else
-        return exception('MultipleInstancesFounds')
-      end
-    end
-
-    local instances, instance = {}
-    for i, id in ipairs(candidates) do
-      instance = self:get(id)
-      if exceptional(instance) then
-        return instance
-      elseif instance then
-        tinsert(instances, instance)
-      end
-    end
-    return instances
-  end,
-
-  get = function(self, id)
-    local instance = self.instances[id]
-    if not instance then
-      instance = self.container[id]
-      if instance then
-        instance = ep.instantiateEntity(instance, 'storage')
-        if not exceptional(instance) then
-          self.instances[id] = instance
-        end
-      end
-    end
-    return instance
-  end,
-
-  put = function(self, instance)
-    local data = instance:extract()
-    if not (data and data.id) then
-      return exception('InvalidInstance')
-    end
-
-    self.instances[id] = instance
-    self.container[id] = data
-
-    for attr, index in pairs(self.specification.indexes) do
-      self._indexInstance(data.id, data, attr, index)
-    end
-  end,
-
-  reindex = function(self)
-    local indexes, specification = self.indexes, self.specification.indexes
-    if not specification then
-      return
-    end
-
-    for attr, index in pairs(specification) do
-      indexes[attr] = {}
-    end
-
-    for id, candidate in pairs(self.container) do
-      for attr, index in pairs(specification) do
-        self:_indexInstance(id, candidate, attr, index)
-      end
-    end
-  end,
-
-  _getIndex = function(self, attr, value)
-    local index = self.specification.indexes[attr]
-    if index == 'boolean' then
-      return self.indexes[attr]
-    elseif index == 'value' or index == 'prefix' then
-      return self.indexes[attr][value]
-    end
-  end,
-
-  _indexInstance = function(self, id, candidate, attr, index)
-    local value, indexes = candidate[attr], self.indexes
-    if value ~= nil then
-      if index == 'boolean' then
-        indexes[attr][id] = true
-      elseif index == 'value' then
-        if indexes[attr][value] then
-          indexes[attr][value][id] = true
-        else
-          indexes[attr][value] = {[id] = true}
-        end
-      elseif index == 'prefix' then
-        value = split(value, ':', 1)[1]
-        if indexes[attr][value] then
-          indexes[attr][value][id] = true
-        else
-          indexes[attr][value] = {[id] = true}
-        end
-      elseif index == 'affinity' then
-        
-      end
-    end
   end
 })
