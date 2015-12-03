@@ -15,7 +15,7 @@ ep.selection = nil
 
 function ep.claimSelection(selection, icon)
   ep.selection = selection
-  epIconCursor:activate(icon or selection.ic)
+  epIconCursor:activate(icon or selection.icon)
 end
 
 function ep.clearSelection(selection)
@@ -428,7 +428,12 @@ ep.datastore = ep.prototype('ep.datastore', {
 
   _getIndex = function(self, attr, value)
     local index = self.specification.indexes[attr]
-    if index.type == 'boolean' then
+    if index.type == 'affinity' then
+      if value:sub(1, 1) == '$' then
+        value = ep.character:getAffinity(value)
+      end
+      return self.indexes[attr][value]
+    elseif index.type == 'boolean' then
       return self.indexes[attr]
     else
       return self.indexes[attr][value]

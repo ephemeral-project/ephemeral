@@ -12,10 +12,11 @@ Button epItemIcon(epIconBox, virtual):
   OnLeave:
     *self.container:manipulate(self, 'leave')
   OnLoad:
-    *self:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
-    *self:RegisterForDrag('LeftButton', 'RightButton')
+    *self:RegisterForClicks('LeftButtonUp', 'MiddleButtonUp', 'RightButtonUp')
+    *self:RegisterForDrag('LeftButton')
     *ep.iconbox(self)
   OnMouseWheel:
+    *self.container:manipulate(self, 'wheel', -delta)
     *local scrollbar = self:GetParent().scrollbar
     *if scrollbar then
     *  scrollbar:move(-delta)

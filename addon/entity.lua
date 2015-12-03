@@ -25,21 +25,25 @@ end
 
 local instanceType = {
   __index = function(object, field)
-    if field:sub(1, 2) == '__' then
-      return rawget(object, field)
-    end
-
-    local value = rawget(object, '__instance')[field]
-    if value == nil then
-      value = rawget(object, '__entity')[field]
+    if field:sub(1, 1) == '_' then
+      local value = rawget(object, field)
+      if value == nil then
+        value = rawget(object, '__entity')[field]
+      end
+    else
+      local value = rawget(object, '__instance')[field]
+      if value == nil then
+        value = rawget(object, '__entity')[field]
+      end
     end
     return value
   end,
 
   __newindex = function(object, field, value)
-    rawget(object, '__instance')[field] = value
-    if field:sub(1, 1) ~= '_' then
-      object.__modified = true
+    if field:sub(1, 1) == '_' then
+      rawset(object, field, value)
+    else
+      rawget(object, '__instance')[field] = value
     end
   end
 }
@@ -57,26 +61,30 @@ ep.entities = {
     proto = proto or {}
     proto.__name, proto.__base, proto.__prototypical = name, base, true
 
-    proto.__call = function(entity, instance, origin)
+    proto.__call = function(entity, instance, origin, transient)
       instance = instance or {}
       if not instance.id then
         instance.id = uniqid()
       end
-
-      instance.cl = entity.cl
+      if not instance.cl then
+        instance.cl = entity.cl
+      end
       if not instance.et and entity.tg then
         instance.et = entity.tg
       end
 
-      affinity = affinity or entity.at
-      if affinity == 'c' then
-        instance.af = ep.character.guid
-      elseif affinity == 'r' then
-        instance.af = ep.character.realmid
+      if instance.af and instance.af:sub(1, 1) == '$' then
+        instance.af = ep.character:getAffinity(instance.af)
+      elseif not instance.af and entity.ay then
+        instance.af = ep.character:getAffinity(entity.ay)
       end
 
       local object = setmetatable({__entity=entity, __instance=instance}, instanceType)
       object:construct(origin)
+
+      if not transient then
+        ep.instances:put(object)
+      end
       return object
     end
 
@@ -198,18 +206,40 @@ ep.entities = {
 }
 
 ep.entity = ep.entities:define('ep.entity', nil, {
-  title = 'Entity',
+  noun = 'entity',
+  plural = 'entities',
 
   construct = function(self, origin)
   end,
 
-  detected = function(self, phase, location)
+  destroy = function(self)
+    if self.pt then
+      return exception('CannotDestroy', 'Entity is protected.')
+    end
+
+    local approval = self:approveDestruction()
+    if exceptional(approval) then
+      return approval
+    end
+
+    ep.instances:delete(self.id)
   end,
 
   extract = function(self)
     return self.__instance
   end,
 
+  persist = function(self)
+    ep.instances:put(self)
+    return self
+  end,
+
+  approveDestruction = function(self)
+  end,
+
+  detected = function(self, phase, location)
+  end,
+
   located = function(self, phase, location)
-  end
+  end,
 })

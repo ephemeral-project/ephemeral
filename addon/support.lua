@@ -11,6 +11,10 @@ ephemeral = {}
 
 ep.promises = promises
 
+local function isPublicAttr(attr)
+  return attr:sub(1, 1) ~= '_'
+end
+
 function ep.alert(context, message, level)
   if not (context and message) then
     return
@@ -79,9 +83,13 @@ ep.metatype = {
       end
     end
 
-    object = setmetatable({}, prototype)
-    referrent, initializer = prototype, rawget(prototype, 'initialize')
+    object = {}
+    if prototype.__segregation then
+      object[prototype.__segregation.attr] = {}
+    end
+    setmetatable(object, prototype)
 
+    referrent, initializer = prototype, rawget(prototype, 'initialize')
     while not initializer do
       referrent = rawget(referrent, '__base')
       if referrent then
@@ -177,24 +185,66 @@ function ep.prototype(...)
   proto.__base = base
   proto.__prototypical = true
 
-  proto.__index = function(object, field)
-    local value, referrent = rawget(object, field)
-    if value == nil then
-      referrent, value = proto, rawget(proto, field)
-      while value == nil do
-        referrent = rawget(referrent, '__base')
-        if referrent then
-          value = rawget(referrent, field)
-        else
-          break
+  local segregation = proto.__segregation
+  if segregation then
+    local segAttr, segFunc = segregation.attr, segregation.func or isPublicAttr
+
+    proto.__index = function(object, field)
+      local value, referrent
+      if segFunc(field) then
+        value = rawget(object, segAttr)[field]
+      else
+        value = rawget(object, field)
+      end
+
+      if value == nil then
+        referrent, value = proto, rawget(proto, field)
+        while value == nil do
+          referrent = rawget(referrent, '__base')
+          if referrent then
+            value = rawget(referrent, field)
+          else
+            break
+          end
         end
+      end
+
+      if value == nil then
+        value = rawget(getmetatable(proto), field)
+      end
+      return value
+    end
+
+    proto.__newindex = function(object, field, value)
+      if segFunc(field) then
+        rawget(object, segAttr)[field] = value
+      else
+        rawset(object, field, value)
       end
     end
 
-    if value == nil then
-      value = rawget(getmetatable(proto), field)
+  else
+
+    proto.__index = function(object, field)
+      local value, referrent = rawget(object, field)
+      if value == nil then
+        referrent, value = proto, rawget(proto, field)
+        while value == nil do
+          referrent = rawget(referrent, '__base')
+          if referrent then
+            value = rawget(referrent, field)
+          else
+            break
+          end
+        end
+      end
+
+      if value == nil then
+        value = rawget(getmetatable(proto), field)
+      end
+      return value
     end
-    return value
+
   end
 
   for attr, container in pairs(prototypeRegistries) do
