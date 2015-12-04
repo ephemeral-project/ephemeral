@@ -44,12 +44,12 @@ Frame epItemCollector(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !TopRight(-10, -89)
     !BottomRight(-10, 49)
     OnLoad:
-      *ep.slider(self, {ep.item.collector.update, self:GetParent()})
+      *ep.slider(self, {callback={ep.item.collector.update, self:GetParent()}})
   EditBox $parentSearch(epEditBox, .search):
     !BottomLeft(10, 10)
     !BottomRight(-94, 10)
     OnLoad:
-      *ep.editbox(self, ep_'search')
+      *ep.editbox(self, {placeholder=ep_'search'})
   Button $parentOptions(epDropBox, .options, text: 'Backpack'):
     !Size(80, 19)
     !BottomRight(-10, 10)
@@ -74,7 +74,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !TopLeft(56, -31)
     !TopRight(-159, -31)
     OnLoad:
-      *ep.editbox(self, ep_'name')
+      *ep.editbox(self, {placeholder=ep_'name', tooltip=ep_'$item-name-tooltip'})
     OnTabPressed:
       *self:parent().f_inscription:SetFocus()
   Button $parentClass(epDropBox, .f_class):
@@ -88,7 +88,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !TopLeft(56, -54)
     !TopRight(-159, -54)
     OnLoad:
-      *ep.editbox(self, ep_'inscription')
+      *ep.editbox(self, {placeholder=ep_'inscription', tooltip=ep_'$item-inscription-tooltip'})
     OnTabPressed:
       *self:parent().facets:SetFocus()
   Button $parentQuality(epDropBox, .f_quality):
@@ -103,7 +103,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !TopLeft(10, -77)
     !TopRight(-159, -77)
     OnLoad:
-      *ep.editbox(self, ep_'facets')
+      *ep.editbox(self, {placeholder=ep_'facets'})
   Button $parentSound(epDropBox, .f_sound):
     !Size(100, 19)
     !TopRight(-10, -77)
@@ -124,11 +124,11 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
       !TopLeft(10, 0)
       !BottomRight
       OnLoad:
-        *ep.editarea(self, ep_'Click here to edit the description of this item.')
+        *ep.editarea(self, {placeholder=ep_'Click here to edit the description of this item.'})
     OnLoad:
-      *ep.multiframe(self, {
+      *ep.multiframe(self, {defaultFrame='Description', frames={
       *  Description = {client='Description'},
-      *}, {defaultFrame='Description'})
+      *}})
       *self:hideBorders('tl', 'l', 'bl')
   CheckButton $parentEquippable(epCheckBox, .f_equippable, text: 'equippable:'):
     !BottomLeft(10, 66)
@@ -167,15 +167,15 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
   CheckButton $parentDisabled(epCheckBox, .f_disabled, text: 'disabled'):
     !BottomLeft(10, 12)
     OnLoad:
-      *ep.checkbox(self, false, ep_('$entity-disabled-tooltip'))
+      *ep.checkbox(self, {tooltip=ep_'$entity-disabled-tooltip'})
   CheckButton $parentProtected(epCheckBox, .f_protected, text: 'protected'):
     !BottomLeft(89, 12)
     OnLoad:
-      *ep.checkbox(self, false, ep_('$entity-protected-tooltip'))
+      *ep.checkbox(self, {tooltip=ep_'$entity-protected-tooltip'})
   CheckButton $parentDebugging(epCheckBox, .f_debugging, text: 'debugging'):
     !BottomLeft(168, 12)
     OnLoad:
-      *ep.checkbox(self, false, ep_('$entity-debugging-tooltip'))
+      *ep.checkbox(self, {tooltip=ep_'$entity-debugging-tooltip'})
   Button $parentActions(epMultiButton, .actions, text: 'Save'):
     !Size(100, 19)
     !BottomRight(-10, 11)

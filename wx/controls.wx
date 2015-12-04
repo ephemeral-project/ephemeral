@@ -39,7 +39,7 @@ CheckButton epReversedCheckBox(epCheckBox, virtual):
   !NormalFont(epLabelFont, RIGHT)
   !HighlightFont(epHighlightFont, RIGHT)
   OnLoad:
-    *ep.checkbox(self, true)
+    *ep.checkbox(self, {reversed=true})
 
 Button epColorSpot(epControl, virtual):
   !Size(16, 16)
@@ -221,7 +221,7 @@ Frame epGrid(epControl, virtual):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     OnLoad:
-      *ep.slider(self, {ep.grid.update, self:GetParent()})
+      *ep.slider(self, {callback={ep.grid.update, self:GetParent()}})
   OnLoad:
     *ep.grid(self)
   OnSizeChanged:
@@ -450,7 +450,7 @@ Frame epMessageFrameBase(virtual):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     OnLoad:
-      *ep.slider(self, {ep.messageframe.scroll, self:GetParent()}, 3)
+      *ep.slider(self, {window=2, callback={ep.messageframe.scroll, self:GetParent()}})
   OnLoad:
     *ep.messageframe(self)
 
@@ -503,7 +503,8 @@ ScrollFrame epScrollFrame(virtual):
     !TopRight(6, -7)
     !BottomRight(6, 7)
     OnLoad:
-      *ep.slider(self, {ep.scrollframe.updateScroll, self:GetParent()}, nil, 0.15)
+      *ep.slider(self, {multiplier=0.15,
+      *  callback={ep.scrollframe.updateScroll, self:GetParent()}})
   OnLoad:
     *ep.scrollframe(self)
   OnMouseWheel:
@@ -691,7 +692,7 @@ Frame epTree(epControl, virtual):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     Onload:
-      *ep.slider(self, {ep.tree.update, self:GetParent()})
+      *ep.slider(self, {callback={ep.tree.update, self:GetParent()}})
   OnLoad:
     *ep.tree(self)
   OnSizeChanged:

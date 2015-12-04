@@ -13,10 +13,10 @@ Frame epConsole(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       !TopLeft(0, -20)
       !BottomRight
     OnLoad:
-      *ep.tabbedframe(self, {
+      *ep.tabbedframe(self, {tabs={
       *  {label = ep_'Interpreter', client = epConsoleTabsInterpreter},
       *  {label = ep_'Debug Log', client = epConsoleTabsLog},
-      *})
+      *}})
   EditBox $parentInput(epEditBox, .input, font: epConsoleFont, historyLines: 32):
     !BottomLeft(10, 10)
     !BottomRight(-10, 10)
@@ -198,13 +198,13 @@ Frame epHome(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       !TopLeft(0, -20)
       !BottomRight
     OnLoad:
-      *ep.tabbedframe(self, {
+      *ep.tabbedframe(self, {showBottomBorder=true, tabs={
       *  {label=ep_'Summary', client='Summary'},
       *  {label=ep_'Modules', client='Modules'},
       *  {label=ep_'Settings', client='Settings'},
       *  {label=ep_'Logs', client='Logs'},
       *  {label=ep_'About', client='About'}
-      *}, {showBottomBorder=true})
+      *}})
   OnLoad:
     *ep.home(self)
 
@@ -235,7 +235,7 @@ Frame epIconBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !TopRight(-10, -47)
     !BottomRight(-10, 49)
     OnLoad:
-      *ep.slider(self, {ep.iconbrowser.update, self:GetParent()})
+      *ep.slider(self, {callback={ep.iconbrowser.update, self:GetParent()}})
   Button $parentSet(epDropBox, .setDropbox, text: 'All Sets'):
     !BottomLeft(10, 10)
     !BottomRight(-125, 10)
@@ -348,7 +348,7 @@ Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !Size(160, 19)
     !TopLeft(12, -245)
     OnLoad:
-      *ep.editbox(self, 'label', true)
+      *ep.editbox(self, {placeholder='label', clearable=true})
   EditBox $parentSpinner(epSpinner):
     !Size(80, 19)
     !TopLeft(12, -268)

@@ -4,14 +4,14 @@ local _, attachTooltip, band, detachTooltip, exception, fieldsort, floor, invoke
       ep.fieldsort, math.floor, ep.invoke, ep.tclear, ep.tindex, ep.tint, ep.tupdate
 
 ep.button = ep.control('ep.button', 'epButton', ep.basecontrol, 'button', {
-  initialize = function(self, tooltip)
+  initialize = function(self, params)
     local text = self:GetText()
     if text then
       self:SetText(_(text))
     end
 
-    if tooltip then
-      attachTooltip(self, tooltip, {delay=1,
+    if params and params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
@@ -28,21 +28,21 @@ ep.button = ep.control('ep.button', 'epButton', ep.basecontrol, 'button', {
 })
 
 ep.checkbox = ep.control('ep.checkbox', 'epCheckBox', ep.basecontrol, 'checkbox', {
-  initialize = function(self, reversed, tooltip)
+  initialize = function(self, params)
     local text = self:GetText()
     if text then
       self:SetText(_(text))
     end
 
     local width = self:GetTextWidth() + 6
-    if reversed then
+    if params and params.reversed then
       self:SetHitRectInsets(-width, 0, 0, 0)
     else
       self:SetHitRectInsets(0, -width, 0, 0)
     end
 
-    if tooltip then
-      attachTooltip(self, tooltip, {delay=1,
+    if params and params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
@@ -79,54 +79,55 @@ ep.checkbox.getValue = ep.checkbox.GetChecked
 ep.checkbox.setValue = ep.checkbox.SetChecked
 
 ep.colorspot = ep.control('ep.colorspot', 'epColorSpot', ep.button, nil, {
-  initialize = function(self, color, tooltip)
-    self.color = tint(color or 'black')
+  initialize = function(self, params)
+    local color = 'black'
+    if params and params.color then
+      color = params.color
+    end
+
+    self.color = tint(color)
     self.spot:SetTexture(unpack(self.color))
 
-    if tooltip then
-      attachTooltip(self, tooltip, {delay=1,
+    if params and params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end
 })
 
 ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
-  initialize = function(self, specification)
-    if not specification then
-      return
-    end
-
+  initialize = function(self, params)
     if self.label then
       self.label:SetText(_(self.label:GetText()))
     end
 
+    params = params or {}
+    self.callback = params.callback
+    self.default = params.default
     self.items = {}
     self.prefix = ''
-    self.callback = specification.callback
-    self.default = specification.default
-    self.sorted = specification.sorted
+    self.sorted = params.sorted
     self.values = {}
 
-    if specification.prefix then
-      self.prefix = tint:format('label', specification.prefix..': ')
+    if params.prefix then
+      self.prefix = tint:format('label', params.prefix..': ')
     end
 
     self.menu = ep.menu(self.name..'Menu', self, {
       callback = {self.select, self},
       items = self.items,
-      location = {anchor = self, x = 0, y = -18},
-      scrollable = specification.scrollable or false,
-      window = specification.window or 8,
-      width = self,
+      location = {anchor=self, x=0, y=-18},
+      scrollable = (params.scrollable or false),
+      window = (params.window or 8),
+      width = self
     })
 
-    if specification.items then
-      self:populate(specification.items, self.default, specification.value)
+    if params.items then
+      self:populate(params.items, self.default, params.value)
     end
 
-    local tooltip = specification.tooltip
-    if tooltip then
-      attachTooltip(self, tooltip, {delay=1,
+    if params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
@@ -277,23 +278,24 @@ ep.combobox = ep.control('ep.combobox', 'epComboBox', ep.dropbox, 'editbox', {
 })
 
 ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
-  initialize = function(self, placeholder, locked, tooltip)
+  initialize = function(self, params)
+    params = params or {}
     self.editbox = self.scrollFrame:GetScrollChild()
-    self.placeholder = placeholder
+    self.placeholder = params.placeholder
 
-    if locked then
+    if params.locked then
       self:lock(true)
     end
 
-    if placeholder then
+    if self.placeholder then
       self.innerLabel:SetText(self.placeholder)
       if self.editbox:GetText() == '' then
         self.innerLabel:Show()
       end
     end
 
-    if tooltip then
-      attachTooltip(self, tooltip, {delay=1,
+    if params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
@@ -381,9 +383,18 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
 })
 
 ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
-  initialize = function(self, placeholder, clearable, tooltip)
-    self.clearable = clearable
-    self.placeholder = placeholder
+  initialize = function(self, params)
+    if self.label then
+      self.label:SetText(_(self.label:GetText()))
+    end
+
+    params = params or {}
+    self.clearable = params.clearable
+    self.placeholder = params.placeholder
+
+    if self.clearable and self:GetText() ~= '' then
+      self.clearButton:Show()
+    end
 
     if self.placeholder then
       self.innerLabel:SetText(self.placeholder)
@@ -392,16 +403,8 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
       end
     end
 
-    if self.label then
-      self.label:SetText(_(self.label:GetText()))
-    end
-
-    if self.clearable and self:GetText() ~= '' then
-      self.clearButton:Show()
-    end
-
-    if tooltip then
-      attachTooltip(self, tooltip, {delay=1,
+    if params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1, 
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
@@ -984,18 +987,19 @@ ep.listbuilder = ep.control('ep.listbuilder', 'epListBuilder', ep.baseframe, nil
 ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
   menus = {},
 
-  initialize = function(self, specification)
+  initialize = function(self, params)
+    params = params or {}
     self.buttons = {}
-    self.callback = specification.callback
-    self.items = specification.items
-    self.generator = specification.generator
-    self.location = specification.location
+    self.callback = params.callback
+    self.items = params.items
+    self.generator = params.generator
+    self.location = params.location
     self.offset = 0
-    self.width = specification.width or 0
-    self.window = specification.window or 0
+    self.width = params.width or 0
+    self.window = params.window or 0
 
     self.scrollbar = false
-    if specification.scrollable then
+    if params.scrollable then
       self.scrollbar = ep.vscrollbar(self.name..'ScrollBar', self, {self.scroll, self})
       self.scrollbar:SetPoint('TOPRIGHT', self, 'TOPRIGHT', 0, -13)
       self.scrollbar:SetPoint('BOTTOMRIGHT', self, 'BOTTOMRIGHT', 0, 13)
@@ -1300,10 +1304,10 @@ ep.menubutton = ep.control('ep.menubutton', 'epMenuButton', ep.button, nil, {
 })
 
 ep.messageframe = ep.control('ep.messageframe', 'epMessageFrame', ep.basecontrol, 'messageframe', {
-  initialize = function(self, color)
+  initialize = function(self, params)
     self.range = 0
-    if color then
-      self.color = tint(color)
+    if params and params.color then
+      self.color = tint(params.color)
     else
       self.color = tint.standard
     end
@@ -1328,10 +1332,12 @@ ep.messageframe = ep.control('ep.messageframe', 'epMessageFrame', ep.basecontrol
 
 ep.multibutton = ep.control('ep.multibutton', 'epMultiButton', ep.basecontrol, 'button', {
   initialize = function(self, params)
-    if not params then
-      return
+    local text = self:GetText()
+    if text then
+      self:SetText(_(text))
     end
 
+    params = params or {}
     self.menu = ep.menu(self.name..'Menu', self, {
       items = params.items,
       location = {anchor = self, x = 0, y = -18},
@@ -1367,13 +1373,13 @@ ep.multibutton = ep.control('ep.multibutton', 'epMultiButton', ep.basecontrol, '
 })
 
 ep.multiframe = ep.control('ep.multiframe', 'epMultiFrame', ep.baseframe, nil, {
-  initialize = function(self, frames, params)
+  initialize = function(self, params)
     params = params or {}
     self.frames = nil
     self.selectedFrame = nil
 
-    if frames then
-      self:populate(frames)
+    if params.frames then
+      self:populate(params.frames)
       if params.defaultFrame then
         self:select(params.defaultFrame)
       end
@@ -1407,11 +1413,11 @@ ep.multiframe = ep.control('ep.multiframe', 'epMultiFrame', ep.baseframe, nil, {
 })
 
 ep.scrollframe = ep.control('ep.scrollframe', 'epScrollFrame', ep.basecontrol, 'scrollframe', {
-  initialize = function(self, specification)
-    self.hideable = specification.hideable or false
-    self.managed = specification.managed or false
-    self.resizable = specification.resizable or false
-    self.childFrame, self.scrollbar = self:GetScrollChild(), self:child('ScrollBar')
+  initialize = function(self, params)
+    self.hideable = params.hideable or false
+    self.managed = params.managed or false
+    self.resizable = params.resizable or false
+    self.childFrame = self:GetScrollChild()
   end,
 
   scroll = function(self, value)
@@ -1454,20 +1460,22 @@ ep.scrollframe = ep.control('ep.scrollframe', 'epScrollFrame', ep.basecontrol, '
 })
 
 ep.slider = ep.control('ep.slider', 'epSlider', ep.basecontrol, 'slider', {
-  initialize = function(self, callback, window, multiplier)
-    self.multiplier = multiplier
-    self.window = window
+  initialize = function(self, params)
+    params = params or {}
+    self.multiplier = params.multiplier
+    self.window = params.window
 
     local min, max = self:GetMinMaxValues()
     if floor(self:GetValueStep()) == 0 then
       self:SetValueStep(1)
     end
+
     if type(self:GetValue()) ~= 'number' then
       self:SetValue(min)
     end
 
     self:update(min or 0)
-    self.callback = callback
+    self.callback = params.callback
   end,
 
   move = function(self, direction, absolute)
@@ -1508,7 +1516,13 @@ ep.slider = ep.control('ep.slider', 'epSlider', ep.basecontrol, 'slider', {
 
 ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
   initialize = function(self, params)
+    if self.label then
+      self.label:SetText(_(self.label:GetText()))
+    end
+
     params = params or {}
+    self.onchange = params.onchange
+
     if params.values then
       self.circular = params.circular
       self.value = params.value
@@ -1532,7 +1546,6 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
       self:setValue(self.value)
     end
 
-    self.onchange = params.onchange
     self.static = params.static
     if self.static then
       self:EnableKeyboard(false)
@@ -1698,7 +1711,7 @@ ep.tabbutton = ep.control('ep.tabbutton', 'epTabButton', ep.button, nil, {
 })
 
 ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil, {
-  initialize = function(self, items, params)
+  initialize = function(self, params)
     params = params or {}
     self.callback = params.callback
     self.showBottomBorder = params.showBottomBorder
@@ -1708,8 +1721,8 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
     self.tab = 0
     self.tabs = {}
 
-    if type(items) == 'table' then
-      self:populate(items)
+    if type(params.tabs) == 'table' then
+      self:populate(params.tabs)
       if #self.items >= 1 then
         self:select(1)
       end

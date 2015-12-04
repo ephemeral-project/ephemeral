@@ -28,7 +28,7 @@ ep.colorbrowser = ep.panel('ep.colorbrowser', 'epColorBrowser', {
   end,
 
   update = function(self, slot, value, control)
-    ep.debug('update', {slot, value})
+    --ep.debug('update', {slot, value})
   end
 })
 
