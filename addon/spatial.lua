@@ -1,5 +1,5 @@
-local floor = math.floor
-local tinsert = table.insert
+local floor, tinsert
+    = math.floor, table.insert
 
 local function dist(a, b)
   return math.sqrt(math.pow((b[1] - a[1]), 2) + (math.pow((b[2] - a[2]), 2)))

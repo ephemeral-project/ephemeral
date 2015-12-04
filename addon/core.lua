@@ -13,6 +13,8 @@ ep.events = events
 ep.invocations = invocations
 ep.selection = nil
 
+ep.locale:bootstrap()
+
 function ep.claimSelection(selection, icon)
   ep.selection = selection
   epIconCursor:activate(icon or selection.icon)

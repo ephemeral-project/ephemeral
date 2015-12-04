@@ -1,52 +1,56 @@
-local ceil, exception, exceptional, floor, inject, split
-    = math.ceil, math.floor, ep.exception, ep.exceptional, ep.inject, ep.split
+local _, capitalize, ceil, copy, exception, exceptional, floor, inject, split
+    = ep.localize, ep.capitalize, math.ceil, ep.copy, ep.exception, ep.exceptional,
+      math.floor, ep.inject, ep.split
 
-local QUALITIES = {
-  Poor = 'p', p = 'Poor', Common = 'c', c = 'Common', Uncommon = 'u', u = 'Uncommon',
-  Rare = 'r', r = 'Rare', Epic = 'e', e = 'Epic', Legendary = 'l', l = 'Legendary',
-  Artifact = 'a', a = 'Artifact'
+local QUALITY_TOKENS = {
+  p = _'Poor',
+  c = _'Common',
+  u = _'Uncommon',
+  r = _'Rare',
+  e = _'Epic',
+  l = _'Legendary',
+  a = _'Artifact'
 }
 
 local QUALITY_MENU_ITEMS = {
-  {'p', 'Poor'}, {'c', 'Common'}, {'u', 'Uncommon'}, {'r', 'Rare'},
-  {'e', 'Epic'}, {'l', 'Legendary'}, {'a', 'Artifact'}
+  {'p', _'Poor'}, {'c', _'Common'}, {'u', _'Uncommon'}, {'r', _'Rare'},
+  {'e', _'Epic'}, {'l', _'Legendary'}, {'a', _'Artifact'}
 }
 
-local SLOTS = {
-  None = 'nn', nn = 'None',
-  Arms = 'ar', ar = 'Arms',
-  Back = 'bk', bk = 'Back',
-  Body = 'bd', bd = 'Body',
-  ['Both Hands'] = 'bh', bh = 'Both Hands',
-  Chest = 'ch', ch = 'Chest',
-  Ears = 'er', er = 'Ears',
-  Eyes = 'ey', ey = 'Eyes',
-  Face = 'fc', fc = 'Face',
-  Feet = 'ft', ft = 'Feet',
-  Fingers = 'fi', fi = 'Fingers',
-  Groin = 'gr', gr = 'Groin',
-  Hair = 'hr', hr = 'Hair',
-  Hands = 'hn', hn = 'Hands',
-  Head = 'hd', hd = 'Head',
-  Legs = 'lg', lg = 'Legs',
-  Mouth = 'mt', mt = 'Mouth',
-  Neck = 'nk', nk = 'Neck',
-  Nose = 'ns', ns = 'Nose',
-  Pockets = 'pk', pk = 'Pockets',
-  Shoulders = 'sh', sh = 'Shoulders',
-  Skin = 'sk', sk = 'Skin',
-  Waist = 'wa', wa = 'Waist',
-  Wrists = 'wr', wr = 'Wrists'
+local SLOT_TOKENS = {
+  nn = _'None',
+  ar = _'Arms',
+  bk = _'Back',
+  bd = _'Body',
+  bh = _'Both Hands',
+  ch = _'Chest',
+  er = _'Ears',
+  ey = _'Eyes',
+  fc = _'Face',
+  ft = _'Feet',
+  fi = _'Fingers',
+  gr = _'Groin',
+  hr = _'Hair',
+  hn = _'Hands',
+  hd = _'Head',
+  lg = _'Legs',
+  mt = _'Mouth',
+  nk = _'Neck',
+  ns = _'Nose',
+  pk = _'Pockets',
+  sh = _'Shoulders',
+  sk = _'Skin',
+  wa = _'Waist',
+  wr = _'Wrists'
 }
 
-local SLOTS_MENU_ITEMS = {
-  {'nn', 'None'}, {'ar', 'Arms'}, {'bk', 'Back'}, {'bd', 'Body'}, {'bh', 'Both Hands'},
-  {'ch', 'Chest'}, {'er', 'Ears'}, {'ey', 'Eyes'}, {'fc', 'Face'}, {'ft', 'Feet'},
-  {'fi', 'Fingers'}, {'gr', 'Groin'}, {'hr', 'Hair'}, {'hn', 'Hands'}, {'hd', 'Head'},
-  {'lg', 'Legs'}, {'mt', 'Mouth'}, {'nk', 'Neck'}, {'ns', 'Nose'}, {'pk', 'Pockets'},
-  {'sh', 'Shoulders'}, {'sk', 'Skin'}, {'wa', 'Waist'}, {'wr', 'Wrists'}
+local SLOT_MENU_ITEMS = {
+  {'nn', _'None'}, {'ar', _'Arms'}, {'bk', _'Back'}, {'bd', _'Body'}, {'bh', _'Both Hands'},
+  {'ch', _'Chest'}, {'er', _'Ears'}, {'ey', _'Eyes'}, {'fc', _'Face'}, {'ft', _'Feet'},
+  {'fi', _'Fingers'}, {'gr', _'Groin'}, {'hr', _'Hair'}, {'hn', _'Hands'}, {'hd', _'Head'},
+  {'lg', _'Legs'}, {'mt', _'Mouth'}, {'nk', _'Neck'}, {'ns', _'Nose'}, {'pk', _'Pockets'},
+  {'sh', _'Shoulders'}, {'sk', _'Skin'}, {'wa', _'Waist'}, {'wr', _'Wrists'}
 }
-
 
 --[[
 
@@ -62,23 +66,39 @@ Item Locations;
 
 ep.items = {
   name = 'ephemeral:items',
-  description = 'Ephemeral Items',
+  description = _'Ephemeral Items',
 
-  slots = SLOTS,
+  definitions = {},
+
+  classMenuItems = {},
+  qualityMenuItems = QUALITY_MENU_ITEMS,
+  qualityTokens = QUALITY_TOKENS,
+  slotMenuItems = SLOT_MENU_ITEMS,
+  slotTokens = SLOT_TOKENS,
 
   deploy = function(self)
-    local character = ep.character
-    if not character.backpack then
-      character.backpack = {n = 0, i = 0}
-    end
-    if not character.equipment then
-      character.equipment = {}
+    for i, definition in ipairs(ep.entities:enumerateDefinitions(ep.item, true)) do
+      local entry = {label=capitalize(definition.noun), value=definition.cl}
+      if definition.description then
+        entry.tooltip = {c=definition.description, delay=1}
+      end
+
+      tinsert(self.classMenuItems, entry)
+      self.definitions[definition.cl] = definition
     end
 
     for name, provider in pairs(ep.deployComponents('locationProvider')) do
       if not exceptional(provider) and not self.locationProviders[name] then
         self.locationProviders[name] = provider
       end
+    end
+
+    local character = ep.character
+    if not character.backpack then
+      character.backpack = {n = 0, i = 0}
+    end
+    if not character.equipment then
+      character.equipment = {}
     end
   end,
 
@@ -108,8 +128,9 @@ ep.items = {
 
 ep.item = ep.entities:define('ep.item', ep.entity, {
   cl = 'it',
-  noun = 'item',
-  plural = 'items',
+  noun = _'item',
+  plural = _'items',
+  description = _'A basic item.',
 
   destroy = function(self)
     local failure = self:super():destroy()
@@ -125,11 +146,6 @@ ep.item = ep.entities:define('ep.item', ep.entity, {
 
   determineSlot = function(self, slot)
     
-  end,
-
-  finishDestruction = function(self)
-    self:remove()
-    ep.items:refreshInterfaces()
   end,
 
   move = function(self, location)
@@ -445,15 +461,29 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
 })
 
 ep.item.editor = ep.panel('ep.item.editor', 'epItemEditor', {
+  defaultSections = {
+    {label=_'Description', tooltip={c=_'$item-description-tooltip'}},
+    {label=_'Capabilities', tooltip={lh=_'Capabilities',
+      rh=_'Optional', c=_'$item-capabilities-tooltip'}},
+    {label=_'Materials', tooltip={c=_'$item-materials-tooltip'}},
+    {label=_'Sockets', tooltip={c=_'$item-sockets-tooltip'}},
+    {label=_'Scripts', tooltip={c=_'$item-scripts-tooltip'}},
+    {label=_'Properties', tooltip={c=_'$item-properties-tooltip'}},
+    {label=_'Logs', tooltip={c=_'$item-logs-tooltip'}}
+  },
+
   editors = {},
 
   initialize = function(self)
     self:super():initialize({
-      title = 'Prop Editor',
+      title = _'Item Editor',
       resizable = true,
-      minsize = {410, 330},
+      minsize = {455, 350},
       maxsize = {710, 630},
     })
+
+    self.lowerDivider:SetVertexColor(1, 1, 1, 0.5)
+    self.f_class:populate(ep.items.classMenuItems)
   end,
 
   close = function(self, discarding)
@@ -484,26 +514,66 @@ ep.item.editor = ep.panel('ep.item.editor', 'epItemEditor', {
     editor:show(item, location)
   end,
 
-  show = function(self, item, location)
-    item = item or {}
+  populateFields = function(self)
+    local item = self.item
     self.f_icon:set(item.ic)
     self.f_name:setValue(item.nm or '')
+    self.f_class:select(item.cl)
+    self.f_inscription:setValue(item.ir or '')
     self.f_quality:select(item.qu)
-    self.f_creator:setValue(item.cr or '')
-    self.tabs.f_description:setValue(item.ds or '')
-    self.tabs.f_appearance:setValue(item.ap or '')
-    self.f_stackable:check(item.st or false)
-    self.f_disabled:check(item.di or false)
-    self.f_protected:check(item.pt or false)
+    self.f_disabled:setValue(item.di)
+    self.f_protected:setValue(item.pt)
+    self.f_debugging:setValue(item.db)
 
     if item.sl then
-      self.f_equippable:check(true)
+      self.f_equippable:setValue(true)
       self.f_slot:select(item.sl)
     else
-      self.f_equippable:check(false)
+      self.f_equippable:setValue(false)
       self.f_slot:select()
     end
 
+    self.sections.f_description:setValue(item.ds or '')
+  end,
+
+  selectSection = function(self, row, tree)
+    d(row)
+  end,
+
+  show = function(self, item, location)
+    self.item = item
+
+    local sections = copy(self.defaultSections)
+    self.selector:populate(sections)
+    
+    --self:populateFields()
+    self:toggleEquippable()
+    self:toggleStackable()
+    self:toggleWeight()
     self:Show()
   end,
+
+  toggleEquippable = function(self)
+    if self.f_equippable:GetChecked() then
+      self.f_slot:enable()
+    else
+      self.f_slot:disable(true)
+    end
+  end,
+
+  toggleStackable = function(self)
+    if self.f_stackable:GetChecked() then
+      self.f_quantity:enable()
+    else
+      self.f_quantity:disable(true)
+    end
+  end,
+
+  toggleWeight = function(self)
+    if self.f_hasweight:GetChecked() then
+      self.f_weight:enable()
+    else
+      self.f_weight:disable(true)
+    end
+  end
 })

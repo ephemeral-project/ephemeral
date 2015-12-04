@@ -1,6 +1,7 @@
-local attrsort, deployModule, exception, exceptional, isderived, split, uniqid
-    = ep.attrsort, ep.deployModule, ep.exception, ep.exceptional, ep.isderived,
-      ep.split, ep.uniqid
+local _, attrsort, deepcopy, deployModule, exception, exceptional, isderived,
+      split, uniqid
+    = ep.localize, ep.attrsort, ep.deepcopy, ep.deployModule, ep.exception,
+      ep.exceptional, ep.isderived, ep.split, ep.uniqid
 
 local entityType = ep.copy(ep.metatype)
 
@@ -42,7 +43,7 @@ local instanceType = {
   __newindex = function(object, field, value)
     if field:sub(1, 1) == '_' then
       rawset(object, field, value)
-    else
+    elseif value == nil or value ~= rawget(object, '__entity')[field] then
       rawget(object, '__instance')[field] = value
     end
   end
@@ -150,7 +151,7 @@ ep.entities = {
     end
 
     if sorted then
-      table.sort(candidates, attrsort('title'))
+      table.sort(candidates, attrsort('noun'))
     end
     return candidates
   end,
@@ -206,15 +207,15 @@ ep.entities = {
 }
 
 ep.entity = ep.entities:define('ep.entity', nil, {
-  noun = 'entity',
-  plural = 'entities',
+  noun = _'entity',
+  plural = _'entities',
 
   construct = function(self, origin)
   end,
 
   destroy = function(self)
     if self.pt then
-      return exception('CannotDestroy', 'Entity is protected.')
+      return exception('CannotDestroy', _'Entity is protected.')
     end
 
     local approval = self:approveDestruction()

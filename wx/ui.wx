@@ -5,7 +5,9 @@ Frame epRoot:
   OnEvent:
     *ep.event(event, ...)
   OnLoad:
-    *ep.subscribe('PLAYER_LOGIN', function() ep.schedule(ep.bootstrapEphemeral, 1, 1) end)
+    *ep.subscribe('PLAYER_LOGIN', function()
+    *  ep.schedule(ep.bootstrapEphemeral, 1, 1)
+    *end)
 
 Font epFont(font: '%fonts\petrock.ttf', virtual):
   !Color(0.0, 0.0, 0.0, 1.0)
@@ -262,25 +264,25 @@ Texture epDownDisabledIcon(file: '%textures\icons', virtual):
 
 Frame epControlEdge(virtual):
   !Border:
-    Texture(epControlEdgeTL):
+    Texture(epControlEdgeTL, .ce_tl):
       !TopLeft(-6, 6)
-    Texture(epControlEdgeT):
+    Texture(epControlEdgeT, .ce_t):
       !TopLeft(6, 6)
       !TopRight(-6, 6)
-    Texture(epControlEdgeTR):
+    Texture(epControlEdgeTR, .ce_tr):
       !TopRight(6, 6)
-    Texture(epControlEdgeL):
+    Texture(epControlEdgeL, .ce_l):
       !TopLeft(-6, -6)
       !BottomLeft(-6, 6)
-    Texture(epControlEdgeR):
+    Texture(epControlEdgeR, .ce_r):
       !TopRight(6, -6)
       !BottomRight(6, 6)
-    Texture(epControlEdgeBL):
+    Texture(epControlEdgeBL, .ce_bl):
       !BottomLeft(-6, -6)
-    Texture(epControlEdgeB):
+    Texture(epControlEdgeB, .ce_b):
       !BottomLeft(6, -6)
       !BottomRight(-6, -6)
-    Texture(epControlEdgeBR):
+    Texture(epControlEdgeBR, .ce_br):
       !BottomRight(6, -6)
 
 Texture epControlHighlight(epStandardHighlight, alphaMode: ADD, virtual):
@@ -467,7 +469,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *  self:GetParent():stopResizing()
       *end
 
-Frame epTooltip(epFrame, frameStrata: TOOLTIP, hidden):
+Frame epTooltip(epFrame, ^UIParent, frameStrata: TOOLTIP, hidden):
   !Size(100, 100)
   !Center
   !Artwork:

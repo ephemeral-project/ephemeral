@@ -9,6 +9,7 @@
 ## X-Ephemeral-Module[4]: name=ephemeral:spatial, path=ep.spatial, version=1
 ## X-Ephemeral-Module[5]: name=ephemeral:items, path=ep.items, version=1
 support.lua
+locales/enUs.lua
 core.lua
 module.lua
 character.lua

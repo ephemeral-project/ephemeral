@@ -9,7 +9,10 @@ local _pseudoidChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 ep = {}
 ephemeral = {}
 
+ep.activeLocale = nil
+ep.locales = {}
 ep.promises = promises
+ep.prototypeRegistries = prototypeRegistries
 
 local function isPublicAttr(attr)
   return attr:sub(1, 1) ~= '_'
@@ -269,6 +272,10 @@ function ep.attrsort(attr)
   return function(first, second)
     return first[attr] < second[attr]
   end
+end
+
+function ep.capitalize(value)
+  return value:sub(1, 1):upper()..value:sub(2)
 end
 
 function ep.clear(tbl)
@@ -969,6 +976,33 @@ function ep._thawScalar(token, value)
     return nil
   end
 end
+
+ep.locale = ep.prototype('ep.locale', {
+  strings = nil,
+
+  bootstrap = function(cls, locale)
+    locale = locale or GetLocale()
+    if ep.locales[locale] then
+      ep.locales[locale]:deploy()
+    end
+  end,
+
+  deploy = function(cls)
+    ep.activeLocale = cls
+
+    local strings = cls.strings
+    if strings then
+      ep.localize = function(string)
+        return strings[string] or string
+      end
+    else
+      ep.localize = function(string)
+        return string
+      end
+    end
+    _G['ep_'] = ep.localize
+  end
+})
 
 ep.pqueue = ep.prototype('ep.pqueue', {
   initialize = function(self, field)

@@ -489,6 +489,15 @@ Button epMultiButton(epControl, virtual):
   OnLoad:
     *ep.multibutton(self)
 
+Frame epMultiFrame(epControlEdge, virtual):
+  !Background:
+    Texture(epControlBackground):
+      !TopLeft(1, -1)
+      !BottomRight(-1, 1)
+      !Color(0.75, 0.63, 0.4, 0.1)
+  OnLoad:
+    *ep.multiframe(self)
+
 ScrollFrame epScrollFrame(virtual):
   Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
     !TopRight(6, -7)

@@ -24,6 +24,7 @@ function constructWxTask(taskname, filename) {
   gulp.task(taskname, function(cb) {
     mkdirp(addon('ephemeral'))
     exec('python util/wx.py ' + filename + ' ' + addon('ephemeral'),
+      {maxBuffer: 1024 * 1000},
       function(err, stdout, stderr) {
         console.log(stdout)
         console.log(stderr)
@@ -73,7 +74,7 @@ gulp.task('resources', function() {
 
 gulp.task('lua', function() {
   mkdirp(addon('ephemeral'))
-  return gulp.src('addon/*.lua')
+  return gulp.src(['addon/*.lua', 'addon/*.toc'])
     .pipe(gulp.dest(addon('ephemeral')))
 })
 
@@ -95,8 +96,17 @@ gulp.task('regions', function(cb) {
   })
 })
 
+gulp.task('locales', function(cb) {
+  mkdirp(addon('ephemeral/locales'))
+  exec('python util/locale.py locales ' + addon('ephemeral/locales'), function(err, stdout, stderr) {
+    console.log(stdout)
+    console.log(stderr)
+    cb(err)
+  })
+})
+
 gulp.task('build',
-  sequence('resources', 'lua', 'wx', 'regions')
+  sequence('resources', 'lua', 'wx', 'regions', 'locales')
 )
 
 gulp.task('watch', function() {
@@ -104,7 +114,8 @@ gulp.task('watch', function() {
     var taskname = path.basename(wxfiles[i])
     gulp.watch(wxfiles[i], [taskname])
   }
-  gulp.watch('addon/*.lua', ['lua'])
+  gulp.watch(['addon/*.lua', 'addon/*.toc'], ['lua'])
+  gulp.watch('locales/*', ['locales'])
 })
 
 gulp.task('test',

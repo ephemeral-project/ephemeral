@@ -1,11 +1,10 @@
-local floor = math.floor
-local invoke = ep.invoke
-local iterkeys = ep.iterkeys
+local _, floor, invoke, iterkeys
+    = ep.localize, math.floor, ep.invoke, ep.iterkeys
 
 ep.colorbrowser = ep.panel('ep.colorbrowser', 'epColorBrowser', {
   initialize = function(self)
     self:super():initialize({
-      title = 'Color Browser',
+      title = _'Color Browser',
     })
   end,
 
@@ -38,7 +37,7 @@ ep.console = ep.panel('ep.console', 'epConsole', {
     self.interpreter:setFontObject(epConsoleFont)
     self.debuglog:setFontObject(epConsoleFont)
     self:super():initialize({
-      title = 'Console',
+      title = 'Ephemeral '.._'Console',
       resizable = true,
       minsize = {300, 300},
       maxsize = {1000, 1000},
@@ -117,74 +116,74 @@ ep.iconbrowserbutton = ep.control('ep.iconbrowserbutton', 'epIconBrowserButton',
 
 ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
   categories = {
-    {label = 'All Icons', value = 'ii'},
-    {label = 'Armor', submenu = {items = {
-      {label = 'All', value = 'ar'},
-      {label = 'Belts', value = 'bl'},
-      {label = 'Boots', value = 'bt'},
-      {label = 'Bracers', value = 'br'},
-      {label = 'Chestpieces', value = 'cp'},
-      {label = 'Cloaks', value = 'cl'},
-      {label = 'Helms', value = 'hm'},
-      {label = 'Gauntlets', value = 'gt'},
-      {label = 'Jewelry', value = 'jy'},
-      {label = 'Miscellaneous', value = 'rm'},
-      {label = 'Pants', value = 'pt'},
-      {label = 'Shields', value = 'sd'},
-      {label = 'Shoulders', value = 'sh'},
+    {label=_'All Icons', value='ii'},
+    {label=_'Armor', submenu={items={
+      {label=_'All', value='ar'},
+      {label=_'Belts', value='bl'},
+      {label=_'Boots', value='bt'},
+      {label=_'Bracers', value='br'},
+      {label=_'Chestpieces', value='cp'},
+      {label=_'Cloaks', value='cl'},
+      {label=_'Helms', value='hm'},
+      {label=_'Gauntlets', value='gt'},
+      {label=_'Jewelry', value='jy'},
+      {label=_'Miscellaneous', value='rm'},
+      {label=_'Pants', value='pt'},
+      {label=_'Shields', value='sd'},
+      {label=_'Shoulders', value='sh'},
     }}},
-    {label = 'Items', submenu = {items = {
-      {label = 'All', value = 'it'},
-      {label = 'Containers', value = 'cn'},
-      {label = 'Devices', value = 'dv'},
-      {label = 'Drinks', value = 'dr'},
-      {label = 'Food', value = 'fd'},
-      {label = 'Keys', value = 'ky'},
-      {label = 'Miscellaneous', value = 'im'},
-      {label = 'Paraphernalia', value = 'pp'},
-      {label = 'Potions', value = 'po'},
-      {label = 'Regalia', value = 'rg'},
-      {label = 'Trophies', value = 'tp'},
-      {label = 'Tools', value = 'tl'},
-      {label = 'Writings', value = 'wt'},
+    {label=_'Items', submenu={items={
+      {label=_'All', value='it'},
+      {label=_'Containers', value='cn'},
+      {label=_'Devices', value='dv'},
+      {label=_'Drinks', value='dr'},
+      {label=_'Food', value='fd'},
+      {label=_'Keys', value='ky'},
+      {label=_'Miscellaneous', value='im'},
+      {label=_'Paraphernalia', value='pp'},
+      {label=_'Potions', value='po'},
+      {label=_'Regalia', value='rg'},
+      {label=_'Trophies', value='tp'},
+      {label=_'Tools', value='tl'},
+      {label=_'Writings', value='wt'},
     }}},
-    {label = 'Materials', submenu = {items = {
-      {label = 'All', value = 'mt'},
-      {label = 'Essences', value = 'ec'},
-      {label = 'Fabrics', value = 'fb'},
-      {label = 'Herbs', value = 'hb'},
-      {label = 'Ingredients', value = 'ig'},
-      {label = 'Miscellaneous', value = 'mm'},
-      {label = 'Minerals', value = 'mn'},
+    {label=_'Materials', submenu={items={
+      {label=_'All', value='mt'},
+      {label=_'Essences', value='ec'},
+      {label=_'Fabrics', value='fb'},
+      {label=_'Herbs', value='hb'},
+      {label=_'Ingredients', value='ig'},
+      {label=_'Miscellaneous', value='mm'},
+      {label=_'Minerals', value='mn'},
     }}},
-    {label = 'Symbols', submenu = {items = {
-      {label = 'All', value = 'sy'},
-      {label = 'Abilities', value = 'ab'},
-      {label = 'Animals', value = 'an'},
-      {label = 'Arcane', value = 'ac'},
-      {label = 'Elemental', value = 'el'},
-      {label = 'Holy', value = 'hy'},
-      {label = 'Miscellaneous', value = 'sm'},
-      {label = 'Nature', value = 'nt'},
-      {label = 'Shadow', value = 'sa'},
+    {label=_'Symbols', submenu={items={
+      {label=_'All', value='sy'},
+      {label=_'Abilities', value='ab'},
+      {label=_'Animals', value='an'},
+      {label=_'Arcane', value='ac'},
+      {label=_'Elemental', value='el'},
+      {label=_'Holy', value='hy'},
+      {label=_'Miscellaneous', value='sm'},
+      {label=_'Nature', value='nt'},
+      {label=_'Shadow', value='sa'},
     }}},
-    {label = 'Weapons', submenu = {items = {
-      {label = 'All', value = 'wp'},
-      {label = 'Ammunition', value = 'au'},
-      {label = 'Axes', value = 'ax'},
-      {label = 'Hammers & Maces', value = 'mc'},
-      {label = 'Miscellaneous', value = 'wm'},
-      {label = 'Polearms & Spears', value = 'pr'},
-      {label = 'Ranged', value = 'ra'},
-      {label = 'Staves', value = 'sv'},
-      {label = 'Swords & Daggers', value = 'sw'},
-      {label = 'Wands', value = 'wn'},
+    {label=_'Weapons', submenu={items={
+      {label=_'All', value='wp'},
+      {label=_'Ammunition', value='au'},
+      {label=_'Axes', value='ax'},
+      {label=_'Hammers & Maces', value='mc'},
+      {label=_'Miscellaneous', value='wm'},
+      {label=_'Polearms & Spears', value='pr'},
+      {label=_'Ranged', value='ra'},
+      {label=_'Staves', value='sv'},
+      {label=_'Swords & Daggers', value='sw'},
+      {label=_'Wands', value='wn'},
     }}},
   },
 
   initialize = function(self)
     self:super():initialize({
-      title = 'Icon Browser',
+      title = _'Icon Browser',
       resizable = true,
       onresize = self.resize,
       initsize = {249, 354},
@@ -224,9 +223,11 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
         self.setDropbox:add(token, ep.icon.sets[token].title)
       end
     end
+
     if #self.buttons == 0 then
       self:layout()
     end
+
     if not self.callback then
       self.callback, self.anchor = callback, anchor
       if self.anchor then
@@ -239,18 +240,22 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
 
   filter = function(self, category, set)
     category, set = category or self.category, set or self.set
-    if category ~= self.category or set ~= self.set then
-      self.category, self.set = category, set
-      self.sequence = ep.icon:filterSequence(category, set)
-      if #self.sequence > 0 then
-        self.count = self.sequence[#self.sequence][1]
-      else
-        self.count = 0
-      end
-      self:_updateDropboxes()
-      self:_updateScrollbar()
-      self:update(0)
+    if category == self.category and set == self.set then
+      return
     end
+
+    self.category, self.set = category, set
+    self.sequence = ep.icon:filterSequence(category, set)
+
+    if #self.sequence > 0 then
+      self.count = self.sequence[#self.sequence][1]
+    else
+      self.count = 0
+    end
+
+    self:_updateDropboxes()
+    self:_updateScrollbar()
+    self:update(0)
   end,
 
   layout = function(self)

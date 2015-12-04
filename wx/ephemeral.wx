@@ -17,7 +17,7 @@ Frame epHome(snPanel, ^UIParent, frameStrata: DIALOG, hidden):
       !BottomRight
     OnLoad:
       *sn.tabbedframe(self, {
-      *  {label='Summary', client='Summary'},
-      *  {label='Modules', client='Modules'},
-      *  {label='Settings', client='Settings'}
+      *  {label=_'Summary', client='Summary'},
+      *  {label=_'Modules', client='Modules'},
+      *  {label='_Settings', client='Settings'}
       *})

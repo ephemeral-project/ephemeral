@@ -1,16 +1,18 @@
-local attachTooltip = ep.attachTooltip
-local band = bit.band
-local fieldsort = ep.fieldsort
-local floor = math.floor
-local invoke = ep.invoke
-local tint = ep.tint
-local update = ep.update
+local _, attachTooltip, band, detachTooltip, exception, fieldsort, floor, invoke,
+      tint, update
+    = ep.localize, ep.attachTooltip, bit.band, ep.detachTooltip, ep.exception,
+      ep.fieldsort, math.floor, ep.invoke, ep.tint, ep.update
 
 ep.button = ep.control('ep.button', 'epButton', ep.basecontrol, 'button', {
   initialize = function(self, tooltip)
-    self.tooltip = tooltip
+    local text = self:GetText()
+    if text then
+      self:SetText(_(text))
+    end
+
     if tooltip then
-      attachTooltip(self, tooltip)
+      attachTooltip(self, tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
 
@@ -27,6 +29,11 @@ ep.button = ep.control('ep.button', 'epButton', ep.basecontrol, 'button', {
 
 ep.checkbox = ep.control('ep.checkbox', 'epCheckBox', ep.basecontrol, 'checkbox', {
   initialize = function(self, reversed, tooltip)
+    local text = self:GetText()
+    if text then
+      self:SetText(_(text))
+    end
+
     local width = self:GetTextWidth() + 6
     if reversed then
       self:SetHitRectInsets(-width, 0, 0, 0)
@@ -34,9 +41,9 @@ ep.checkbox = ep.control('ep.checkbox', 'epCheckBox', ep.basecontrol, 'checkbox'
       self:SetHitRectInsets(0, -width, 0, 0)
     end
 
-    self.tooltip = tooltip
     if tooltip then
-      attachTooltip(self, tooltip)
+      attachTooltip(self, tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
 
@@ -68,10 +75,18 @@ ep.checkbox = ep.control('ep.checkbox', 'epCheckBox', ep.basecontrol, 'checkbox'
   end
 })
 
+ep.checkbox.getValue = ep.checkbox.GetChecked
+ep.checkbox.setValue = ep.checkbox.SetChecked
+
 ep.colorspot = ep.control('ep.colorspot', 'epColorSpot', ep.button, nil, {
-  initialize = function(self, color)
+  initialize = function(self, color, tooltip)
     self.color = tint(color or 'black')
     self.spot:SetTexture(unpack(self.color))
+
+    if tooltip then
+      attachTooltip(self, tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
+    end
   end
 })
 
@@ -81,12 +96,15 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
       return
     end
 
+    if self.label then
+      self.label:SetText(_(self.label:GetText()))
+    end
+
     self.items = {}
     self.prefix = ''
     self.callback = specification.callback
     self.default = specification.default
     self.sorted = specification.sorted
-    self.tooltip = specification.tooltip
     self.values = {}
 
     if specification.prefix then
@@ -106,9 +124,10 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
       self:populate(specification.items, self.default, specification.value)
     end
 
+    local tooltip = specification.tooltip
     if tooltip then
-      tooltip.location = {anchor = self, hook = 'BOTTOMLEFT', x = 10, y = -2}
-      attachTooltip(self, tooltip)
+      attachTooltip(self, tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
 
@@ -150,22 +169,25 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
   end,
 
   open = function(self)
-    if self.menu and #self.items > 1 then
+    if self.menu and #self.items > 0 then
       self.menu:toggle()
     end
   end,
 
   populate = function(self, population, default, value)
-    items, self.values = ep.clear(self.items), {}
-    values = self.values
-
+    local items, values = ep.clear(self.items), ep.clear(self.values)
     for i, item in ipairs(population) do
       if type(item) == 'table' then
-        values[item[1] ] = item[2]
-        items[i] = {label = item[2], value = item[1]}
+        if item.label then
+          values[item.value] = item.label
+          items[i] = item
+        else
+          values[item[1]] = item[2]
+          items[i] = {label=item[2], value=item[1]}
+        end
       else
         values[item] = item
-        items[i] = {label = item, value = item}
+        items[i] = {label=item, value=item}
       end
     end
 
@@ -255,24 +277,24 @@ ep.combobox = ep.control('ep.combobox', 'epComboBox', ep.dropbox, 'editbox', {
 })
 
 ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
-  initialize = function(self, label, locked, tooltip)
+  initialize = function(self, placeholder, locked, tooltip)
     self.editbox = self.scrollFrame:GetScrollChild()
-    self.label = label
-    self.tooltip = tooltip
+    self.placeholder = placeholder
 
     if locked then
       self:lock(true)
     end
 
-    if label then
-      self.innerLabel:SetText(self.label)
+    if placeholder then
+      self.innerLabel:SetText(self.placeholder)
       if self.editbox:GetText() == '' then
         self.innerLabel:Show()
       end
     end
 
     if tooltip then
-      attachTooltip(self, tooltip)
+      attachTooltip(self, tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
 
@@ -329,7 +351,7 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
   setValue = function(self, value)
     self.editbox:SetText(value or '')
     if #self.editbox:GetText() == 0 then
-      if self.label then
+      if self.placeholder then
         self.innerLabel:Show()
       end
     else
@@ -348,7 +370,7 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
 
   _focusLost = function(self)
     self.editbox:HighlightText(0, 0)
-    if self.label then
+    if self.placeholder then
       if self.editbox:GetText() == '' then
         self.innerLabel:Show()
       else
@@ -359,16 +381,19 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
 })
 
 ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
-  initialize = function(self, label, clearable, tooltip)
+  initialize = function(self, placeholder, clearable, tooltip)
     self.clearable = clearable
-    self.label = label
-    self.tooltip = tooltip
+    self.placeholder = placeholder
 
-    if self.label then
-      self.innerLabel:SetText(self.label)
+    if self.placeholder then
+      self.innerLabel:SetText(self.placeholder)
       if self:GetText() == '' then
         self.innerLabel:Show()
       end
+    end
+
+    if self.label then
+      self.label:SetText(_(self.label:GetText()))
     end
 
     if self.clearable and self:GetText() ~= '' then
@@ -376,7 +401,8 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
     end
 
     if tooltip then
-      attachTooltip(self, tooltip)
+      attachTooltip(self, tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
 
@@ -437,7 +463,7 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
 
     if #self:GetText() == 0 then
       self.clearButton:Hide()
-      if self.label and self:HasFocus() then
+      if self.placeholder and self:HasFocus() then
         self.innerLabel:Show()
       end
     else
@@ -455,7 +481,7 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
 
   _focusLost = function(self)
     self:HighlightText(0, 0)
-    if self.label then
+    if self.placeholder then
       if self:GetText() == '' then
         self.innerLabel:Show()
       else
@@ -861,6 +887,11 @@ ep.iconbox = ep.control('ep.iconbox', 'epIconBox', ep.button, nil, {
 
     self.anchor = params.anchor or self
     self.enableBrowsing = params.enableBrowsing
+
+    if params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
+    end
   end,
 
   browse = function(self)
@@ -1214,8 +1245,14 @@ ep.menubutton = ep.control('ep.menubutton', 'epMenuButton', ep.button, nil, {
         self.item.submenu.ancestor = self.frame
       end
       self.item.submenu:display({anchor = self, x = self:GetWidth() + 5, y = 4})
-    elseif #self.frame.menus > self.frame.depth then
-      self.frame.menus[self.frame.depth + 1]:close()
+    else
+      if #self.frame.menus > self.frame.depth then
+        self.frame.menus[self.frame.depth + 1]:close()
+      end
+      if self.item.tooltip then
+        self.item.tooltip.location = {anchor=self, hook='TOPRIGHT', x=5, y=8}
+        epTooltip:display(self.item.tooltip)
+      end
     end
   end,
 
@@ -1223,6 +1260,8 @@ ep.menubutton = ep.control('ep.menubutton', 'epMenuButton', ep.button, nil, {
     self.highlight:Hide()
     if self.item.submenu then
       self.arrow:SetTexture('Interface\\AddOns\\ephemeral\\textures\\arrow-right')
+    elseif self.item.tooltip then
+      epTooltip:hide(self)
     end
   end,
 
@@ -1300,10 +1339,9 @@ ep.multibutton = ep.control('ep.multibutton', 'epMultiButton', ep.basecontrol, '
       width = self,
     })
 
-    self.tooltip = params.tooltip
-    if tooltip then
-      tooltip.location = {anchor = self, hook = 'BOTTOMLEFT', x = 10, y = -2}
-      attachTooltip(self, tooltip)
+    if params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
 
@@ -1326,6 +1364,46 @@ ep.multibutton = ep.control('ep.multibutton', 'epMultiButton', ep.basecontrol, '
   open = function(self)
     self.menu:toggle()
   end,
+})
+
+ep.multiframe = ep.control('ep.multiframe', 'epMultiFrame', ep.baseframe, nil, {
+  initialize = function(self, frames, params)
+    params = params or {}
+    self.frames = nil
+    self.selectedFrame = nil
+
+    if frames then
+      self:populate(frames)
+      if params.defaultFrame then
+        self:select(params.defaultFrame)
+      end
+    end
+  end,
+
+  populate = function(self, frames)
+    for name, frame in pairs(frames) do
+      if type(frame.client) == 'string' then
+        frame.client = self:child(frame.client)
+      end
+    end
+    self.frames = frames
+  end,
+  
+  select = function(self, name)
+    if self.frames[name] then
+      if self.selectedFrame then
+        if self.selectedFrame ~= name then
+          self.frames[self.selectedFrame].client:Hide()
+        else
+          return
+        end
+      end
+      self.frames[name].client:Show()
+      self.selectedFrame = name
+    else
+      return exception('UnknownFrame')
+    end
+  end
 })
 
 ep.scrollframe = ep.control('ep.scrollframe', 'epScrollFrame', ep.basecontrol, 'scrollframe', {
@@ -1461,9 +1539,9 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
       self:EnableMouse(false)
     end
 
-    self.tooltip = params.tooltip
-    if self.tooltip then
-      attachTooltip(self, self.tooltip)
+    if params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
   end,
 
@@ -1506,6 +1584,10 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
 
     self.more:Enable()
     self.more:EnableMouseWheel(true)
+  end,
+
+  getValue = function(self)
+    return self.value
   end,
 
   setValue = function(self, value)
@@ -1674,6 +1756,13 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
         tab:SetText(item.label)
         tab:SetWidth((tab:GetTextWidth() * 1.03) + 18)
 
+        if item.tooltip then
+          attachTooltip(tab, item.tooltip, {delay=1,
+            location={anchor=tab, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
+        else
+          detachTooltip(tab)
+        end
+
         if item.disabled then
           tab:disable()
         else
@@ -1840,6 +1929,7 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
     self.flat = params.flat
     self.noDefaultSelection = params.noDefaultSelection
     self.resizeToFit = params.resizeToFit
+    self.tooltipDelay = params.tooltipDelay or 1
 
     self.buttons = {}
     self.buttonCount = 0
@@ -1847,11 +1937,13 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
     self.offset = 0
     self.scrolling = false
     self.selection = nil
-    self.sequence = nil
+    self.sequence = {}
 
     self:constructButtons()
     if params.items then
       self:populate(params.items)
+    else
+      self:update()
     end
   end,
 
@@ -2014,12 +2106,21 @@ ep.treebutton = ep.control('ep.treebutton', 'epTreeButton', ep.button, nil, {
   end,
 
   enter = function(self)
+    local tooltip = self.row.item.tooltip
+    if tooltip then
+      tooltip.location = {anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}
+      tooltip.delay = self.frame.tooltipDelay
+      epTooltip:display(tooltip)
+    end
     self.highlight:Show()
   end,
 
   leave = function(self)
     if not self.selected then
       self.highlight:Hide()
+    end
+    if self.row.item.tooltip then
+      epTooltip:hide(self)
     end
   end,
 

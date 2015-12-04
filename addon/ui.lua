@@ -1,9 +1,6 @@
-local combine = ep.combine
-local empty = ep.empty
-local exceptional = ep.exceptional
-local floor = math.floor
-local invoke = ep.invoke
-local schedule = ep.schedule
+local _, combine, empty, exceptional, floor, invoke, schedule
+    = ep.localize, ep.combine, ep.empty, ep.exceptional, math.floor, ep.invoke,
+      ep.schedule
 
 local _pendingControlArgs = {}
 local _referenceFrames = {
@@ -70,6 +67,15 @@ ep.basecontrol = ep.prototype('ep.basecontrol', {
         for i, invocation in ipairs(subscriptions) do
           invoke(invocation, event, ...)
         end
+      end
+    end
+  end,
+
+  hideBorders = function(self, ...)
+    for i, value in ipairs({...}) do
+      local attr = 'ce_'..value
+      if self[attr] then
+        self[attr]:Hide()
       end
     end
   end,
@@ -317,59 +323,59 @@ end
 
 ep.icon = ep.pseudotype{
   categories = {
-    ii = {title = 'All Icons', default = 'interface\\icons\\inv_misc_questionmark'},
-    ar = {title = 'Armor', default = 'interface\\icons\\inv_chest_chain'},
-    bl = {title = 'Belts', default = 'interface\\icons\\inv_belt_04'},
-    bt = {title = 'Boots', default = 'interface\\icons\\inv_boots_04'},
-    br = {title = 'Bracers', default = 'interface\\icons\\inv_bracer_01'},
-    cp = {title = 'Chestpieces', default = 'interface\\icons\\inv_chest_chain'},
-    cl = {title = 'Cloaks', default = 'interface\\icons\\inv_misc_cape_02'},
-    hm = {title = 'Helms', default = 'interface\\icons\\inv_helmet_51'},
-    gt = {title = 'Gauntlets', default = 'interface\\icons\\inv_gauntlets_24'},
-    jy = {title = 'Jewelry', default = 'interface\\icons\\inv_jewelry_ring_03'},
-    rm = {title = 'Misc. Armor', default = 'interface\\icons\\inv_chest_chain'},
-    pt = {title = 'Pants', default = 'interface\\icons\\inv_pants_01'},
-    sd = {title = 'Shields', default = 'interface\\icons\\inv_shield_04'},
-    sh = {title = 'Shoulders', default = 'interface\\icons\\inv_shoulder_09'},
-    it = {title = 'Items', default = 'interface\\icons\\inv_misc_throwingball_01'},
-    cn = {title = 'Containers', default = 'interface\\icons\\inv_misc_bag_01'},
-    dv = {title = 'Devices', default = 'interface\\icons\\inv_battery_01'},
-    dr = {title = 'Drinks', default = 'interface\\icons\\inv_drink_04'},
-    fd = {title = 'Food', default = 'interface\\icons\\inv_misc_food_11'},
-    ky = {title = 'Keys', default = 'interface\\icons\\inv_misc_key_01'},
-    im = {title = 'Misc. Items', default = 'interface\\icons\\inv_misc_throwingball_01'},
-    pp = {title = 'Paraphernalia', default = 'interface\\icons\\inv_misc_elvencoins'},
-    po = {title = 'Potions', default = 'interface\\icons\\inv_potion_13'},
-    rg = {title = 'Regalia', default = 'interface\\icons\\inv_shirt_guildtabard_01'},
-    tp = {title = 'Trophies', default = 'interface\\icons\\inv_misc_bone_01'},
-    tl = {title = 'Tools', default = 'interface\\icons\\inv_misc_wrench_01'},
-    wt = {title = 'Writings', default = 'interface\\icons\\inv_misc_note_01'},
-    mt = {title = 'Materials', default = 'interface\\icons\\inv_misc_dust_01'},
-    ec = {title = 'Essences', default = 'interface\\icons\\inv_enchant_dustarcane'},
-    fb = {title = 'Fabrics', default = 'interface\\icons\\inv_fabric_linen_01'},
-    hb = {title = 'Herbs', default = 'interface\\icons\\inv_misc_flower_03'},
-    ig = {title = 'Ingredients', default = 'interface\\icons\\inv_misc_dust_01'},
-    mm = {title = 'Misc. Materials', default = 'interface\\icons\\inv_misc_dust_01'},
-    mn = {title = 'Minerals', default = 'interface\\icons\\inv_ore_copper_01'},
-    sy = {title = 'Symbols', default = 'interface\\icons\\trade_engineering'},
-    ab = {title = 'Abilities', default = 'interface\\icons\\ability_meleedamage'},
-    an = {title = 'Animals', default = 'interface\\icons\\ability_mount_ridinghorse'},
-    ac = {title = 'Arcane', default = 'interface\\icons\\spell_arcane_arcane04'},
-    el = {title = 'Elemental', default = 'interface\\icons\\spell_frost_stun'},
-    hy = {title = 'Holy', default = 'interface\\icons\\spell_holy_lesserheal'},
-    sm = {title = 'Misc. Symbols', default = 'interface\\icons\\trade_engineering'},
-    nt = {title = 'Nature', default = 'interface\\icons\\spell_nature_earthquake'},
-    sa = {title = 'Shadow', default = 'interface\\icons\\spell_shadow_chilltouch'},
-    wp = {title = 'Weapons', default = 'interface\\icons\\inv_sword_04'},
-    au = {title = 'Ammunition', default = 'interface\\icons\\inv_ammo_bullet_01'},
-    ax = {title = 'Axes', default = 'interface\\icons\\inv_axe_01'},
-    mc = {title = 'Hammers & Maces', default = 'interface\\icons\\inv_mace_01'},
-    wm = {title = 'Misc. Weapons', default = 'interface\\icons\\inv_weapon_hand_01'},
-    pr = {title = 'Polearms', default = 'interface\\icons\\inv_weapon_halbard_06'},
-    ra = {title = 'Ranged', default = 'interface\\icons\\inv_weapon_bow_02'},
-    sv = {title = 'Staves', defaults = 'interface\\icons\\inv_staff_08'},
-    sw = {title = 'Swords', default = 'interface\\icons\\inv_sword_04'},
-    wn = {title = 'Wands', default = 'interface\\icons\\inv_wand_01'},
+    ii = {title=_'All Icons', default='interface\\icons\\inv_misc_questionmark'},
+    ar = {title=_'Armor', default='interface\\icons\\inv_chest_chain'},
+    bl = {title=_'Belts', default='interface\\icons\\inv_belt_04'},
+    bt = {title=_'Boots', default='interface\\icons\\inv_boots_04'},
+    br = {title=_'Bracers', default='interface\\icons\\inv_bracer_01'},
+    cp = {title=_'Chestpieces', default='interface\\icons\\inv_chest_chain'},
+    cl = {title=_'Cloaks', default='interface\\icons\\inv_misc_cape_02'},
+    hm = {title=_'Helms', default='interface\\icons\\inv_helmet_51'},
+    gt = {title=_'Gauntlets', default='interface\\icons\\inv_gauntlets_24'},
+    jy = {title=_'Jewelry', default='interface\\icons\\inv_jewelry_ring_03'},
+    rm = {title=_'Misc. Armor', default='interface\\icons\\inv_chest_chain'},
+    pt = {title=_'Pants', default='interface\\icons\\inv_pants_01'},
+    sd = {title=_'Shields', default='interface\\icons\\inv_shield_04'},
+    sh = {title=_'Shoulders', default='interface\\icons\\inv_shoulder_09'},
+    it = {title=_'Items', default='interface\\icons\\inv_misc_throwingball_01'},
+    cn = {title=_'Containers', default='interface\\icons\\inv_misc_bag_01'},
+    dv = {title=_'Devices', default='interface\\icons\\inv_battery_01'},
+    dr = {title=_'Drinks', default='interface\\icons\\inv_drink_04'},
+    fd = {title=_'Food', default='interface\\icons\\inv_misc_food_11'},
+    ky = {title=_'Keys', default='interface\\icons\\inv_misc_key_01'},
+    im = {title=_'Misc. Items', default='interface\\icons\\inv_misc_throwingball_01'},
+    pp = {title=_'Paraphernalia', default='interface\\icons\\inv_misc_elvencoins'},
+    po = {title=_'Potions', default='interface\\icons\\inv_potion_13'},
+    rg = {title=_'Regalia', default='interface\\icons\\inv_shirt_guildtabard_01'},
+    tp = {title=_'Trophies', default='interface\\icons\\inv_misc_bone_01'},
+    tl = {title=_'Tools', default='interface\\icons\\inv_misc_wrench_01'},
+    wt = {title=_'Writings', default='interface\\icons\\inv_misc_note_01'},
+    mt = {title=_'Materials', default='interface\\icons\\inv_misc_dust_01'},
+    ec = {title=_'Essences', default='interface\\icons\\inv_enchant_dustarcane'},
+    fb = {title=_'Fabrics', default='interface\\icons\\inv_fabric_linen_01'},
+    hb = {title=_'Herbs', default='interface\\icons\\inv_misc_flower_03'},
+    ig = {title=_'Ingredients', default='interface\\icons\\inv_misc_dust_01'},
+    mm = {title=_'Misc. Materials', default='interface\\icons\\inv_misc_dust_01'},
+    mn = {title=_'Minerals', default='interface\\icons\\inv_ore_copper_01'},
+    sy = {title=_'Symbols', default='interface\\icons\\trade_engineering'},
+    ab = {title=_'Abilities', default='interface\\icons\\ability_meleedamage'},
+    an = {title=_'Animals', default='interface\\icons\\ability_mount_ridinghorse'},
+    ac = {title=_'Arcane', default='interface\\icons\\spell_arcane_arcane04'},
+    el = {title=_'Elemental', default='interface\\icons\\spell_frost_stun'},
+    hy = {title=_'Holy', default='interface\\icons\\spell_holy_lesserheal'},
+    sm = {title=_'Misc. Symbols', default='interface\\icons\\trade_engineering'},
+    nt = {title=_'Nature', default='interface\\icons\\spell_nature_earthquake'},
+    sa = {title=_'Shadow', default='interface\\icons\\spell_shadow_chilltouch'},
+    wp = {title=_'Weapons', default='interface\\icons\\inv_sword_04'},
+    au = {title=_'Ammunition', default='interface\\icons\\inv_ammo_bullet_01'},
+    ax = {title=_'Axes', default='interface\\icons\\inv_axe_01'},
+    mc = {title=_'Hammers & Maces', default='interface\\icons\\inv_mace_01'},
+    wm = {title=_'Misc. Weapons', default='interface\\icons\\inv_weapon_hand_01'},
+    pr = {title=_'Polearms', default='interface\\icons\\inv_weapon_halbard_06'},
+    ra = {title=_'Ranged', default='interface\\icons\\inv_weapon_bow_02'},
+    sv = {title=_'Staves', defaults = 'interface\\icons\\inv_staff_08'},
+    sw = {title=_'Swords', default='interface\\icons\\inv_sword_04'},
+    wn = {title=_'Wands', default='interface\\icons\\inv_wand_01'},
   },
 
   precedence = {
@@ -557,14 +563,14 @@ ep.sound = ep.pseudotype{
     end
   end,
 
-  ii = {title = 'All Sounds', default = ''},
-  ab = {title = 'Abstract', default = ''},
-  bg = {title = 'Background', default = ''},
-  cr = {title = 'Creature', default = ''},
-  ev = {title = 'Environment', default = ''},
-  it = {title = 'Item', default = ''},
-  mg = {title = 'Magical', default = ''},
-  mi = {title = 'Miscellaneous', default = ''},
+  ii = {title=_'All Sounds', default=''},
+  ab = {title=_'Abstract', default=''},
+  bg = {title=_'Background', default=''},
+  cr = {title=_'Creature', default=''},
+  ev = {title=_'Environment', default=''},
+  it = {title=_'Item', default=''},
+  mg = {title=_'Magical', default=''},
+  mi = {title=_'Miscellaneous', default=''},
 }
 
 ep.tint = ep.pseudotype{
@@ -810,24 +816,44 @@ ep.tooltip = ep.control('ep.tooltip', 'epTooltip', ep.baseframe, nil, {
   end
 })
 
-function ep.attachTooltip(control, aspects)
-  if not (control:GetScript('onenter') or control:GetScript('onleave')) then
-    if type(aspects) == 'string' then
-      aspects = {c = aspects}
-    end
+function ep.attachTooltip(control, aspects, defaults)
+  if control:GetScript('onenter') or control:GetScript('onleave') then
+    return
+  end
 
-    if not aspects.location then
+  if type(aspects) == 'string' then
+    aspects = {c=aspects}
+  end
+
+  if not aspects.location then
+    if defaults and defaults.location then
+      aspects.location = defaults.location
+    else
       aspects.location = control
-    elseif not aspects.location.anchor then
-      aspects.location.anchor = control
     end
+  elseif not aspects.location.anchor then
+    aspects.location.anchor = control
+  end
 
-    control:SetScript('onenter', function(self)
-      epTooltip:display(aspects)
-    end)
+  if not aspects.delay and defaults and defaults.delay then
+    aspects.delay = defaults.delay
+  end
 
-    control:SetScript('onleave', function(self)
-      epTooltip:hide(self)
-    end)
+  control:SetScript('onenter', function(self)
+    epTooltip:display(aspects)
+  end)
+
+  control:SetScript('onleave', function(self)
+    epTooltip:hide(self)
+  end)
+
+  control.hasTooltipAttached = true
+end
+
+function ep.detachTooltip(control)
+  if control.hasTooltipAttached then
+    control:SetScript('onenter', nil)
+    control:SetScript('onleave', nil)
+    control.hasTooltipAttached = nil
   end
 end

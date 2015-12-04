@@ -1,4 +1,5 @@
-local exception, inject = ep.exception, ep.inject
+local exception, inject
+    = ep.exception, ep.inject
 
 ep.items.locationProvider = ep.prototype('ep.items.locationProvider', {
   addToOrderedContainer = function(cls, container, id, position)
