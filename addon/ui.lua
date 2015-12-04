@@ -1,6 +1,6 @@
-local _, combine, empty, exceptional, floor, invoke, schedule
-    = ep.localize, ep.combine, ep.empty, ep.exceptional, math.floor, ep.invoke,
-      ep.schedule
+local _, exceptional, floor, invoke, schedule, tcombine, tempty, tupdate
+    = ep.localize, ep.exceptional, math.floor, ep.invoke, ep.schedule,
+      ep.tcombine, ep.tempty, ep.tupdate
 
 local _pendingControlArgs = {}
 local _referenceFrames = {
@@ -13,7 +13,8 @@ local _referenceFrames = {
   slider = 'ReputationListScrollFrameScrollBar',
 }
 
-ep.controltype = ep.copy(ep.metatype)
+ep.controltype = ep.tcopy(ep.metatype)
+
 ep.controltype.__call = function(proto, object, ...)
   local referrent, initializer, arguments
   if type(object) == 'string' then
@@ -387,11 +388,11 @@ ep.icon = ep.pseudotype{
   },
 
   levels = {
-    ar = combine({'bl', 'bt', 'br', 'cp', 'cl', 'hm', 'gt', 'jy', 'rm', 'pt', 'sh'}, true),
-    it = combine({'cn', 'dv', 'dr', 'fd', 'ky', 'im', 'pp', 'po', 'rg', 'tp', 'tl', 'wr'}, true),
-    mt = combine({'ec', 'fb', 'hb', 'ig', 'mm', 'mn'}, true),
-    sy = combine({'ab', 'an', 'ac', 'el', 'hy', 'sm', 'nt', 'sa'}, true),
-    wp = combine({'au', 'ax', 'mc', 'wm', 'pr', 'ra', 'sv', 'sw', 'wn'}, true),
+    ar = tcombine({'bl', 'bt', 'br', 'cp', 'cl', 'hm', 'gt', 'jy', 'rm', 'pt', 'sh'}, true),
+    it = tcombine({'cn', 'dv', 'dr', 'fd', 'ky', 'im', 'pp', 'po', 'rg', 'tp', 'tl', 'wr'}, true),
+    mt = tcombine({'ec', 'fb', 'hb', 'ig', 'mm', 'mn'}, true),
+    sy = tcombine({'ab', 'an', 'ac', 'el', 'hy', 'sm', 'nt', 'sa'}, true),
+    wp = tcombine({'au', 'ax', 'mc', 'wm', 'pr', 'ra', 'sv', 'sw', 'wn'}, true),
   },
 
   icons = {},
@@ -418,7 +419,7 @@ ep.icon = ep.pseudotype{
   end,
 
   deployIconsets = function(self)
-    if empty(self.icons) then
+    if tempty(self.icons) then
       for name, component in pairs(ep.deployComponents('iconset')) do
         if not exceptional(component) then
           self:_deployIconset(name, component)
@@ -495,7 +496,7 @@ ep.icon = ep.pseudotype{
     local token = iconset.token
     self.sets[token] = iconset
 
-    ep.update(iconset.icons, iconset.prefixes)
+    tupdate(iconset.icons, iconset.prefixes)
     self.icons[token] = iconset.icons
 
     if #self.sequence > 0 then
@@ -506,9 +507,9 @@ ep.icon = ep.pseudotype{
   end,
 
   _mergeSequence = function(self, additions, prepend)
-    local precedence, index, cmp = self.precedence, ep.index
+    local precedence, tindex, cmp = self.precedence, ep.tindex
     before = function(left, right)
-      return index(precedence, left) > index(precedence, right)
+      return tindex(precedence, left) > tindex(precedence, right)
     end
 
     local sequence, idx, span, prefix = self.sequence, 1, tremove(additions, 1)

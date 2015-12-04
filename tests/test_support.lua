@@ -48,40 +48,40 @@ function tests.test_attempt()
   assert(ep.exceptional(ep.attempt(willFail, 1)))
 end
 
-function tests.test_clear()
-  assert(cmpSeq(ep.clear({}), {}))
-  assert(cmpSeq(ep.clear({1,2,3}), {}))
-  assert(cmpMap(ep.clear({}), {}))
-  assert(cmpMap(ep.clear({a=1, b=2}), {}))
+function tests.test_tclear()
+  assert(cmpSeq(ep.tclear({}), {}))
+  assert(cmpSeq(ep.tclear({1,2,3}), {}))
+  assert(cmpMap(ep.tclear({}), {}))
+  assert(cmpMap(ep.tclear({a=1, b=2}), {}))
 end
 
-function tests.test_combine()
-  local result = ep.combine({}, {})
+function tests.test_tcombine()
+  local result = ep.tcombine({}, {})
   assert(cmpMap(result, {}))
 
-  result = ep.combine({'a', 'b'}, {1, 2})
+  result = ep.tcombine({'a', 'b'}, {1, 2})
   assert(cmpMap(result, {a=1, b=2}))
 end
 
-function tests.test_contains()
-  assert(ep.contains({}, 1) == false)
-  assert(ep.contains({1}, 1) == true)
-  assert(ep.contains({3, 2, 1}, 1) == true)
+function tests.test_tcontains()
+  assert(ep.tcontains({}, 1) == false)
+  assert(ep.tcontains({1}, 1) == true)
+  assert(ep.tcontains({3, 2, 1}, 1) == true)
 end
 
-function tests.test_copy()
+function tests.test_tcopy()
   local original, copy = {a=1}
-  copy = ep.copy(original)
+  copy = ep.tcopy(original)
 
   assert(original ~= copy)
   assert(cmpMap(original, copy))
 end
 
-function tests.test_count()
-  assert(ep.count({}, 1) == 0)
-  assert(ep.count({1, 2, 3}, 1) == 1)
-  assert(ep.count({1, 2, 2, 3}, 2) == 2)
-  assert(ep.count({1, 2, 2, 3}, 2, 1) == 1)
+function tests.test_tcount()
+  assert(ep.tcount({}, 1) == 0)
+  assert(ep.tcount({1, 2, 3}, 1) == 1)
+  assert(ep.tcount({1, 2, 2, 3}, 2) == 2)
+  assert(ep.tcount({1, 2, 2, 3}, 2, 1) == 1)
 end
 
 function tests.test_deepcopy()
@@ -94,9 +94,9 @@ function tests.test_deepcopy()
   assert(cmpMap(original.b, copy.b))
 end
 
-function tests.test_empty()
-  assert(ep.empty({}) == true)
-  assert(ep.empty({a=1}) == false)
+function tests.test_tempty()
+  assert(ep.tempty({}) == true)
+  assert(ep.tempty({a=1}) == false)
 end
 
 function tests.test_exceptions()
@@ -106,8 +106,8 @@ function tests.test_exceptions()
   assert(ep.exceptional(ep.exception('test'), 'test'))
 end
 
-function tests.test_extend()
-  assert(cmpSeq(ep.extend({1}, {2}, {3}), {1, 2, 3}))
+function tests.test_textend()
+  assert(cmpSeq(ep.textend({1}, {2}, {3}), {1, 2, 3}))
 end
 
 function tests.test_fieldsort()
@@ -115,11 +115,11 @@ function tests.test_fieldsort()
   --print(ep.repr(extractValues(testdata, 'value')))
 end
 
-function tests.test_filter()
+function tests.test_tfilter()
   local cb = function(value)
     return (value > 0)
   end
-  assert(cmpSeq(ep.filter({-1, 0, 1, 2, 1, 0, -1}, cb), {1, 2, 1}))
+  assert(cmpSeq(ep.tfilter({-1, 0, 1, 2, 1, 0, -1}, cb), {1, 2, 1}))
 end
 
 function tests.test_freeze_and_thaw()
@@ -170,20 +170,20 @@ function tests.test_hash()
   assert(ep.hash('testing') == ep.strhash('testing'))
 end
 
-function tests.test_index()
-  assert(ep.index({}, 1) == nil)
-  assert(ep.index({1, 2, 3}, 1) == 1)
-  assert(ep.index({1, 2, 3}, 3) == 3)
-  assert(ep.index({2, 2, 2}, 2, 2) == 2)
+function tests.test_tindex()
+  assert(ep.tindex({}, 1) == nil)
+  assert(ep.tindex({1, 2, 3}, 1) == 1)
+  assert(ep.tindex({1, 2, 3}, 3) == 3)
+  assert(ep.tindex({2, 2, 2}, 2, 2) == 2)
 end
 
-function tests.test_inject()
+function tests.test_tinject()
   local tbl = {}
-  assert(ep.inject(tbl, 1) == 1)
+  assert(ep.tinject(tbl, 1) == 1)
   assert(cmpSeq(tbl, {1}))
 
   tbl = {1, nil, 3}
-  assert(ep.inject(tbl, 2) == 2)
+  assert(ep.tinject(tbl, 2) == 2)
   assert(cmpSeq(tbl, {1, 2, 3}))
 end
 
@@ -240,9 +240,9 @@ function tests.test_itervalues()
   assert(cmpSeq(values, {1, 2, 3}))
 end
 
-function tests.test_keys()
-  assert(cmpSeq(ep.keys({}), {}))
-  assert(cmpSeq(ep.keys({a=1, b=2, c=3}, true), {'a', 'b', 'c'}))
+function tests.test_tkeys()
+  assert(cmpSeq(ep.tkeys({}), {}))
+  assert(cmpSeq(ep.tkeys({a=1, b=2, c=3}, true), {'a', 'b', 'c'}))
 end
 
 function tests.test_lstrip()
@@ -256,11 +256,11 @@ function tests.test_lstrip()
   assert(ep.lstrip('+test+', '+') == 'test+')
 end
 
-function tests.test_map()
+function tests.test_tmap()
   local cb = function(value)
     return value + 1
   end
-  assert(cmpSeq(ep.map({1, 2, 3}, cb), {2, 3, 4}))
+  assert(cmpSeq(ep.tmap({1, 2, 3}, cb), {2, 3, 4}))
 end
 
 function tests.test_partition()
@@ -316,7 +316,7 @@ function tests.test_pseudoid()
   for i = 1, 10, 1 do
     table.insert(ids, ep.pseudoid())
   end
-  assert(#ep.unique(ids) == 10)
+  assert(#ep.tunique(ids) == 10)
 end
 
 function tests.test_put()
@@ -339,10 +339,10 @@ function tests.test_ref()
   _G.one = nil
 end
 
-function tests.test_remove()
-  assert(cmpSeq(ep.remove({}, 4), {}))
-  assert(cmpSeq(ep.remove({1, 2, 3}, 4), {1, 2, 3}))
-  assert(cmpSeq(ep.remove({1, 2, 3}, 2), {1, 3}))
+function tests.test_textract()
+  assert(cmpSeq(ep.textract({}, 4), {}))
+  assert(cmpSeq(ep.textract({1, 2, 3}, 4), {1, 2, 3}))
+  assert(cmpSeq(ep.textract({1, 2, 3}, 2), {1, 3}))
 end
 
 function tests.test_repr()
@@ -354,9 +354,9 @@ function tests.test_repr()
   assert(ep.repr(1.1) == '1.1')
 end
 
-function tests.test_reverse()
-  assert(cmpSeq(ep.reverse({}), {}))
-  assert(cmpSeq(ep.reverse({1, 2, 3}), {3, 2, 1}))
+function tests.test_treverse()
+  assert(cmpSeq(ep.treverse({}), {}))
+  assert(cmpSeq(ep.treverse({1, 2, 3}), {3, 2, 1}))
 end
 
 function tests.test_rstrip()
@@ -370,11 +370,11 @@ function tests.test_rstrip()
   assert(ep.rstrip('+test+', '+') == '+test')
 end
 
-function tests.test_splice()
-  assert(cmpSeq(ep.splice({}, 0, 0), {}))
-  assert(cmpSeq(ep.splice({1, 2, 3}, 2, 1), {1, 3}))
-  assert(cmpSeq(ep.splice({1, 2, 3}, 2, 1, 4), {1, 4, 3}))
-  assert(cmpSeq(ep.splice({1, 2, 3}, 2, 0, 4), {1, 4, 2, 3}))
+function tests.test_tsplice()
+  assert(cmpSeq(ep.tsplice({}, 0, 0), {}))
+  assert(cmpSeq(ep.tsplice({1, 2, 3}, 2, 1), {1, 3}))
+  assert(cmpSeq(ep.tsplice({1, 2, 3}, 2, 1, 4), {1, 4, 3}))
+  assert(cmpSeq(ep.tsplice({1, 2, 3}, 2, 0, 4), {1, 4, 2, 3}))
 end
 
 function tests.test_split()
@@ -423,22 +423,22 @@ function tests.test_surrogate()
   assert(s.b.x == nil)
 end
 
-function tests.test_unique()
-  assert(cmpSeq(ep.unique({}), {}))
-  assert(cmpSeq(ep.unique({1, 2, 3}), {1, 2, 3}))
-  assert(cmpSeq(ep.unique({1, 2, 2, 3, 3, 3}), {1, 2, 3}))
+function tests.test_tunique()
+  assert(cmpSeq(ep.tunique({}), {}))
+  assert(cmpSeq(ep.tunique({1, 2, 3}), {1, 2, 3}))
+  assert(cmpSeq(ep.tunique({1, 2, 2, 3, 3, 3}), {1, 2, 3}))
 end
 
-function tests.test_update()
-  assert(cmpMap(ep.update({}, {}), {}))
-  assert(cmpMap(ep.update({a=1}, {b=2}), {a=1, b=2}))
-  assert(cmpMap(ep.update({a=1, b=2}, {b=22, c=3}), {a=1, b=22, c=3}))
-  assert(cmpMap(ep.update({a=1}, {b=2}, {c=3}), {a=1, b=2, c=3}))
+function tests.test_tupdate()
+  assert(cmpMap(ep.tupdate({}, {}), {}))
+  assert(cmpMap(ep.tupdate({a=1}, {b=2}), {a=1, b=2}))
+  assert(cmpMap(ep.tupdate({a=1, b=2}, {b=22, c=3}), {a=1, b=22, c=3}))
+  assert(cmpMap(ep.tupdate({a=1}, {b=2}, {c=3}), {a=1, b=2, c=3}))
 end
 
-function tests.test_values()
-  assert(cmpSeq(ep.values({}), {}))
-  assert(cmpSeq(ep.values({a=1, b=2, c=3}, true), {1, 2, 3}))
+function tests.test_tvalues()
+  assert(cmpSeq(ep.tvalues({}), {}))
+  assert(cmpSeq(ep.tvalues({a=1, b=2, c=3}, true), {1, 2, 3}))
 end
 
 function tests.test_pqueue()

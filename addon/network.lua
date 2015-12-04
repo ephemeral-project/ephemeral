@@ -1,10 +1,10 @@
 local ceil, concat, exception, exceptional, format, freeze, invoke, iterkeys,
-      loadComponent, promise, pseudoid, satisfy, schedule, split, subscribe,
-      thaw, unsubscribe, scheduleInvocation
+      loadComponent, promise, pseudoid, satisfy, schedule, scheduleInvocation,
+      split, subscribe, thaw, unsubscribe
     = math.ceil, table.concat, ep.exception, ep.exceptional, string.format,
       ep.freeze, ep.invoke, ep.iterkeys, ep.loadComponent, ep.promise,
-      ep.pseudoid, ep.satisfy, ep.schedule, ep.split, ep.subscribe, ep.thaw,
-      ep.unsubscribe, ep.scheduleInvocation
+      ep.pseudoid, ep.satisfy, ep.schedule, ep.scheduleInvocation, ep.split,
+      ep.subscribe, ep.thaw, ep.unsubscribe
 
 local channel
 local conduit

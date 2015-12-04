@@ -14,10 +14,6 @@ ep.locales = {}
 ep.promises = promises
 ep.prototypeRegistries = prototypeRegistries
 
-local function isPublicAttr(attr)
-  return attr:sub(1, 1) ~= '_'
-end
-
 function ep.alert(context, message, level)
   if not (context and message) then
     return
@@ -72,6 +68,10 @@ function ep.debug(message, objects, stacktrace)
   else
     ep.alert('debug', lines)
   end
+end
+
+local function isPublicAttr(attr)
+  return attr:sub(1, 1) ~= '_'
 end
 
 ep.metatype = {
@@ -278,63 +278,6 @@ function ep.capitalize(value)
   return value:sub(1, 1):upper()..value:sub(2)
 end
 
-function ep.clear(tbl)
-  if tbl[1] then
-    for i = 1, #tbl do
-      tbl[i] = nil
-    end
-  else
-    for k, v in pairs(tbl) do
-      tbl[k] = nil
-    end
-  end
-  return tbl
-end
-
-function ep.combine(keys, values)
-  local result = {}
-  if type(values) == 'table' then
-    for i, key in ipairs(keys) do
-      result[key] = values[i]
-    end
-  else
-    for i, key in ipairs(keys) do
-      result[key] = values
-    end
-  end
-  return result
-end
-
-function ep.contains(tbl, value)
-  for i, v in ipairs(tbl) do
-    if v == value then
-      return true
-    end
-  end
-  return false
-end
-
-function ep.copy(tbl)
-  local result = {}
-  for key, value in pairs(tbl) do
-    result[key] = value
-  end
-  return result
-end
-
-function ep.count(tbl, value, threshold)
-  local count, threshold = 0, threshold or #tbl
-  for i, v in ipairs(tbl) do
-    if v == value then
-      count = count + 1
-    end
-    if count >= threshold then
-      break
-    end
-  end
-  return count
-end
-
 function ep.deepcopy(tbl, memo)
   local result, memo = {}, memo or {}
   for key, value in pairs(tbl) do
@@ -350,13 +293,6 @@ function ep.deepcopy(tbl, memo)
   return result
 end
 
-function ep.empty(tbl)
-  for key, value in pairs(tbl) do
-    return false
-  end
-  return true
-end
-
 function ep.exception(exception, description, traceback, aspects)
   exc = aspects or {}
   exc.__exceptional, exc.exception, exc.description = true, exception, description
@@ -370,16 +306,6 @@ end
 function ep.exceptional(value, exception)
   return (type(value) == 'table' and value.__exceptional
     and (not exception or value.exception == exception))
-end
-
-function ep.extend(tbl, ...)
-  local idx = #tbl + 1
-  for i, extension in ipairs({...}) do
-    for j, value in ipairs(extension) do
-      tbl[idx], idx = value, idx + 1
-    end
-  end
-  return tbl
 end
 
 function ep.fieldsort(items, ...)
@@ -407,16 +333,6 @@ function ep.fieldsort(items, ...)
     sort(items, cmp)
   end
   return items
-end
-
-function ep.filter(tbl, callback)
-  local result, idx = {}, 1
-  for i, value in ipairs(tbl) do
-    if callback(value) then
-      result[idx], idx = value, idx + 1
-    end
-  end
-  return result
 end
 
 function ep.freeze(object, naive)
@@ -460,24 +376,6 @@ function ep.hash(object)
   end
 end
 
-function ep.index(tbl, value, offset)
-  for i = offset or 1, #tbl, 1 do
-    if tbl[i] == value then
-      return i
-    end
-  end
-end
-
-function ep.inject(tbl, value)
-  local index = 1
-  while tbl[index] do
-    index = index + 1
-  end
-
-  tbl[index] = value
-  return index
-end
-
 function ep.invoke(invocation, ...)
   local callable, arguments = invocation, {...}
   if type(invocation) == 'table' then
@@ -510,7 +408,7 @@ function ep.isderived(candidate, prototype, strict)
 end
 
 function ep.iterkeys(tbl, sorted)
-  tbl = ep.keys(tbl, sorted)
+  tbl = ep.tkeys(tbl, sorted)
   return function()
     return tremove(tbl, 1)
   end
@@ -533,22 +431,10 @@ function ep.itersplit(str, sep, limit)
 end
 
 function ep.itervalues(tbl, sorted)
-  tbl = ep.values(tbl, sorted)
+  tbl = ep.tvalues(tbl, sorted)
   return function()
     return tremove(tbl, 1)
   end
-end
-
-function ep.keys(tbl, sorted)
-  local keys, idx = {}, 1
-  for key, value in pairs(tbl) do
-    keys[idx], idx = key, idx + 1
-  end
-
-  if sorted then
-    table.sort(keys, ep.naivesort)
-  end
-  return keys
 end
 
 function ep.lstrip(str, chars)
@@ -557,14 +443,6 @@ function ep.lstrip(str, chars)
     pattern = format(pattern, chars)
   end
   return str:gsub(pattern, '%1', 1)
-end
-
-function ep.map(tbl, callback)
-  local result = {}
-  for i, value in ipairs(tbl) do
-    result[i] = callback(value)
-  end
-  return result
 end
 
 function ep.naivesort(first, second)
@@ -661,21 +539,6 @@ function ep.ref(path, namespace)
   end
 end
 
-function ep.remove(tbl, value)
-  local index = 0
-  for i, v in ipairs(tbl) do
-    if v == value then
-      index = i
-      break
-    end
-  end
-
-  if index >= 1 then
-    tremove(tbl, index)
-  end
-  return tbl
-end
-
 function ep.repr(object, strLimit, naive)
   local objtype, strLimit, representation, length = type(object), limit or 100
   if objtype == 'table' then
@@ -687,7 +550,7 @@ function ep.repr(object, strLimit, naive)
     end
 
     tag = format('table(0x%s)', tostring(object):sub(8))
-    if ep.empty(object) then
+    if ep.tempty(object) then
       return tag..' {}'
     else
      return format('%s {\n%s}\n', tag, ep.reprtable(object, nil, nil, nil, strLimit, naive))
@@ -729,7 +592,7 @@ function ep.reprtable(object, indent, spacing, roots, strLimit, naive)
           representation = format('%s[%s] = %s -> %s\n', prefix, key, tag, roots[value])
         else
           roots[value] = key
-          if ep.empty(value) then
+          if ep.tempty(value) then
             representation = format('%s[%s] = %s {}\n', prefix, key, tag)
           else
             subtable = ep.reprtable(value, indent + 1, spacing, roots, strLimit, naive)
@@ -743,14 +606,6 @@ function ep.reprtable(object, indent, spacing, roots, strLimit, naive)
     end
   end
   return text
-end
-
-function ep.reverse(tbl)
-  local result, length = {}, #tbl
-  for i = length, 1, -1 do
-    result[length - i + 1] = tbl[i]
-  end
-  return result
 end
 
 function ep.rstrip(str, chars)
@@ -777,18 +632,6 @@ function ep.satisfy(source, topic, ...)
     end
     promises[topic] = nil
   end
-end
-
-function ep.splice(tbl, idx, count, ...)
-  for i = 1, count do
-    tremove(tbl, idx)
-  end
-
-  for i, value in ipairs({...}) do
-    tinsert(tbl, idx, value)
-    idx = idx + 1
-  end
-  return tbl
 end
 
 function ep.split(str, sep, limit)
@@ -865,6 +708,105 @@ function ep.surrogate(tbl)
   })
 end
 
+function ep.tclear(tbl)
+  if tbl[1] then
+    for i = 1, #tbl do
+      tbl[i] = nil
+    end
+  else
+    for k, v in pairs(tbl) do
+      tbl[k] = nil
+    end
+  end
+  return tbl
+end
+
+function ep.tcombine(keys, values)
+  local result = {}
+  if type(values) == 'table' then
+    for i, key in ipairs(keys) do
+      result[key] = values[i]
+    end
+  else
+    for i, key in ipairs(keys) do
+      result[key] = values
+    end
+  end
+  return result
+end
+
+function ep.tcontains(tbl, value)
+  for i, v in ipairs(tbl) do
+    if v == value then
+      return true
+    end
+  end
+  return false
+end
+
+function ep.tcopy(tbl)
+  local result = {}
+  for key, value in pairs(tbl) do
+    result[key] = value
+  end
+  return result
+end
+
+function ep.tcount(tbl, value, threshold)
+  local count, threshold = 0, threshold or #tbl
+  for i, v in ipairs(tbl) do
+    if v == value then
+      count = count + 1
+    end
+    if count >= threshold then
+      break
+    end
+  end
+  return count
+end
+
+function ep.tempty(tbl)
+  for key, value in pairs(tbl) do
+    return false
+  end
+  return true
+end
+
+function ep.textend(tbl, ...)
+  local idx = #tbl + 1
+  for i, extension in ipairs({...}) do
+    for j, value in ipairs(extension) do
+      tbl[idx], idx = value, idx + 1
+    end
+  end
+  return tbl
+end
+
+function ep.textract(tbl, value)
+  local index = 0
+  for i, v in ipairs(tbl) do
+    if v == value then
+      index = i
+      break
+    end
+  end
+
+  if index >= 1 then
+    tremove(tbl, index)
+  end
+  return tbl
+end
+
+function ep.tfilter(tbl, callback)
+  local result, idx = {}, 1
+  for i, value in ipairs(tbl) do
+    if callback(value) then
+      result[idx], idx = value, idx + 1
+    end
+  end
+  return result
+end
+
 function ep.thaw(obj, naive)
   local position, implementation, object, length, delta, field, ftype, vlength, value, prototype
   if type(obj) == 'string' and #obj >= 1 then
@@ -911,7 +853,65 @@ function ep.thaw(obj, naive)
   return object
 end
 
-function ep.unique(tbl)
+function ep.tindex(tbl, value, offset)
+  for i = offset or 1, #tbl, 1 do
+    if tbl[i] == value then
+      return i
+    end
+  end
+end
+
+function ep.tinject(tbl, value)
+  local index = 1
+  while tbl[index] do
+    index = index + 1
+  end
+
+  tbl[index] = value
+  return index
+end
+
+function ep.tkeys(tbl, sorted)
+  local keys, idx = {}, 1
+  for key, value in pairs(tbl) do
+    keys[idx], idx = key, idx + 1
+  end
+
+  if sorted then
+    table.sort(keys, ep.naivesort)
+  end
+  return keys
+end
+
+function ep.tmap(tbl, callback)
+  local result = {}
+  for i, value in ipairs(tbl) do
+    result[i] = callback(value)
+  end
+  return result
+end
+
+function ep.treverse(tbl)
+  local result, length = {}, #tbl
+  for i = length, 1, -1 do
+    result[length - i + 1] = tbl[i]
+  end
+  return result
+end
+
+function ep.tsplice(tbl, idx, count, ...)
+  for i = 1, count do
+    tremove(tbl, idx)
+  end
+
+  for i, value in ipairs({...}) do
+    tinsert(tbl, idx, value)
+    idx = idx + 1
+  end
+  return tbl
+end
+
+function ep.tunique(tbl)
   local result, values, idx = {}, {}, 1
   for i, value in ipairs(tbl) do
     if not values[value] then
@@ -922,7 +922,7 @@ function ep.unique(tbl)
   return result
 end
 
-function ep.update(tbl, ...)
+function ep.tupdate(tbl, ...)
   for i, update in ipairs({...}) do
     for key, value in pairs(update) do
       tbl[key] = value
@@ -931,7 +931,7 @@ function ep.update(tbl, ...)
   return tbl
 end
 
-function ep.values(tbl, sorted)
+function ep.tvalues(tbl, sorted)
   local result, idx = {}, 1
   for key, value in pairs(tbl) do
     result[idx], idx = value, idx + 1

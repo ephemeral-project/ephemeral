@@ -1,7 +1,8 @@
-local clear, concat, exception, exceptional, format, invoke, ref, put,
-      split, surrogate, tinsert, tremove
-    = ep.clear, table.concat, ep.exception, ep.exceptional, string.format, ep.invoke,
-      ep.ref, ep.put, ep.split, ep.surrogate, table.insert, table.remove
+local concat, exception, exceptional, format, invoke, ref, put,
+      split, surrogate, tclear, tinsert, tkeys, tremove
+    = table.concat, ep.exception, ep.exceptional, string.format, ep.invoke,
+      ep.ref, ep.put, ep.split, ep.surrogate, ep.tclear, table.insert,
+      ep.tkeys, table.remove
 
 local events = {}
 local invocations = ep.pqueue('delta')
@@ -326,7 +327,7 @@ ep.datastore = ep.prototype('ep.datastore', {
         end
       end
     else
-      candidates = ep.keys(primary)
+      candidates = tkeys(primary)
     end
 
     local instance
@@ -480,14 +481,14 @@ ep.script = ep.prototype('ep.script', {
     select = select, sin = sin, sort = sort, sqrt = sqrt, tan = tan, tinsert = tinsert, time = time,
     tonumber = tonumber, tostring = tostring, tremove = tremove, type = type, unpack = unpack,
 
-    combine = ep.combine, contains = ep.contains, copy = ep.copy, count = ep.count,
-    deepcopy = ep.deepcopy, empty = ep.empty, extend = ep.extend, filter = ep.filter,
-    freeze = ep.freeze, hash = ep.hash, index = ep.index, inject = ep.inject,
-    iterkeys = ep.iterkeys, itersplit = ep.itersplit, itervalues = ep.itervalues,
-    keys = ep.keys, lstrip = ep.lstrip, map = ep.map, partition = ep.partition,
-    populate = ep.populate, remove = ep.remove, reverse = ep.reverse, rstrip = ep.rstrip,
-    split = ep.split, strcount = ep.strcount, strip = ep.strip, thaw = ep.thaw,
-    unique = ep.unique, values = ep.values,
+    deepcopy=ep.deepcopy, freeze=ep.freeze, hash=ep.hash, iterkeys=ep.iterkeys,
+    itersplit=ep.itersplit, itervalues=ep.itervalues, lstrip=ep.lstrip,
+    partition=ep.partition, rstrip=ep.rstrip, split=ep.split, strcount=ep.strcount,
+    strip=ep.strip, tcombine=ep.tcombine, tcontains=ep.tcontains, tcopy=ep.tcopy,
+    tcount=ep.tcount, tempty=ep.empty, textend=ep.textend, textract=ep.textract,
+    tfilter=ep.tfilter, thaw=ep.thaw, tindex=ep.tindex, tinject=ep.tinject,
+    tkeys=ep.tkeys, tmap=ep.tmap, treverse=ep.treverse, tunique=ep.tunique,
+    tupdate=ep.tupdate, tvalues=ep.tvalues,
 
     print = print
   },
@@ -533,7 +534,7 @@ ep.script = ep.prototype('ep.script', {
         return exception('CompilationError', err)
       end
     end
-    clear(namespace)
+    tclear(namespace)
     if immutable then
       for attr, value in pairs(immutable) do
         namespace[attr] = surrogate(value)

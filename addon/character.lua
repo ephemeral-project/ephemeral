@@ -1,5 +1,5 @@
-local format, update
-    = string.format, ep.update
+local format, tupdate
+    = string.format, ep.tupdate
 
 CHARACTER_GENDERS = {'unknown', 'male', 'female'}
 
@@ -61,7 +61,7 @@ ep.characterization = {
 
     ep.character = ep.characters:get(description.id)
     if ep.character then
-      ep.update(ep.character, description)
+      tupdate(ep.character, description)
     else
       ep.character = ep.characterProfile(description)
       ep.characters:put(ep.character)

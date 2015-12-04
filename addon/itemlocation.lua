@@ -1,5 +1,5 @@
-local exception, inject
-    = ep.exception, ep.inject
+local exception, tinject
+    = ep.exception, ep.tinject
 
 ep.items.locationProvider = ep.prototype('ep.items.locationProvider', {
   addToOrderedContainer = function(cls, container, id, position)
@@ -7,7 +7,7 @@ ep.items.locationProvider = ep.prototype('ep.items.locationProvider', {
     if position then
       container[position] = id
     else
-      position = inject(container, id)
+      position = tinject(container, id)
     end
     if position > container.i then
       container.i = position

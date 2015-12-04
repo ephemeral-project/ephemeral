@@ -3,7 +3,7 @@ local _, attrsort, deepcopy, deployModule, exception, exceptional, isderived,
     = ep.localize, ep.attrsort, ep.deepcopy, ep.deployModule, ep.exception,
       ep.exceptional, ep.isderived, ep.split, ep.uniqid
 
-local entityType = ep.copy(ep.metatype)
+local entityType = ep.tcopy(ep.metatype)
 
 entityType.__call = function(prototype, entity)
   local object = setmetatable({__entity = entity or {}}, prototype)

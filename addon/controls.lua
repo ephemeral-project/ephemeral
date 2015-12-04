@@ -1,7 +1,7 @@
 local _, attachTooltip, band, detachTooltip, exception, fieldsort, floor, invoke,
-      tint, update
+      tclear, tindex, tint, tupdate
     = ep.localize, ep.attachTooltip, bit.band, ep.detachTooltip, ep.exception,
-      ep.fieldsort, math.floor, ep.invoke, ep.tint, ep.update
+      ep.fieldsort, math.floor, ep.invoke, ep.tclear, ep.tindex, ep.tint, ep.tupdate
 
 ep.button = ep.control('ep.button', 'epButton', ep.basecontrol, 'button', {
   initialize = function(self, tooltip)
@@ -175,7 +175,7 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
   end,
 
   populate = function(self, population, default, value)
-    local items, values = ep.clear(self.items), ep.clear(self.values)
+    local items, values = tclear(self.items), tclear(self.values)
     for i, item in ipairs(population) do
       if type(item) == 'table' then
         if item.label then
@@ -1593,7 +1593,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
   setValue = function(self, value)
     self:ClearFocus()
     if self.values then
-      local offset = ep.index(self.values, value)
+      local offset = tindex(self.values, value)
       if offset then
         self.offset, self.value = offset, value
       end
@@ -1812,7 +1812,7 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
     end
 
     if offset >= 1 and offset <= #self.items then
-      update(self.items[offset], item)
+      tupdate(self.items[offset], item)
       self:build()
     end
   end,

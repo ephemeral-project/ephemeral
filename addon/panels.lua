@@ -1,5 +1,6 @@
-local _, floor, invoke, iterkeys
-    = ep.localize, math.floor, ep.invoke, ep.iterkeys
+local _, exceptional, floor, invoke, iterkeys, itersplit, repr, strip
+    = ep.localize, ep.exceptional, math.floor, ep.invoke, ep.iterkeys,
+      ep.itersplit, ep.repr, ep.strip
 
 ep.colorbrowser = ep.panel('ep.colorbrowser', 'epColorBrowser', {
   initialize = function(self)
@@ -60,27 +61,27 @@ ep.console = ep.panel('ep.console', 'epConsole', {
   end,
 
   log = function(self, text, color)
-    for line in ep.itersplit(text, '\n') do
+    for line in itersplit(text, '\n') do
       self.debuglog:append(line, color)
     end
   end,
 
   notify = function(self, text, color)
-    for line in ep.itersplit(text, '\n') do
+    for line in itersplit(text, '\n') do
       self.interpreter:append(line, color)
     end
   end,
 
   submit = function(self)
-    local text, result = ep.strip(self.input:setValue(''))
+    local text, result = strip(self.input:setValue(''))
     if text then
       self.input:AddHistoryLine(text)
       self.interpreter:append('>> '..text, ep.tint.console)
       result = ep.interpretInput(text)
-      if ep.exceptional(result) then
+      if exceptional(result) then
         self.interpreter:append('!! '..result.exception..': '..result.description)
       elseif result then
-        self:notify(ep.repr(result, -1))
+        self:notify(repr(result, -1))
       end
     end
     self.tabs:select(1)

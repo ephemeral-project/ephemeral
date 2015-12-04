@@ -1,6 +1,6 @@
-local _, capitalize, ceil, copy, exception, exceptional, floor, inject, split
-    = ep.localize, ep.capitalize, math.ceil, ep.copy, ep.exception, ep.exceptional,
-      math.floor, ep.inject, ep.split
+local _, capitalize, ceil, exception, exceptional, floor, split, tcopy
+    = ep.localize, ep.capitalize, math.ceil, ep.exception, ep.exceptional,
+      math.floor, ep.split, ep.tcopy
 
 local QUALITY_TOKENS = {
   p = _'Poor',
@@ -543,7 +543,7 @@ ep.item.editor = ep.panel('ep.item.editor', 'epItemEditor', {
   show = function(self, item, location)
     self.item = item
 
-    local sections = copy(self.defaultSections)
+    local sections = tcopy(self.defaultSections)
     self.selector:populate(sections)
     
     --self:populateFields()
