@@ -258,6 +258,7 @@ end
 function ep.unsubscribe(ref)
   local event, idx, subscriptions = unpack(ref)
   subscriptions = events[event]
+
   if subscriptions then
     table.remove(subscriptions, idx)
     if not event:find(':', 1, true) and #subscriptions == 0 then

@@ -651,7 +651,7 @@ Frame epTabbedFrame(virtual):
     *ep.tabbedframe(self)
 
 Button epTreeButton(virtual):
-  !Size(128, 13)
+  !Size(128, 16)
   ButtonText $parentText(.text):
     !Left(0, 0)
   !PushedTextOffset(0, 0)
@@ -688,6 +688,13 @@ Button epTreeButton(virtual):
     *self:scroll(delta)
 
 Frame epTree(epControl, virtual):
+  !Artwork:
+    FontString(epTitleFont, .titleString, justifyH: LEFT, hidden):
+      !TopLeft(5, -6)
+  !Border:
+    Texture $parentTitleDivider(epControlInnerEdgeB, .titleDivider, hidden):
+      !TopLeft(1, -18)
+      !TopRight(-1, -16)
   Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
     !TopRight(0, -13)
     !BottomRight(0, 13)

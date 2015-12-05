@@ -1936,12 +1936,14 @@ ep.testitems = {
 ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
   initialize = function(self, params)
     params = params or {}
+    self.buttonHeight = params.buttonHeight or 16
     self.callback = params.callback
     self.defaultExpansion = params.defaultExpansion or 0
     self.expandOnSelect = params.expandOnSelect
     self.flat = params.flat
     self.noDefaultSelection = params.noDefaultSelection
     self.resizeToFit = params.resizeToFit
+    self.title = params.title
     self.tooltipDelay = params.tooltipDelay or 1
 
     self.buttons = {}
@@ -1952,6 +1954,13 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
     self.selection = nil
     self.sequence = {}
 
+    if self.title then
+      self.titleString:SetText(self.title)
+      self.titleString:Show()
+      self.titleDivider:SetVertexColor(1, 1, 1, 0.5)
+      self.titleDivider:Show()
+    end
+
     self:constructButtons()
     if params.items then
       self:populate(params.items)
@@ -1961,14 +1970,20 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
   end,
 
   constructButtons = function(self)
-    self.buttonCount = floor((self:GetHeight() - 8) / 13)
+    local initialOffset = 4
+    if self.title then
+      initialOffset = initialOffset + 25
+    end
+
+    self.buttonCount = floor((self:GetHeight() - 8) / self.buttonHeight)
     for i = 1, self.buttonCount do
       local button = self.buttons[i]
       if button then
         button:Show()
       else
         button = ep.treebutton(self.name..'b'..i, self, self, i)
-        button:SetPoint('TOPLEFT', self, 'TOPLEFT', 5, -(4 + (13 * (i - 1))))
+        button:SetPoint('TOPLEFT', self, 'TOPLEFT', 5,
+          -(initialOffset + (self.buttonHeight * (i - 1))))
         self.buttons[i] = button
       end
     end

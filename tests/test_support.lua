@@ -2,6 +2,7 @@ require('base')
 require('addon/support')
 
 ep.character = {guid = 'xxxxxxxx'}
+ep.logExceptions = false
 
 local function r(id, name, description, value)
   return {id=id, name=name, description=description, value=value}
@@ -382,6 +383,8 @@ function tests.test_split()
   assert(cmpSeq({ep.split('a,b,c', ';')}, {'a,b,c'}))
   assert(cmpSeq({ep.split('a,b,c', ',')}, {'a', 'b', 'c'}))
   assert(cmpSeq({ep.split('a,b,c', ',', 1)}, {'a', 'b,c'}))
+
+  assert(cmpSeq(ep.split('a,b,c', ',', nil, true), {'a','b','c'}))
 end
 
 function tests.test_strcount()

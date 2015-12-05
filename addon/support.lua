@@ -11,6 +11,7 @@ ephemeral = {}
 
 ep.activeLocale = nil
 ep.locales = {}
+ep.logExceptions = true
 ep.promises = promises
 ep.prototypeRegistries = prototypeRegistries
 
@@ -31,43 +32,58 @@ function ep.alert(context, message, level)
   end
 end
 
-function d(...)
-  local values = {}
-  for i, value in ipairs({...}) do
-    tinsert(values, ep.repr(value))
-  end
-  ep.alert('debug', concat(values, ', '))
-end
-
-function ep.debug(message, objects, stacktrace)
+function ep.debug(message, objects, stacktrace, showConsole)
   local lines, line = {}
-  if type(message) == 'table' then
-    message = message[1]:format(select(2, unpack(message)))
+  if ep.exceptional(message) then
+    line = message.exception
+    if message.description then
+      line = line..': '..message.description
+    end
+  elseif type(message) == 'table' then
+    line = message[1]:format(select(2, unpack(message)))
+  else
+    line = message
   end
 
-  lines[1] = format('[%s] %s', date('%H:%M:%S'), message)
-  if objects then
-    for i, object in ipairs(objects) do
-      tinsert(lines, format('  object #%d:', i))
-      for line in ep.itersplit(ep.repr(object, -1), '\n') do
-        tinsert(lines, '    '..line)
-      end
+  local formatObject = function(title, object)
+    if type(title) == 'string' then
+      title = format('"%s"', title)
+    else
+      title = format('#%d', title)
+    end
+
+    tinsert(lines, format('  object %s:', title))
+    for line in ep.itersplit(ep.repr(object, -1), '\n') do
+      tinsert(lines, '    '..line)
     end
   end
 
-  if stacktrace then
+  lines[1] = format('[%s] %s', date('%H:%M:%S'), line)
+  if objects then
+    for title, object in pairs(objects) do
+      formatObject(title, object)
+    end
+    for i, object in ipairs(objects) do
+      formatObject(title, object)
+    end
+  end
+
+  if stacktrace and debugstack then
     tinsert(lines, '  stack trace:')
     for line in ep.itersplit(debugstack(2), '\n') do
       tinsert(lines, '    '..line)
     end
   end
 
-  lines = concat(lines, '\n')
   if epConsole then
-    epConsole:log(lines)
+    epConsole:log(lines, nil, showConsole)
   else
-    ep.alert('debug', lines)
+    ep.alert('debug', concat(lines, '\n'))
   end
+end
+
+function d(...)
+  ep.debug('debug', {...})
 end
 
 local function isPublicAttr(attr)
@@ -264,7 +280,7 @@ function ep.attempt(func, ...)
   if status then
     return result
   else
-    return ep.exception('Exception', result)
+    return ep.exception('AttemptedFailed', result)
   end
 end
 
@@ -293,12 +309,12 @@ function ep.deepcopy(tbl, memo)
   return result
 end
 
-function ep.exception(exception, description, traceback, aspects)
+function ep.exception(exception, description, aspects)
   exc = aspects or {}
   exc.__exceptional, exc.exception, exc.description = true, exception, description
 
-  if traceback then
-    exc.traceback = debugstack(2)
+  if ep.logExceptions then
+    ep.debug(exc, nil, true, true)
   end
   return exc
 end
@@ -315,6 +331,7 @@ function ep.fieldsort(items, ...)
     if type(field) == 'table' then
       field, descending = unpack(field)
     end
+
     cmp = function(first, second)
       local first, second, result = first[field], second[field]
       if type(first) == 'number' and type(second) == 'number' then
@@ -388,7 +405,7 @@ function ep.invoke(invocation, ...)
   if callable then
     return callable(unpack(arguments))
   else
-    ep.debug('invalid invocation', {invocation}, true)
+    ep.debug('invalid invocation', {invocation}, true, true)
   end
 end
 
@@ -460,7 +477,8 @@ function ep.partition(str, ...)
       chunks[i] = str:sub(1, length)
       str = str:sub(length + 1)
     else
-      error('string too short to partition as requested')
+      return ep.exception('CannotPartition',
+        'specified string too short to partition')
     end
   end
 
@@ -502,7 +520,7 @@ function ep.pseudotype(ns)
 end
 
 function ep.put(path, object, overwrite)
-  local sections, name, namespace = {ep.split(path, '.')}
+  local sections, name, namespace = ep.split(path, '.', nil, true)
   if #sections > 1 then
     name = tremove(sections)
     namespace = ep.ref(concat(sections, '.'))
@@ -634,7 +652,7 @@ function ep.satisfy(source, topic, ...)
   end
 end
 
-function ep.split(str, sep, limit)
+function ep.split(str, sep, limit, packed)
   local chunks, position, idx, delta, width, count = {}, 1, 1, nil, #sep, 0
   if #str == 0 then
     return ''
@@ -650,7 +668,12 @@ function ep.split(str, sep, limit)
       break
     end
   end
-  return unpack(chunks)
+
+  if packed then
+    return chunks
+  else
+    return unpack(chunks)
+  end
 end
 
 function ep.strcount(str, pattern)
@@ -812,7 +835,7 @@ function ep.thaw(obj, naive)
   if type(obj) == 'string' and #obj >= 1 then
     obj = obj:gsub('~n', '\n'):gsub('~~', '~')
   else
-    return nil
+    return ep.exception('TypeError', 'obj must be a string')
   end
 
   position = obj:find('$', 2, true)
@@ -822,7 +845,7 @@ function ep.thaw(obj, naive)
       return ep._thawScalar(ep.split(obj, ':', 1))
     end
   else
-    return nil
+    return ep.exception('InvalidValue', 'obj is not a serialized value')
   end
 
   object, position, length = {}, 1, #obj

@@ -60,6 +60,21 @@ ep.console = ep.panel('ep.console', 'epConsole', {
     end
   end,
 
+  log = function(self, text, color, showConsole)
+    if type(text) == 'table' then
+      for i, line in ipairs(text) do
+        self.debuglog:append(line, color)
+      end
+    else
+      for line in itersplit(text, '\n') do
+        self.debuglog:append(line, color)
+      end
+    end
+    if showConsole then
+      self:display('log')
+    end
+  end,
+
   log = function(self, text, color)
     for line in itersplit(text, '\n') do
       self.debuglog:append(line, color)
@@ -232,7 +247,7 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
     if not self.callback then
       self.callback, self.anchor = callback, anchor
       if self.anchor then
-        self:position(anchor, {x = 3})
+        self:position(anchor, {edge='TOPLEFT', hook='TOPRIGHT'})
       end
       self:filter(category or 'ii', set or 'all')
       self:Show()

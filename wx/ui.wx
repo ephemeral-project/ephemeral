@@ -53,7 +53,7 @@ Font epHighlightFont(epFont, virtual):
 FontString epInnerLabel(epInnerLabelFont, justifyH: LEFT, virtual):
   !Right(-5, 0)
 
-FontString epLeftLabel(epInnerLabelFont, justifyH: LEFT, virtual):
+FontString epLeftLabel(epLabelFont, justifyH: LEFT, virtual):
   !Anchor(point: RIGHT, relativePoint: LEFT, x: -4, y: 0)
 
 Texture epArrowLeft(file: '%textures\arrow-left', virtual):

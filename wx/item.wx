@@ -94,6 +94,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
   Button $parentQuality(epDropBox, .f_quality):
     !Size(100, 19)
     !TopRight(-10, -54)
+    !HitRectInsets(-30, 0, 0, 0)
     !Artwork:
       FontString(epLeftLabel, .label, text: 'quality:')
     OnLoad:
@@ -116,7 +117,8 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !TopLeft(10, -100)
     !BottomLeft(10, 87)
     OnLoad:
-      *ep.tree(self, {flat=true, callback={ep.item.editor.selectSection, self}})
+      *ep.tree(self, {flat=true, title=ep_'Details',
+      *  callback={ep.item.editor.selectSection, self}})
   Frame $parentSections(epMultiFrame, .sections):
     !TopLeft(104, -100)
     !BottomRight(-10, 87)
