@@ -10,7 +10,7 @@ Button epButton(epControl, virtual):
   !NormalFont(epLabelFont)
   !HighlightFont(epHighlightFont)
   OnLoad:
-    *ep.button(self)
+    *ep.Button(self)
 
 CheckButton epCheckBox(virtual):
   !Size(16, 16)
@@ -31,7 +31,7 @@ CheckButton epCheckBox(virtual):
   !NormalFont(epLabelFont, LEFT)
   !HighlightFont(epHighlightFont, LEFT)
   OnLoad:
-    *ep.checkbox(self)
+    *ep.CheckBox(self)
 
 CheckButton epReversedCheckBox(epCheckBox, virtual):
   ButtonText:
@@ -39,7 +39,7 @@ CheckButton epReversedCheckBox(epCheckBox, virtual):
   !NormalFont(epLabelFont, RIGHT)
   !HighlightFont(epHighlightFont, RIGHT)
   OnLoad:
-    *ep.checkbox(self, {reversed=true})
+    *ep.CheckBox(self, {reversed=true})
 
 Button epColorSpot(epControl, virtual):
   !Size(16, 16)
@@ -70,7 +70,7 @@ Button epColorSpot(epControl, virtual):
       !BottomLeft(2, 2)
       !Color(0.82, 0.76, 0.61, 1.0)
   OnLoad:
-    *ep.colorspot(self)
+    *ep.ColorSpot(self)
 
 EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
   !Size(y: 19)
@@ -100,7 +100,7 @@ EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
   OnEditFocusLost:
     *self:HighlightText(0, 0)
   OnLoad:
-    *self.combobox(self)
+    *ep.ComboBox(self)
 
 Button epDropBox(epControl, virtual):
   !Size(y: 19)
@@ -123,7 +123,7 @@ Button epDropBox(epControl, virtual):
   OnClick:
     *self:open()
   OnLoad:
-    *ep.dropbox(self)
+    *ep.DropBox(self)
 
 Frame epEditAreaBase(virtual):
   !Border:
@@ -146,9 +146,9 @@ Frame epEditAreaBase(virtual):
         OnMouseWheel:
           *self:GetParent().scrollbar:move(-delta)
     OnLoad:
-      *ep.scrollframe(self, {managed=true})
+      *ep.ScrollFrame(self, {managed=true})
   OnLoad:
-    *ep.editarea(self)
+    *ep.EditArea(self)
   OnMouseDown:
     *if not self.disabled and button == 'LeftButton' then
     *  self.editbox:SetFocus()
@@ -180,8 +180,10 @@ EditBox epEditBox(epControl, font: epNormalFont, -autoFocus, virtual):
     *self.innerLabel:Hide()
   OnEditFocusLost:
     *self:_focusLost()
+  OnTabPressed:
+    *self:showHistory()
   OnLoad:
-    *ep.editbox(self)
+    *ep.EditBox(self)
 
 EditBox epInlineEditBox(epEditBox, virtual):
   OnEditFocusGained:
@@ -221,9 +223,9 @@ Frame epGrid(epControl, virtual):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     OnLoad:
-      *ep.slider(self, {callback={ep.grid.update, self:GetParent()}})
+      *ep.Slider(self, {callback={ep.Grid.update, self:GetParent()}})
   OnLoad:
-    *ep.grid(self)
+    *ep.Grid(self)
   OnSizeChanged:
     *if self.resize then
     *  self:resize()
@@ -256,7 +258,7 @@ Button epGridHeader(virtual):
   OnLeave:
     *self:leave()
   OnLoad:
-    *ep.gridheader(self)
+    *ep.GridHeader(self)
 
 Frame epGridRow(virtual):
   !Background:
@@ -269,11 +271,11 @@ Frame epGridRow(virtual):
   OnLeave:
     *self:leave()
   OnLoad:
-    *ep.gridrow(self)
+    *ep.GridRow(self)
   OnMouseUp:
     *self:manipulate(button)
   OnMouseWheel:
-    *self.grid.scrollbar:move(-delta)
+    *self.Grid.scrollbar:move(-delta)
 
 Frame epGridCell(virtual):
   !Size(y: 13)
@@ -286,7 +288,7 @@ Frame epGridCell(virtual):
   OnLeave:
     *self.row:leave()
   OnLoad:
-    *ep.gridcell(self)
+    *ep.GridCell(self)
   OnMouseUp:
     *self.row:manipulate(button)
   OnMouseWheel:
@@ -322,12 +324,12 @@ Button epIconBox(epControl, virtual):
       !BottomLeft(2, 2)
       !Color(0.82, 0.76, 0.61, 1.0)
   OnLoad:
-    *ep.iconbox(self)
+    *ep.IconBox(self)
   OnClick:
     *self:browse()
 
-Button epListEntry(virtual):
-  !Size(y: 17)
+Button epListBuilderButton(epControlEdge, virtual):
+  !Size(y: 19)
   HighlightTexture(epControlHighlight, alphaMode: ADD)
   PushedTexture(epControlHighlight, alphaMode: ADD)
   ButtonText:
@@ -335,25 +337,32 @@ Button epListEntry(virtual):
   !PushedTextOffset(0, 0)
   !NormalFont(epLabelFont)
   !HighlightFont(epHighlightFont)
+  !Background:
+    Texture $parentBackground(.background, hidden):
+      !TopLeft(0, -2)
+      !BottomRight(0, 2)
+      !Color(1, 1, 1, 0.2)
+  OnEnter:
+    *self:enter()
+  OnLeave:
+    *self:leave()
+  OnLoad:
+    *ep.ListBuilderButton(self)
 
 Frame epListBuilder(epControl, virtual):
-  !Size(y: 19)
+  !Size(y: 21)
   Button $parentAdd(.add):
-    !Size(20, 20)
-    !TopRight(0, 1)
-    NormalTexture(file: '%textures\plus-normal'):
-      !Size(20, 20)
-      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
-    HighlightTexture(file: '%textures\plus-highlight'):
-      !Size(20, 20)
-      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    !Size(21, 21)
+    !TopRight(1, 1)
+    NormalTexture(epPlus)
+    HighlightTexture(epPlusHighlight)
     OnClick:
       *self:GetParent():open()
-  Frame $parentEntries(.entries):
-    !TopLeft(1, -1)
+  Frame $parentEntries(.entryContainer):
+    !TopLeft(4, -2)
     !BottomRight(-20, 1)
-  Frame $parentEditor(epControlEdge, .editor, hidden):
-    !Size(190, 25)
+  Frame $parentEditor(epControlEdge, .editor, frameStrata: DIALOG, hidden):
+    !Size(190, 27)
     !TopLeft(0, -18)
     Backdrop(bgFile: '%textures\panel-background', +tile):
       BackgroundInsets:
@@ -362,35 +371,20 @@ Frame epListBuilder(epControl, virtual):
         AbsValue(val: 128)
     EditBox $parentText(epComboBox, .text):
       !Size(100, 19)
-      !TopLeft(3, -3)
+      !TopLeft(4, -4)
       OnLoad:
-        *ep.combobox(self, {})
+        *ep.ComboBox(self, {})
     Button $parentColor(epColorSpot, .color):
       !Right(-36)
     Button $parentSave(.save):
-      !Size(20, 20)
-      !Right(-16)
-      NormalTexture(file: '%textures\plus-normal'):
-        !Size(20, 20)
-        !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
-      HighlightTexture(file: '%textures\plus-highlight'):
-        !Size(20, 20)
-        !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+      !Size(21, 21)
+      !Right(1)
+      NormalTexture(epPlus)
+      HighlightTexture(epPlusHighlight)
       OnClick:
         *self:GetParent():GetParent():save()
-    Button $parentCancel(.cancel):
-      !Size(20, 20)
-      !Right(0)
-      NormalTexture(file: '%textures\close-normal'):
-        !Size(20, 20)
-        !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
-      HighlightTexture(file: '%textures\close-highlight'):
-        !Size(20, 20)
-        !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
-      OnClick:
-        *self:GetParent():GetParent():cancel()
   OnLoad:
-    *ep.listbuilder(self)
+    *ep.ListBuilder(self)
 
 Button epMenuButton(virtual):
   !Size(128, 13)
@@ -420,14 +414,14 @@ Button epMenuButton(virtual):
   OnLeave:
     *self:leave()
   OnLoad:
-    *ep.menubutton(self)
+    *ep.MenuButton(self)
   OnMouseWheel:
     *local scrollbar = self.frame.scrollbar
     *if scrollbar and scrollbar:IsShown() then
     *  scrollbar:move(-delta)
     *end
 
-Frame epMenu(epControlEdge, frameStrata: FULLSCREEN, virtual):
+Frame epMenu(epControlEdge, frameStrata: DIALOG, virtual):
   Backdrop(bgFile: '%textures\panel-background', +tile):
     BackgroundInsets:
       AbsInset(left: 1, right: 1, top: 1, bottom: 1)
@@ -437,7 +431,7 @@ Frame epMenu(epControlEdge, frameStrata: FULLSCREEN, virtual):
     Texture(epControlBackground):
       !Color(0.75, 0.63, 0.4, 0.2)
   OnLoad:
-    *ep.menu(self)
+    *ep.Menu(self)
 
 Frame epMessageFrameBase(virtual):
   ScrollingMessageFrame $parentMessages(.messages, maxLines: 999999, fade: 0, displayDuration: 65526.0):
@@ -450,9 +444,9 @@ Frame epMessageFrameBase(virtual):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     OnLoad:
-      *ep.slider(self, {window=2, callback={ep.messageframe.scroll, self:GetParent()}})
+      *ep.Slider(self, {window=2, callback={ep.MessageFrame.scroll, self:GetParent()}})
   OnLoad:
-    *ep.messageframe(self)
+    *ep.MessageFrame(self)
 
 Frame epMessageFrame(inherits: 'epControl,epMessageFrameBase', virtual)
 
@@ -487,7 +481,7 @@ Button epMultiButton(epControl, virtual):
   !NormalFont(epNormalFont)
   !HighlightFont(epHighlightFont)
   OnLoad:
-    *ep.multibutton(self)
+    *ep.MultiButton(self)
 
 Frame epMultiFrame(epControlEdge, virtual):
   !Background:
@@ -496,17 +490,17 @@ Frame epMultiFrame(epControlEdge, virtual):
       !BottomRight(-1, 1)
       !Color(0.75, 0.63, 0.4, 0.1)
   OnLoad:
-    *ep.multiframe(self)
+    *ep.MultiFrame(self)
 
 ScrollFrame epScrollFrame(virtual):
   Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
     !TopRight(6, -7)
     !BottomRight(6, 7)
     OnLoad:
-      *ep.slider(self, {multiplier=0.15,
-      *  callback={ep.scrollframe.updateScroll, self:GetParent()}})
+      *ep.Slider(self, {multiplier=0.15,
+      *  callback={ep.ScrollFrame.updateScroll, self:GetParent()}})
   OnLoad:
-    *ep.scrollframe(self)
+    *ep.ScrollFrame(self)
   OnMouseWheel:
     *self.scrollbar:move(-delta)
   OnScrollRangeChanged:
@@ -563,14 +557,14 @@ EditBox epSpinner(epControl, font: epNormalFont, -autoFocus, virtual):
   OnEditFocusLost:
     *self:HighlightText(0, 0)
   OnLoad:
-    *ep.spinner(self)
+    *ep.Spinner(self)
   OnMouseWheel:
     *self:spin(delta)
 
 StatusBar epStatusBar(epControl, virtual):
   BarTexture $parentBar(epControlHighlight)
   OnLoad:
-    *ep.statusbar(self)
+    *ep.StatusBar(self)
 
 Button epTabButton(virtual):
   !Size(y: 21)
@@ -597,7 +591,7 @@ Button epTabButton(virtual):
   OnClick:
     *self.frame:select(self.id)
   OnLoad:
-    *ep.tabbutton(self)
+    *ep.TabButton(self)
 
 Frame epTabbedFrame(virtual):
   !Background:
@@ -648,7 +642,7 @@ Frame epTabbedFrame(virtual):
       !Anchor(point: TOPLEFT, relativeTo: $parentLeftCorner, relativePoint: TOPLEFT, x: -1, y: 14)
       !Anchor(point: BOTTOMLEFT, relativeTo: $parentLeftCorner, relativePoint: TOPLEFT, x: -1, y: 0)
   OnLoad:
-    *ep.tabbedframe(self)
+    *ep.TabbedFrame(self)
 
 Button epTreeButton(virtual):
   !Size(128, 16)
@@ -683,7 +677,7 @@ Button epTreeButton(virtual):
   OnLeave:
     *self:leave()
   OnLoad:
-    *ep.treebutton(self)
+    *ep.TreeButton(self)
   OnMouseWheel:
     *self:scroll(delta)
 
@@ -699,9 +693,9 @@ Frame epTree(epControl, virtual):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     Onload:
-      *ep.slider(self, {callback={ep.tree.update, self:GetParent()}})
+      *ep.Slider(self, {callback={ep.Tree.update, self:GetParent()}})
   OnLoad:
-    *ep.tree(self)
+    *ep.Tree(self)
   OnSizeChanged:
     *if self.resize then
     *  self:resize()
@@ -746,7 +740,7 @@ Slider epVerticalScrollBar(orientation: VERTICAL, valueStep: 1, virtual):
       *  self:GetParent():move(1, (IsShiftKeyDown() or button == 'RightButton'))
       *end
   OnLoad:
-    *ep.slider(self)
+    *ep.Slider(self)
   OnMouseWheel:
     *self:move(-delta)
   OnValueChanged:
@@ -812,7 +806,7 @@ Slider epVerticalSlider(orientation: VERTICAL, valueStep: 1, virtual):
       *  self:GetParent():move(1, (IsShiftKeyDown() or button == 'RightButton'))
       *end
   OnLoad:
-    *ep.slider(self)
+    *ep.Slider(self)
   OnMouseWheel:
     *self:move(-delta)
   OnValueChanged:

@@ -1,7 +1,7 @@
 local exception, tinject
     = ep.exception, ep.tinject
 
-ep.items.locationProvider = ep.prototype('ep.items.locationProvider', {
+ep.ItemLocationProvider = ep.prototype('ep.ItemLocationProvider', {
   addToOrderedContainer = function(cls, container, id, position)
     container.n = container.n + 1
     if position then
@@ -27,7 +27,7 @@ ep.items.locationProvider = ep.prototype('ep.items.locationProvider', {
   end
 })
 
-ep.items.backpackProvider = ep.prototype('ep.items.backpackProvider', ep.items.locationProvider, {
+ep.BackpackLocationProvider = ep.prototype('ep.BackpackLocationProvider', ep.ItemLocationProvider, {
   approveMove = function(cls, item, location)
 
   end,
@@ -86,7 +86,7 @@ ep.items.backpackProvider = ep.prototype('ep.items.backpackProvider', ep.items.l
   end
 })
 
-ep.items.containerProvider = ep.prototype('ep.items.containerProvider', ep.items.containerProvider, {
+ep.ContainerLocationProvider = ep.prototype('ep.ContainerLocationProvider', ep.ItemLocationProvider, {
   parseLocation = function(cls, location)
     local tokens = {split(location, ':')}
     if #tokens ~= 3 or tokens[1] ~= 'cn' then
@@ -130,7 +130,7 @@ ep.items.containerProvider = ep.prototype('ep.items.containerProvider', ep.items
   end
 })
 
-ep.items.equipmentProvider = ep.prototype('ep.items.equipmentProvider', ep.items.locationProvider, {
+ep.EquipmentLocationProvider = ep.prototype('ep.EquipmentLocationProvider', ep.ItemLocationProvider, {
   parseLocation = function(cls, location)
     local tokens = {split(location, ':')}
     if #tokens ~= 4 or tokens[1] ~= 'eq' then
@@ -159,7 +159,7 @@ ep.items.equipmentProvider = ep.prototype('ep.items.equipmentProvider', ep.items
   end
 })
 
-ep.items.socketProvider = ep.prototype('ep.items.socketProvider', ep.items.locationProvider, {
+ep.SocketLocationProvider = ep.prototype('ep.SocketLocationProvider', ep.ItemLocationProvider, {
   parseLocation = function(cls, location)
     local tokens = {split(location, ':')}
     if #tokens ~= 3 or tokens[1] ~= 'sk' then
@@ -179,11 +179,11 @@ ep.items.socketProvider = ep.prototype('ep.items.socketProvider', ep.items.locat
   end
 })
 
-ep.items.spatialProvider = ep.prototype('ep.items.spatialProvider', ep.items.locationProvider, {
+ep.SpatialLocationProvider = ep.prototype('ep.SpatialLocationProvider', ep.ItemLocationProvider, {
   
 })
 
-ep.items.stashProvider = ep.prototype('ep.items.stashProvider', ep.items.locationProvider, {
+ep.StashLocationProvider = ep.prototype('ep.StashLocationProvider', ep.ItemLocationProvider, {
   approveMove = function(cls, item, location)
 
   end,
@@ -198,10 +198,10 @@ ep.items.stashProvider = ep.prototype('ep.items.stashProvider', ep.items.locatio
 })
 
 ep.items.locationProviders = {
-  bk = ep.items.backpackProvider,
-  cn = ep.items.containerProvider,
-  eq = ep.items.equipmentProvider,
-  sk = ep.items.socketProvider,
-  sp = ep.items.spatialProvider,
-  st = ep.items.stashProvider,
+  bk = ep.BackpackLocationProvider,
+  cn = ep.ContainerLocationProvider,
+  eq = ep.EquipmentLocationProvider,
+  sk = ep.SocketLocationProvider,
+  sp = ep.SpatialLocationProvider,
+  st = ep.StashLocationProvider
 }

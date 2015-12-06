@@ -1,9 +1,10 @@
-local _, attachTooltip, band, detachTooltip, exception, fieldsort, floor, invoke,
-      tclear, tindex, tint, tupdate
-    = ep.localize, ep.attachTooltip, bit.band, ep.detachTooltip, ep.exception,
-      ep.fieldsort, math.floor, ep.invoke, ep.tclear, ep.tindex, ep.tint, ep.tupdate
+local _, attachTooltip, attrsort, band, detachTooltip, exception, exceptional,
+      fieldsort, floor, invoke, put, ref, tclear, tindex, tint, tupdate
+    = ep.localize, ep.attachTooltip, ep.attrsort, bit.band, ep.detachTooltip,
+      ep.exception, ep.exceptional, ep.fieldsort, math.floor, ep.invoke, ep.put,
+      ep.ref, ep.tclear, ep.tindex, ep.tint, ep.tupdate
 
-ep.button = ep.control('ep.button', 'epButton', ep.basecontrol, 'button', {
+ep.Button = ep.control('ep.Button', 'epButton', ep.BaseControl, 'button', {
   initialize = function(self, params)
     local text = self:GetText()
     if text then
@@ -27,7 +28,7 @@ ep.button = ep.control('ep.button', 'epButton', ep.basecontrol, 'button', {
   end
 })
 
-ep.checkbox = ep.control('ep.checkbox', 'epCheckBox', ep.basecontrol, 'checkbox', {
+ep.CheckBox = ep.control('ep.CheckBox', 'epCheckBox', ep.BaseControl, 'checkbox', {
   initialize = function(self, params)
     local text = self:GetText()
     if text then
@@ -75,10 +76,10 @@ ep.checkbox = ep.control('ep.checkbox', 'epCheckBox', ep.basecontrol, 'checkbox'
   end
 })
 
-ep.checkbox.getValue = ep.checkbox.GetChecked
-ep.checkbox.setValue = ep.checkbox.SetChecked
+ep.CheckBox.getValue = ep.CheckBox.GetChecked
+ep.CheckBox.setValue = ep.CheckBox.SetChecked
 
-ep.colorspot = ep.control('ep.colorspot', 'epColorSpot', ep.button, nil, {
+ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
   initialize = function(self, params)
     local color = 'black'
     if params and params.color then
@@ -95,7 +96,7 @@ ep.colorspot = ep.control('ep.colorspot', 'epColorSpot', ep.button, nil, {
   end
 })
 
-ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
+ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
   initialize = function(self, params)
     if self.label then
       self.label:SetText(_(self.label:GetText()))
@@ -113,7 +114,7 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
       self.prefix = tint:format('label', params.prefix..': ')
     end
 
-    self.menu = ep.menu(self.name..'Menu', self, {
+    self.menu = ep.Menu(self.name..'Menu', self, {
       callback = {self.select, self},
       items = self.items,
       location = {anchor=self, x=0, y=-18},
@@ -248,7 +249,7 @@ ep.dropbox = ep.control('ep.dropbox', 'epDropBox', ep.button, nil, {
   end
 })
 
-ep.combobox = ep.control('ep.combobox', 'epComboBox', ep.dropbox, 'editbox', {
+ep.ComboBox = ep.control('ep.ComboBox', 'epComboBox', ep.DropBox, 'editbox', {
   disable = function(self, cleared)
     self:ClearFocus()
     self:super():disable(cleared)
@@ -277,7 +278,7 @@ ep.combobox = ep.control('ep.combobox', 'epComboBox', ep.dropbox, 'editbox', {
   end
 })
 
-ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
+ep.EditArea = ep.control('ep.EditArea', 'epEditArea', ep.BaseFrame, nil, {
   initialize = function(self, params)
     params = params or {}
     self.editbox = self.scrollFrame:GetScrollChild()
@@ -382,15 +383,14 @@ ep.editarea = ep.control('ep.editarea', 'epEditArea', ep.baseframe, nil, {
   end
 })
 
-ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
+ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
   initialize = function(self, params)
-    if self.label then
-      self.label:SetText(_(self.label:GetText()))
-    end
-
     params = params or {}
     self.clearable = params.clearable
     self.placeholder = params.placeholder
+    self.historyEnabled = params.historyEnabled
+    self.historyLimit = params.historyLimit or 30
+    self.historyTable = params.historyTable
 
     if self.clearable and self:GetText() ~= '' then
       self.clearButton:Show()
@@ -407,6 +407,29 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
       attachTooltip(self, params.tooltip, {delay=1, 
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
+
+    if self.label then
+      self.label:SetText(_(self.label:GetText()))
+    end
+  end,
+
+  addToHistory = function(self, value)
+    if not (self.historyEnabled and #value > 0) then
+      return
+    end
+
+    local history = self:getHistory()
+    for i, line in ipairs(history) do
+      if value == line then
+        return
+      end
+    end
+
+    tinsert(history, 1, value)
+    if #history > self.historyLimit then
+      tremove(history)
+    end
+    self:cancelHistory()
   end,
 
   append = function(self, content, unmoved)
@@ -425,6 +448,10 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
     if position then
       self:SetCursorPosition(position)
     end
+  end,
+
+  cancelHistory = function(self)
+    self.historyActive, self.historyOffset = nil, nil
   end,
 
   disable = function(self, cleared, saved)
@@ -456,6 +483,21 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
     self:EnableMouse(true)
   end,
 
+  getHistory = function(self)
+    local historyTable = self.historyTable
+    if type(historyTable) == 'string' then
+      historyTable = ref(historyTable)
+      if type(historyTable) ~= 'table' then
+        historyTable = {}
+        put(self.historyTable, historyTable)
+      end
+    elseif not historyTable then
+      historyTable = {}
+      self.historyTable = historyTable
+    end
+    return historyTable
+  end,
+
   getValue = function(self)
     return self:GetText()
   end,
@@ -478,12 +520,32 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
     return original
   end,
 
+  showHistory = function(self)
+    if not self.historyEnabled then
+      return
+    end
+
+    local history = self:getHistory()
+    if self.historyActive then
+      self.historyOffset = self.historyOffset + 1
+      if self.historyOffset > #history then
+        self.historyOffset = 1
+      end
+    else
+      self.historyActive = true
+      self.historyOffset = 1
+    end
+    self:setValue(history[self.historyOffset])
+  end,
+
   _gridSet = function(self, value)
     self:setValue(value)
   end,
 
   _focusLost = function(self)
     self:HighlightText(0, 0)
+    self:cancelHistory()
+
     if self.placeholder then
       if self:GetText() == '' then
         self.innerLabel:Show()
@@ -507,17 +569,17 @@ ep.editbox = ep.control('ep.editbox', 'epEditBox', ep.basecontrol, 'editbox', {
   end
 })
 
-ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
+ep.Grid = ep.control('ep.Grid', 'epGrid', ep.BaseFrame, nil, {
   controls = {
-    button = {constructor = ep.button, height = 19, minwidth = 19},
-    checkbox = {constructor = ep.checkbox, height = 16, width = 20},
-    colorspot = {constructor = ep.colorspot, height = 16, width = 16},
-    combobox = {constructor = ep.combobox, height = 19, minwidth = 19},
-    dropbox = {constructor = ep.dropbox, height = 19, minwidth = 19},
-    editbox = {constructor = ep.editbox, height = 19, minwidth = 19},
-    iconbox = {constructor = ep.iconbox, height = 38, width = 38},
-    spinner = {constructor = ep.spinner, height = 19, minwidth = 19},
-    statusbar = {constructor = ep.statusbar, height = 19, minwidth = 19}
+    button = {constructor = ep.Button, height = 19, minwidth = 19},
+    checkbox = {constructor = ep.CheckBox, height = 16, width = 20},
+    colorspot = {constructor = ep.ColorSpot, height = 16, width = 16},
+    combobox = {constructor = ep.ComboBox, height = 19, minwidth = 19},
+    dropbox = {constructor = ep.DropBox, height = 19, minwidth = 19},
+    editbox = {constructor = ep.EditBox, height = 19, minwidth = 19},
+    iconbox = {constructor = ep.IconBox, height = 38, width = 38},
+    spinner = {constructor = ep.Spinner, height = 19, minwidth = 19},
+    statusbar = {constructor = ep.StatusBar, height = 19, minwidth = 19}
   },
 
   initialize = function(self, params)
@@ -594,7 +656,7 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
     for i = 1, self.rowCount do
       row = self.rows[i]
       if not row then
-        row = ep.gridrow(self.name..'r'..i, self, self, i)
+        row = ep.GridRow(self.name..'r'..i, self, self, i)
         row:SetPoint('TOPLEFT', self, 'TOPLEFT', 1, -(offset + (self.rowHeight * (i - 1))))
         self.rows[i] = row
       end
@@ -660,7 +722,7 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
 
       cell.field = cell.field or i
       if self.headers then
-        header = ep.gridheader(self.name..'h'..i, self.header, self, i, cell)
+        header = ep.GridHeader(self.name..'h'..i, self.header, self, i, cell)
         self.headers[i], self.headersByField[cell.field] = header, header
       end
     end
@@ -735,7 +797,7 @@ ep.grid = ep.control('ep.grid', 'epGrid', ep.baseframe, nil, {
   end
 })
 
-ep.gridcell = ep.control('ep.gridcell', 'epGridCell', ep.baseframe, nil, {
+ep.GridCell = ep.control('ep.GridCell', 'epGridCell', ep.BaseFrame, nil, {
   initialize = function(self, row)
     self.row = row
   end,
@@ -745,7 +807,7 @@ ep.gridcell = ep.control('ep.gridcell', 'epGridCell', ep.baseframe, nil, {
   end
 })
 
-ep.gridheader = ep.control('ep.gridheader', 'epGridHeader', ep.button, nil, {
+ep.GridHeader = ep.control('ep.GridHeader', 'epGridHeader', ep.Button, nil, {
   initialize = function(self, grid, id, cell)
     self:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
     self.cell = cell
@@ -804,7 +866,7 @@ ep.gridheader = ep.control('ep.gridheader', 'epGridHeader', ep.button, nil, {
   end
 })
 
-ep.gridrow = ep.control('ep.gridrow', 'epGridRow', ep.baseframe, nil, {
+ep.GridRow = ep.control('ep.GridRow', 'epGridRow', ep.BaseFrame, nil, {
   initialize = function(self, grid, id)
     local instance, cellName, constructor
     self.grid = grid
@@ -822,7 +884,7 @@ ep.gridrow = ep.control('ep.gridrow', 'epGridRow', ep.baseframe, nil, {
         end
         instance.row = row
       else
-        instance = ep.gridcell(cellName, self, self)
+        instance = ep.GridCell(cellName, self, self)
       end
       instance.cell = cell
       self.cells[i] = instance
@@ -872,7 +934,7 @@ ep.gridrow = ep.control('ep.gridrow', 'epGridRow', ep.baseframe, nil, {
   end
 })
 
-ep.iconbox = ep.control('ep.iconbox', 'epIconBox', ep.button, nil, {
+ep.IconBox = ep.control('ep.IconBox', 'epIconBox', ep.Button, nil, {
   initialize = function(self, params)
     self:child('T'):SetGradientAlpha('vertical', 1, 1, 1, 0.2, 1, 1, 1, 1)
     self:child('B'):SetGradientAlpha('vertical', 1, 1, 1, 1, 1, 1, 1, 0.2)
@@ -942,26 +1004,36 @@ ep.iconbox = ep.control('ep.iconbox', 'epIconBox', ep.button, nil, {
   end
 })
 
-ep.listbuilder = ep.control('ep.listbuilder', 'epListBuilder', ep.baseframe, nil, {
-  initialize = function(self, specification)
+ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil, {
+  initialize = function(self, params)
+    params = params or {}
     self.buttons = {}
+    self.defaultColor = params.defaultColor
     self.entries = {}
+    self.formatter = params.formatter
     self.opened = false
+    self.sorter = params.sorter or attrsort(1)
+    self.supportColor = params.supportColor
+    self.tooltipGenerator = params.tooltipGenerator
+    self.validator = params.validator
   end,
 
-  add = function(self, entry)
-    for i, existing in ipairs(self.entries) do
-      if existing[1] == entry[1] then
+  addEntry = function(self, entry, skipUpdate)
+    if self.formatter then
+      entry = self.formatter(entry)
+    end
+
+    if self.validator then
+      local failure = self.validator(entry)
+      if exceptional(failure) then
+        -- handle this properly
         return
       end
     end
 
-    local idx, button = #self.entries + 1
-    if self.buttons[idx] then
-      button = self.buttons[idx]
-    else
-      button = CreateFrame('Button', self.name..idx, self.container, 'epListEntry')
-      self.buttons[idx] = button
+    tinsert(self.entries, entry)
+    if not skipUpdate then
+      self:update()
     end
   end,
 
@@ -972,19 +1044,89 @@ ep.listbuilder = ep.control('ep.listbuilder', 'epListBuilder', ep.baseframe, nil
     end
   end,
 
-  open = function(self, item)
+  open = function(self)
     if self.opened then
-      self.editor:Hide()
-      self.opened = false
+      self:cancel()
     else
       self.editor:SetWidth(self:GetWidth())
       self.editor:Show()
       self.opened = true
     end
   end,
+
+  update = function(self)
+    table.sort(self.entries, self.sorter)
+
+    local width, x, y, bw = self:GetWidth() - 24, 0, 0 
+    for i, entry in ipairs(self.entries) do
+      local button = self.buttons[i]
+      if not button then
+        button = ep.ListBuilderButton(self.name..'Entry'..i, self.entryContainer, self, i)
+        self.buttons[i] = button
+      end
+    
+      if button.entry ~= entry then
+        button:update(entry)
+      end
+      button:Show()
+
+      bw = button:GetWidth()
+      if (x + bw) > width then
+        x, y = 0, y - 18
+      end
+
+      button:SetPoint('TOPLEFT', self.entryContainer, 'TOPLEFT', x, y)
+      x = x + bw + 4
+    end
+
+    self:SetHeight(y + 21)
+
+    local idx = #self.entries + 1
+    while true do
+      button = self.buttons[idx]
+      if button then
+        button.entry = nil
+        button:Hide()
+        idx = idx + 1
+      else
+        break
+      end
+    end
+  end
 })
 
-ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
+ep.ListBuilderButton = ep.control('ep.ListBuilderButton', 'epListBuilderButton', ep.Button, nil, {
+  initialize = function(self, frame, id)
+    self.entry = nil
+    self.font = self:GetNormalFontObject()
+    self.frame = frame
+    self.id = id
+    self:setBorderColors(1, 1, 1, 0.5)
+  end,
+
+  enter = function(self)
+  end,
+
+  leave = function(self)
+  end,
+
+  update = function(self, entry)
+    if entry then
+      self.entry = entry
+    end
+    if self.entry then
+      self:SetText(self.entry[1])
+      if self.entry[2] then
+        self.font:SetTextColor(unpack(tint(self.entry[2])))
+      else
+        self.font:SetTextColor(unpack(tint.label))
+      end
+      self:SetWidth(self:GetTextWidth() + 2)
+    end
+  end
+})
+
+ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
   menus = {},
 
   initialize = function(self, params)
@@ -1000,7 +1142,7 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
 
     self.scrollbar = false
     if params.scrollable then
-      self.scrollbar = ep.vscrollbar(self.name..'ScrollBar', self, {self.scroll, self})
+      self.scrollbar = ep.VerticalScrollBar(self.name..'ScrollBar', self, {self.scroll, self})
       self.scrollbar:SetPoint('TOPRIGHT', self, 'TOPRIGHT', 0, -13)
       self.scrollbar:SetPoint('BOTTOMRIGHT', self, 'BOTTOMRIGHT', 0, 13)
     end
@@ -1021,7 +1163,7 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
     elseif items > buttons then
       target = (self.scrollbar) and min(self.window, items) or items
       for i = buttons + 1, target do
-        button = ep.menubutton(self.name..i, self, self, i)
+        button = ep.MenuButton(self.name..i, self, self, i)
         button:SetPoint('TOPLEFT', self, 'TOPLEFT', 5, -(4 + (13 * (i - 1))))
         self.buttons[i] = button
       end
@@ -1197,7 +1339,7 @@ ep.menu = ep.control('ep.menu', 'epMenu', ep.baseframe, nil, {
   end
 })
 
-ep.menubutton = ep.control('ep.menubutton', 'epMenuButton', ep.button, nil, {
+ep.MenuButton = ep.control('ep.MenuButton', 'epMenuButton', ep.Button, nil, {
   initialize = function(self, frame, id)
     self.arrow, self.checkbox, self.highlight = self:children('Arrow', 'Check', 'Highlight')
     self.font = self:GetNormalFontObject()
@@ -1245,7 +1387,7 @@ ep.menubutton = ep.control('ep.menubutton', 'epMenuButton', ep.button, nil, {
     if self.item.submenu then
       self.arrow:SetTexture('Interface\\AddOns\\ephemeral\\textures\\arrow-right-highlight')
       if not self.item.submenu.ancestor then
-        self.item.submenu = ep.menu(self.frame.name..self.item.label..'Menu', self.frame, self.item.submenu)
+        self.item.submenu = ep.Menu(self.frame.name..self.item.label..'Menu', self.frame, self.item.submenu)
         self.item.submenu.ancestor = self.frame
       end
       self.item.submenu:display({anchor = self, x = self:GetWidth() + 5, y = 4})
@@ -1303,7 +1445,7 @@ ep.menubutton = ep.control('ep.menubutton', 'epMenuButton', ep.button, nil, {
   end
 })
 
-ep.messageframe = ep.control('ep.messageframe', 'epMessageFrame', ep.basecontrol, 'messageframe', {
+ep.MessageFrame = ep.control('ep.MessageFrame', 'epMessageFrame', ep.BaseControl, 'messageframe', {
   initialize = function(self, params)
     self.range = 0
     if params and params.color then
@@ -1330,7 +1472,7 @@ ep.messageframe = ep.control('ep.messageframe', 'epMessageFrame', ep.basecontrol
   end
 })
 
-ep.multibutton = ep.control('ep.multibutton', 'epMultiButton', ep.basecontrol, 'button', {
+ep.MultiButton = ep.control('ep.MultiButton', 'epMultiButton', ep.BaseControl, 'button', {
   initialize = function(self, params)
     local text = self:GetText()
     if text then
@@ -1338,7 +1480,7 @@ ep.multibutton = ep.control('ep.multibutton', 'epMultiButton', ep.basecontrol, '
     end
 
     params = params or {}
-    self.menu = ep.menu(self.name..'Menu', self, {
+    self.menu = ep.Menu(self.name..'Menu', self, {
       items = params.items,
       location = {anchor = self, x = 0, y = -18},
       window = params.window or 8,
@@ -1372,7 +1514,7 @@ ep.multibutton = ep.control('ep.multibutton', 'epMultiButton', ep.basecontrol, '
   end,
 })
 
-ep.multiframe = ep.control('ep.multiframe', 'epMultiFrame', ep.baseframe, nil, {
+ep.MultiFrame = ep.control('ep.MultiFrame', 'epMultiFrame', ep.BaseFrame, nil, {
   initialize = function(self, params)
     params = params or {}
     self.frames = nil
@@ -1412,7 +1554,7 @@ ep.multiframe = ep.control('ep.multiframe', 'epMultiFrame', ep.baseframe, nil, {
   end
 })
 
-ep.scrollframe = ep.control('ep.scrollframe', 'epScrollFrame', ep.basecontrol, 'scrollframe', {
+ep.ScrollFrame = ep.control('ep.ScrollFrame', 'epScrollFrame', ep.BaseControl, 'scrollframe', {
   initialize = function(self, params)
     self.hideable = params.hideable or false
     self.managed = params.managed or false
@@ -1459,7 +1601,7 @@ ep.scrollframe = ep.control('ep.scrollframe', 'epScrollFrame', ep.basecontrol, '
   end
 })
 
-ep.slider = ep.control('ep.slider', 'epSlider', ep.basecontrol, 'slider', {
+ep.Slider = ep.control('ep.Slider', 'epSlider', ep.BaseControl, 'slider', {
   initialize = function(self, params)
     params = params or {}
     self.multiplier = params.multiplier
@@ -1514,7 +1656,7 @@ ep.slider = ep.control('ep.slider', 'epSlider', ep.basecontrol, 'slider', {
   end
 })
 
-ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
+ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.EditBox, nil, {
   initialize = function(self, params)
     if self.label then
       self.label:SetText(_(self.label:GetText()))
@@ -1682,7 +1824,7 @@ ep.spinner = ep.control('ep.spinner', 'epSpinner', ep.editbox, nil, {
   end
 })
 
-ep.tabbutton = ep.control('ep.tabbutton', 'epTabButton', ep.button, nil, {
+ep.TabButton = ep.control('ep.TabButton', 'epTabButton', ep.Button, nil, {
   initialize = function(self, id, frame)
     self.background = self:child('Background')
     self.border = self:child('Border')
@@ -1710,7 +1852,7 @@ ep.tabbutton = ep.control('ep.tabbutton', 'epTabButton', ep.button, nil, {
   end
 })
 
-ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil, {
+ep.TabbedFrame = ep.control('ep.TabbedFrame', 'epTabbedFrame', ep.BaseFrame, nil, {
   initialize = function(self, params)
     params = params or {}
     self.callback = params.callback
@@ -1753,7 +1895,7 @@ ep.tabbedframe = ep.control('ep.tabbedframe', 'epTabbedFrame', ep.baseframe, nil
     local items, tabs, offset, index, tab, border = #self.items, #self.tabs
     if items > tabs then
       for i = tabs + 1, items do
-        self.tabs[i] = ep.tabbutton(self.name..i, self, i, self)
+        self.tabs[i] = ep.TabButton(self.name..i, self, i, self)
       end
     end
 
@@ -1933,7 +2075,7 @@ ep.testitems = {
   {label='nothing'}
 }
 
-ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
+ep.Tree = ep.control('ep.Tree', 'epTree', ep.BaseFrame, nil, {
   initialize = function(self, params)
     params = params or {}
     self.buttonHeight = params.buttonHeight or 16
@@ -1981,7 +2123,7 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
       if button then
         button:Show()
       else
-        button = ep.treebutton(self.name..'b'..i, self, self, i)
+        button = ep.TreeButton(self.name..'b'..i, self, self, i)
         button:SetPoint('TOPLEFT', self, 'TOPLEFT', 5,
           -(initialOffset + (self.buttonHeight * (i - 1))))
         self.buttons[i] = button
@@ -2125,7 +2267,7 @@ ep.tree = ep.control('ep.tree', 'epTree', ep.baseframe, nil, {
   end
 })
 
-ep.treebutton = ep.control('ep.treebutton', 'epTreeButton', ep.button, nil, {
+ep.TreeButton = ep.control('ep.TreeButton', 'epTreeButton', ep.Button, nil, {
   initialize = function(self, frame, id)
     self.font = self:GetNormalFontObject()
     self.frame = frame
@@ -2208,4 +2350,4 @@ ep.treebutton = ep.control('ep.treebutton', 'epTreeButton', ep.button, nil, {
   end
 })
 
-ep.vscrollbar = ep.control('ep.vscrollbar', 'epVerticalScrollBar', ep.slider)
+ep.VerticalScrollBar = ep.control('ep.VerticalScrollBar', 'epVerticalScrollBar', ep.Slider)

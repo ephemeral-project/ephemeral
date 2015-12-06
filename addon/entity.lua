@@ -3,9 +3,9 @@ local _, attrsort, deepcopy, deployModule, exception, exceptional, isderived,
     = ep.localize, ep.attrsort, ep.deepcopy, ep.deployModule, ep.exception,
       ep.exceptional, ep.isderived, ep.split, ep.uniqid
 
-local entityType = ep.tcopy(ep.metatype)
+ep.EntityType = ep.tcopy(ep.metatype)
 
-entityType.__call = function(prototype, entity)
+ep.EntityType.__call = function(prototype, entity)
   local object = setmetatable({__entity = entity or {}}, prototype)
   local referrent, initializer = prototype, rawget(prototype, 'initialize')
 
@@ -24,7 +24,7 @@ entityType.__call = function(prototype, entity)
   return object
 end
 
-local instanceType = {
+ep.InstanceType = {
   __index = function(object, field)
     if field:sub(1, 1) == '_' then
       local value = rawget(object, field)
@@ -55,8 +55,6 @@ ep.entities = {
 
   cache = ep.weaktable('v'),
   definitions = {},
-  entityType = entityType,
-  instanceType = instanceType,
 
   define = function(self, name, base, proto)
     proto = proto or {}
@@ -80,7 +78,7 @@ ep.entities = {
         instance.af = ep.character:getAffinity(entity.ay)
       end
 
-      local object = setmetatable({__entity=entity, __instance=instance}, instanceType)
+      local object = setmetatable({__entity=entity, __instance=instance}, ep.InstanceType)
       object:construct(origin)
 
       if not transient then
@@ -123,11 +121,11 @@ ep.entities = {
       self.definitions[proto.cl] = proto
     end
 
-    return setmetatable(proto, entityType)
+    return setmetatable(proto, ep.EntityType)
   end,
 
   deploy = function(self)
-    ep.instances = ep.datastore({
+    ep.instances = ep.DataStore({
       location = 'ephemeral.instances',
       indexes = {
         af = {type = 'affinity'},
@@ -206,7 +204,7 @@ ep.entities = {
   end
 }
 
-ep.entity = ep.entities:define('ep.entity', nil, {
+ep.Entity = ep.entities:define('ep.Entity', nil, {
   noun = _'entity',
   plural = _'entities',
 

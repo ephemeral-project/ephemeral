@@ -41,6 +41,13 @@ function ep.debug(message, objects, stacktrace, showConsole)
     end
   elseif type(message) == 'table' then
     line = message[1]:format(select(2, unpack(message)))
+  elseif type(message) == 'number' then
+    line = debugstack(message)
+    if line then
+      line, _ = ep.split(line, '\n', 1)
+    else
+      line = 'unknown location'
+    end
   else
     line = message
   end
@@ -63,9 +70,6 @@ function ep.debug(message, objects, stacktrace, showConsole)
     for title, object in pairs(objects) do
       formatObject(title, object)
     end
-    for i, object in ipairs(objects) do
-      formatObject(title, object)
-    end
   end
 
   if stacktrace and debugstack then
@@ -75,7 +79,7 @@ function ep.debug(message, objects, stacktrace, showConsole)
     end
   end
 
-  if epConsole then
+  if epConsole and epConsole.log then
     epConsole:log(lines, nil, showConsole)
   else
     ep.alert('debug', concat(lines, '\n'))
@@ -83,7 +87,7 @@ function ep.debug(message, objects, stacktrace, showConsole)
 end
 
 function d(...)
-  ep.debug('debug', {...})
+  ep.debug(3, {...}, nil, true)
 end
 
 local function isPublicAttr(attr)
@@ -1000,7 +1004,7 @@ function ep._thawScalar(token, value)
   end
 end
 
-ep.locale = ep.prototype('ep.locale', {
+ep.Locale = ep.prototype('ep.Locale', {
   strings = nil,
 
   bootstrap = function(cls, locale)
@@ -1027,7 +1031,7 @@ ep.locale = ep.prototype('ep.locale', {
   end
 })
 
-ep.pqueue = ep.prototype('ep.pqueue', {
+ep.PriorityQueue = ep.prototype('ep.PriorityQueue', {
   initialize = function(self, field)
     self.field, self.items = field, {}
   end,
@@ -1062,7 +1066,7 @@ ep.pqueue = ep.prototype('ep.pqueue', {
   end
 })
 
-ep.ring = ep.prototype('ep.ring', {
+ep.Ring = ep.prototype('ep.Ring', {
   add = function(self, object)
     local head = self.head
     if head then
@@ -1093,7 +1097,7 @@ ep.ring = ep.prototype('ep.ring', {
   end
 })
 
-ep.timer = ep.prototype('ep.timer', {
+ep.Timer = ep.prototype('ep.Timer', {
   timers = {},
 
   initialize = function(self, name)
@@ -1144,7 +1148,7 @@ ep.timer = ep.prototype('ep.timer', {
   end
 })
 
-ep.timestamp = ep.prototype('ep.timestamp', {
+ep.Timestamp = ep.prototype('ep.Timestamp', {
   parts = {'year', 'month', 'day', 'hour', 'min', 'sec'},
 
   initialize = function(self, value, portable)

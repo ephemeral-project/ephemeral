@@ -2,7 +2,7 @@ local _, exceptional, floor, invoke, iterkeys, itersplit, repr, strip
     = ep.localize, ep.exceptional, math.floor, ep.invoke, ep.iterkeys,
       ep.itersplit, ep.repr, ep.strip
 
-ep.colorbrowser = ep.panel('ep.colorbrowser', 'epColorBrowser', {
+ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
   initialize = function(self)
     self:super():initialize({
       title = _'Color Browser',
@@ -32,7 +32,7 @@ ep.colorbrowser = ep.panel('ep.colorbrowser', 'epColorBrowser', {
   end
 })
 
-ep.console = ep.panel('ep.console', 'epConsole', {
+ep.Console = ep.panel('ep.Console', 'epConsole', {
   initialize = function(self)
     self.interpreter, self.debuglog = self:children('TabsInterpreter', 'TabsLog')
     self.interpreter:setFontObject(epConsoleFont)
@@ -75,12 +75,6 @@ ep.console = ep.panel('ep.console', 'epConsole', {
     end
   end,
 
-  log = function(self, text, color)
-    for line in itersplit(text, '\n') do
-      self.debuglog:append(line, color)
-    end
-  end,
-
   notify = function(self, text, color)
     for line in itersplit(text, '\n') do
       self.interpreter:append(line, color)
@@ -90,7 +84,9 @@ ep.console = ep.panel('ep.console', 'epConsole', {
   submit = function(self)
     local text, result = strip(self.input:setValue(''))
     if text then
-      self.input:AddHistoryLine(text)
+      if text ~= '.' and text ~= '\\' then
+        self.input:addToHistory(text)
+      end
       self.interpreter:append('>> '..text, ep.tint.console)
       result = ep.interpretInput(text)
       if exceptional(result) then
@@ -103,7 +99,7 @@ ep.console = ep.panel('ep.console', 'epConsole', {
   end
 })
 
-ep.drawer = ep.panel('ep.drawer', 'epDrawer', {
+ep.Drawer = ep.panel('ep.Drawer', 'epDrawer', {
   initialize = function(self)
     self:super():initialize({
       style = 'handlebar',
@@ -112,7 +108,7 @@ ep.drawer = ep.panel('ep.drawer', 'epDrawer', {
   end
 })
 
-ep.home = ep.panel('ep.home', 'epHome', {
+ep.Home = ep.panel('ep.Home', 'epHome', {
   initialize = function(self)
     self:super():initialize({
       title = 'Ephemeral',
@@ -128,9 +124,9 @@ ep.home = ep.panel('ep.home', 'epHome', {
   end
 })
 
-ep.iconbrowserbutton = ep.control('ep.iconbrowserbutton', 'epIconBrowserButton', ep.iconbox)
+ep.IconBrowserButton = ep.control('ep.IconBrowserButton', 'epIconBrowserButton', ep.IconBox)
 
-ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
+ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
   categories = {
     {label=_'All Icons', value='ii'},
     {label=_'Armor', submenu={items={
@@ -214,7 +210,7 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
     self.icons = 0
     self.rows = 0
 
-    self.categoryDropbox.menu = ep.menu('epIconBrowserCategoryMenu', self.categoryDropbox, {
+    self.categoryDropbox.menu = ep.Menu('epIconBrowserCategoryMenu', self.categoryDropbox, {
       callback = {self.setCategory, self},
       items = self.categories,
       location = {anchor = self.categoryDropbox, x = 0, y = -18},
@@ -285,7 +281,7 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
       end
     elseif self.icons > buttons then
       for i = buttons + 1, self.icons do
-        tinsert(self.buttons, ep.iconbrowserbutton('epIconBrowser'..i, self.container))
+        tinsert(self.buttons, ep.IconBrowserButton('epIconBrowser'..i, self.container))
       end
     end
 
@@ -366,7 +362,7 @@ ep.iconbrowser = ep.panel('ep.iconbrowser', 'epIconBrowser', {
   end
 })
 
-ep.iconcursor = ep.control('ep.iconcursor', 'epIconCursor', ep.basecontrol, 'frame', {
+ep.IconCursor = ep.control('ep.IconCursor', 'epIconCursor', ep.basecontrol, 'frame', {
   initialize = function(self)
     self.reference = nil
     self.substrate = {'ep'}
@@ -403,7 +399,7 @@ ep.iconcursor = ep.control('ep.iconcursor', 'epIconCursor', ep.basecontrol, 'fra
   end
 })
 
-ep.ribbonbutton = ep.control('ep.ribbonbutton', 'epRibbonButton', ep.iconbox, nil, {
+ep.RibbonButton = ep.control('ep.RibbonButton', 'epRibbonButton', ep.iconbox, nil, {
   initialize = function(self, ribbon, id)
     self:super():initialize()
     self.id = id
@@ -411,7 +407,7 @@ ep.ribbonbutton = ep.control('ep.ribbonbutton', 'epRibbonButton', ep.iconbox, ni
   end
 })
 
-ep.ribbon = ep.panel('ep.ribbon', 'epRibbon', {
+ep.Ribbon = ep.panel('ep.Ribbon', 'epRibbon', {
   initialize = function(self, params)
     params = params or {}
     self:super():initialize({
@@ -451,7 +447,7 @@ ep.ribbon = ep.panel('ep.ribbon', 'epRibbon', {
       end
     elseif self.icons > buttons then
       for i = buttons + 1, self.icons do
-        tinsert(self.buttons, ep.ribbonbutton(self:GetName()..i, self.container, self, i))
+        tinsert(self.buttons, ep.RibbonButton(self:GetName()..i, self.container, self, i))
       end
     end
 

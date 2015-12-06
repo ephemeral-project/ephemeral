@@ -9,7 +9,7 @@ ep.registeredAddons = registeredAddons
 ep.registeredComponents = registeredComponents
 ep.registeredModules = registeredModules
 
-ep.module = ep.prototype('ep.module', {
+ep.Module = ep.prototype('ep.Module', {
   initialize = function(self, params)
     self.dependencies = {}
     self.components = {}
@@ -106,7 +106,7 @@ ep.module = ep.prototype('ep.module', {
 })
 
 function ep.bootstrapModules()
-  ep.deployedModules = ep.datastore({
+  ep.deployedModules = ep.DataStore({
     location = 'ephemeral.modules',
     instantiator = ep.module
   })
@@ -250,7 +250,7 @@ function ep.parseAddon(id, compatibility)
       break
     end
 
-    module = ep.module({
+    module = ep.Module({
       addon = addon.name,
       description = GetAddOnMetadata(id, entry..'-Description')
     })

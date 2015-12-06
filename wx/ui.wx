@@ -482,4 +482,4 @@ Frame epTooltip(epFrame, ^UIParent, frameStrata: TOOLTIP, hidden):
     FontString $parentRF(epNormalFont, .rf, justifyH: RIGHT, justifyV: TOP, maxLines: 10)
     FontString $parentB(epNormalFont, .b, justifyH: LEFT, justifyV: TOP, maxLines: 10)
   OnLoad:
-    *ep.tooltip(self)
+    *ep.Tooltip(self)

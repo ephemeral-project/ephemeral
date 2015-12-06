@@ -5,7 +5,7 @@ local concat, exception, exceptional, format, invoke, ref, put,
       ep.tkeys, table.remove
 
 local events = {}
-local invocations = ep.pqueue('delta')
+local invocations = ep.PriorityQueue('delta')
 
 local _schedulingTicks = 0
 local _uniqidEntropy = 0
@@ -14,7 +14,7 @@ ep.events = events
 ep.invocations = invocations
 ep.selection = nil
 
-ep.locale:bootstrap()
+ep.Locale:bootstrap()
 
 function ep.claimSelection(selection, icon)
   ep.selection = selection
@@ -267,7 +267,7 @@ function ep.unsubscribe(ref)
   end
 end
 
-ep.datastore = ep.prototype('ep.datastore', {
+ep.DataStore = ep.prototype('ep.DataStore', {
   initialize = function(self, specification)
     self.indexes = {}
     self.instances = {}

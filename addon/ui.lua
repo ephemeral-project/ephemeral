@@ -13,9 +13,9 @@ local _referenceFrames = {
   slider = 'ReputationListScrollFrameScrollBar',
 }
 
-ep.controltype = ep.tcopy(ep.metatype)
+ep.ControlType = ep.tcopy(ep.metatype)
 
-ep.controltype.__call = function(proto, object, ...)
+ep.ControlType.__call = function(proto, object, ...)
   local referrent, initializer, arguments
   if type(object) == 'string' then
     _pendingControlArgs[object] = {select(2, ...)}
@@ -47,7 +47,7 @@ ep.controltype.__call = function(proto, object, ...)
   return object
 end
 
-ep.basecontrol = ep.prototype('ep.basecontrol', {
+ep.BaseControl = ep.prototype('ep.BaseControl', {
   child = function(self, name)
     return _G[self.name..name]
   end,
@@ -117,6 +117,17 @@ ep.basecontrol = ep.prototype('ep.basecontrol', {
     end
   end,
 
+  setBorderColors = function(self, r, g, b, a)
+    self.ce_tl:SetVertexColor(r, g, b, a)
+    self.ce_t:SetVertexColor(r, g, b, a)
+    self.ce_tr:SetVertexColor(r, g, b, a)
+    self.ce_l:SetVertexColor(r, g, b, a)
+    self.ce_r:SetVertexColor(r, g, b, a)
+    self.ce_bl:SetVertexColor(r, g, b, a)
+    self.ce_b:SetVertexColor(r, g, b, a)
+    self.ce_br:SetVertexColor(r, g, b, a)
+  end,
+
   subscribe = function(self, event, invocation)
     local events, idx, subscriptions = self.events, 1
     event = event:lower()
@@ -153,10 +164,10 @@ ep.basecontrol = ep.prototype('ep.basecontrol', {
       end
     end
   end
-}, ep.controltype)
+}, ep.ControlType)
 
 function ep.control(name, declaration, base, modelname, properties)
-  local ctl = ep.prototype(name, base or ep.basecontrol, properties or {}, ep.controltype)
+  local ctl = ep.prototype(name, base or ep.BaseControl, properties or {}, ep.ControlType)
   if _referenceFrames[modelname] then
     modelname = _referenceFrames[modelname]
   end
@@ -177,7 +188,7 @@ function ep.control(name, declaration, base, modelname, properties)
   return ctl
 end
 
-ep.baseframe = ep.control('ep.baseframe', 'epFrame', ep.basecontrol, 'frame', {
+ep.BaseFrame = ep.control('ep.Baseframe', 'epFrame', ep.BaseControl, 'frame', {
   initialize = function(self)
     self:initializeBackground()
   end,
@@ -193,7 +204,7 @@ ep.baseframe = ep.control('ep.baseframe', 'epFrame', ep.basecontrol, 'frame', {
   end
 })
 
-ep.basepanel = ep.control('ep.basepanel', 'epPanel', ep.baseframe, nil, {
+ep.BasePanel = ep.control('ep.BasePanel', 'epPanel', ep.BaseFrame, nil, {
   initialize = function(self, features)
     local features, strata = features or {}
     self:SetClampedToScreen(features.clamped ~= false)
@@ -319,7 +330,7 @@ ep.basepanel = ep.control('ep.basepanel', 'epPanel', ep.baseframe, nil, {
 })
 
 function ep.panel(name, structure, properties)
-  return ep.control(name, structure, ep.basepanel, nil, properties)
+  return ep.control(name, structure, ep.BasePanel, nil, properties)
 end
 
 ep.icon = ep.pseudotype{
@@ -670,8 +681,8 @@ ep.tint = ep.pseudotype{
   artifact = {0.9, 0.8, 0.5, 1.0},
 }
 
-ep.tooltip = ep.control('ep.tooltip', 'epTooltip', ep.baseframe, nil, {
-  defaultLocation = {edge = 'TOPLEFT', hook = 'CENTER'},
+ep.Tooltip = ep.control('ep.Tooltip', 'epTooltip', ep.BaseFrame, nil, {
+  defaultLocation = {edge='TOPLEFT', hook='CENTER'},
 
   cancel = function(self, focus)
     if self._delayFocus == focus then
@@ -849,6 +860,20 @@ function ep.attachTooltip(control, aspects, defaults)
   end)
 
   control.hasTooltipAttached = true
+end
+
+function ep.attachScalingBackground(frame, attr, texture)
+  if not texture then
+    texture = 'Interface\\AddOns\\ephemeral\\textures\\panel-background'
+  end
+
+  local scaleBackground = function()
+    frame[attr]:SetTexCoord(0, frame:GetWidth() / 128, 0, frame:GetHeight() / 128)
+  end
+
+  frame[attr]:SetTexture(texture, true)
+  frame:SetScript('OnSizeChanged', scaleBackground)
+  scaleBackground()
 end
 
 function ep.detachTooltip(control)

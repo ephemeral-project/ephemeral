@@ -3,7 +3,7 @@ local format, tupdate
 
 CHARACTER_GENDERS = {'unknown', 'male', 'female'}
 
-ep.characterProfile = ep.prototype('ep.characterProfile', {
+ep.Character = ep.prototype('ep.Character', {
   __segregation = {attr = '__aspects'},
 
   initialize = function(self, aspects)
@@ -53,17 +53,17 @@ ep.characterization = {
   name = 'ephemeral:characterization',
 
   deploy = function(self)
-    local description = ep.characterProfile:describeCharacter()
-    ep.characters = ep.datastore({
+    local description = ep.Character:describeCharacter()
+    ep.characters = ep.DataStore({
       location = 'ephemeral.characters',
-      instantiator = ep.characterProfile
+      instantiator = ep.Character
     })
 
     ep.character = ep.characters:get(description.id)
     if ep.character then
       tupdate(ep.character, description)
     else
-      ep.character = ep.characterProfile(description)
+      ep.character = ep.Character(description)
       ep.characters:put(ep.character)
     end
   end

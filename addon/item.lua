@@ -77,7 +77,7 @@ ep.items = {
   slotTokens = SLOT_TOKENS,
 
   deploy = function(self)
-    for i, definition in ipairs(ep.entities:enumerateDefinitions(ep.item, true)) do
+    for i, definition in ipairs(ep.entities:enumerateDefinitions(ep.Item, true)) do
       local entry = {label=capitalize(definition.noun), value=definition.cl}
       if definition.description then
         entry.tooltip = {c=definition.description, delay=1}
@@ -126,7 +126,7 @@ ep.items = {
   end
 }
 
-ep.item = ep.entities:define('ep.item', ep.entity, {
+ep.Item = ep.entities:define('ep.Item', ep.entity, {
   cl = 'it',
   noun = _'item',
   plural = _'items',
@@ -194,7 +194,7 @@ ep.item = ep.entities:define('ep.item', ep.entity, {
   end
 })
 
-ep.item.default = ep.item({
+ep.Item.default = ep.Item({
   ic = 'ii',
   qu = 'c',
   sf = 'it',
@@ -202,9 +202,9 @@ ep.item.default = ep.item({
 })
 
 
-ep.item.collectoricon = ep.control('ep.item.collectoricon', 'epItemIcon', ep.iconbox)
+ep.ItemCollectorIcon = ep.control('ep.ItemCollectorIcon', 'epItemIcon', ep.iconbox)
 
-ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
+ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
   collectors = {},
   defaultIcon = 'cnwow38',
 
@@ -229,7 +229,7 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
     self.location = nil
     self.rows = 0
 
-    self.options.menu = ep.menu('epItemCollector'..id..'OptionsMenu', self.options, {
+    self.options.menu = ep.Menu('epItemCollector'..id..'OptionsMenu', self.options, {
       callback = {self.selectOption, self},
       location = {anchor = self.options, x = 0, y = -18},
       width = self.options
@@ -281,7 +281,7 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
       end
     elseif self.icons > buttons then
       for i = buttons + 1, self.icons do
-        button = ep.item.collectoricon(self.name..'b'..i, self.container)
+        button = ep.ItemCollectorIcon(self.name..'b'..i, self.container)
         button.container = self
         tinsert(self.buttons, button)
       end
@@ -460,7 +460,7 @@ ep.item.collector = ep.panel('ep.item.collector', 'epItemCollector', {
   end
 })
 
-ep.item.editor = ep.panel('ep.item.editor', 'epItemEditor', {
+ep.ItemEditor = ep.panel('ep.ItemEditor', 'epItemEditor', {
   defaultSections = {
     {label=_'Description', tooltip={c=_'$item-description-tooltip'}},
     {label=_'Capabilities', tooltip={lh=_'Capabilities',
@@ -495,7 +495,7 @@ ep.item.editor = ep.panel('ep.item.editor', 'epItemEditor', {
   end,
 
   display = function(item, location)
-    local editors, id, editor = ep.item.editor.editors
+    local editors, id, editor = ep.ItemEditor.editors
     for i, frame in ipairs(editors) do
       if frame:IsShown() and frame.item then
         if frame.item == items then
@@ -508,7 +508,7 @@ ep.item.editor = ep.panel('ep.item.editor', 'epItemEditor', {
     end
     if not editor then
       id = #editors + 1
-      editor = ep.item.editor('epItemEditor'..id, UIParent, id)
+      editor = ep.ItemEditor('epItemEditor'..id, UIParent, id)
       editors[id] = editor
     end
     editor:show(item, location)

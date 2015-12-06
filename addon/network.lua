@@ -6,17 +6,17 @@ local ceil, concat, exception, exceptional, format, freeze, invoke, iterkeys,
       ep.pseudoid, ep.satisfy, ep.schedule, ep.scheduleInvocation, ep.split,
       ep.subscribe, ep.thaw, ep.unsubscribe
 
-local channel
-local conduit
-local conference
-local group
+local Channel
+local Conduit
+local Conference
+local Group
 local guild
-local transport
+local Transport
 
 local _characterName = UnitName('player'):lower()
 local _networkVersion = 1
 local _encodedVersion = format('%x', _networkVersion)
-local _pendingTransmissions = {ep.ring(), ep.ring()}
+local _pendingTransmissions = {ep.Ring(), ep.Ring()}
 local _pollScheduled = false
 local _tokenEquivalents = {['~'] = '$', ['^'] = '#'}
 local _uniqidEntropy = 65535
@@ -117,20 +117,20 @@ ep.network = {
     end
 
     if distribution == 'WHISPER' then
-      conduit:receive(peer, content)
+      Conduit:receive(peer, content)
     elseif distribution == 'PARTY' or distribution == 'RAID' then
-      if channel.group.connected then
-        channel.group:receive(peer, content)
+      if Channel.group.connected then
+        Channel.group:receive(peer, content)
       end
     elseif distribution == 'GUILD' then
-      if channel.guild.connected then
-        channel.guild:receive(peer, content)
+      if Channel.guild.connected then
+        Channel.guild:receive(peer, content)
       end
     end
   end,
 
   _monitorChannelMessages = function(self, event, content, peer, a3, a4, a5, a6, a7, a8, name)
-    local target = channel.channels[name:lower()]
+    local target = Channel.channels[name:lower()]
     if not target then
       return
     end
@@ -150,14 +150,14 @@ ep.network = {
 
   _monitorSpecialChannels = function(self, event)
     if event == 'PLAYER_GUILD_UPDATE' then
-      channel.guild:synchronize()
+      Channel.guild:synchronize()
     else
-      channel.group:synchronize()
+      Channel.group:synchronize()
     end
   end
 }
 
-transport = ep.prototype('ep.transport', {
+Transport = ep.prototype('ep.transport', {
   receptions = {},
 
   receive = function(cls, peer, text)
@@ -304,7 +304,7 @@ transport = ep.prototype('ep.transport', {
   close: "!"
 ]]
 
-conduit = ep.prototype('ep.conduit', transport, {
+Conduit = ep.prototype('ep.Conduit', Transport, {
   conduits = {},
   timeout = 4,
   version = 1,
@@ -436,7 +436,7 @@ conduit = ep.prototype('ep.conduit', transport, {
   end
 })
 
-channel = ep.prototype('ep.channel', transport, {
+Channel = ep.prototype('ep.Channel', Transport, {
   channels = {},
 
   initialize = function(self, name)
@@ -614,10 +614,10 @@ channel = ep.prototype('ep.channel', transport, {
   end
 })
 
-conference = ep.prototype('ep.conference', {
+Conference = ep.prototype('ep.Conference', {
   initialize = function(self, channel, descriptor, signature)
     if type(channel) ~= 'table' then
-      channel = ep.channel(channel)
+      channel = ep.Channel(channel)
     end
 
     self.channel = channel
@@ -632,7 +632,7 @@ conference = ep.prototype('ep.conference', {
 
   instantiate = function(self, channel, descriptor, signature)
     if type(channel) ~= 'table' then
-      channel = ep.channel.channels[channel]
+      channel = Channel.channels[channel]
     end
     if channel then
       return channel.conferences[signature]
@@ -653,7 +653,7 @@ conference = ep.prototype('ep.conference', {
   end
 })
 
-group = ep.prototype('ep.network.group', channel, {
+Group = ep.prototype('ep.network.Group', Channel, {
   initialize = function(self)
     self.conferences = {}
     self.connected = false
@@ -676,7 +676,7 @@ group = ep.prototype('ep.network.group', channel, {
   end
 })
 
-guild = ep.prototype('ep.network.guild', channel, {
+Guild = ep.prototype('ep.network.Guild', Channel, {
   initialize = function(self)
     self.conferences = {}
     self.connected = false
@@ -699,10 +699,10 @@ guild = ep.prototype('ep.network.guild', channel, {
   end
 })
 
-channel.group = group()
-channel.guild = guild()
+Channel.group = Group()
+Channel.guild = Guild()
 
-ep.channel = channel
-ep.conduit = conduit
-ep.conference = conference
-ep.transport = transport
+ep.Channel = Channel
+ep.Conduit = Conduit
+ep.Conference = Conference
+ep.Transport = Transport

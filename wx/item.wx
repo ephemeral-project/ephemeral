@@ -14,7 +14,7 @@ Button epItemIcon(epIconBox, virtual):
   OnLoad:
     *self:RegisterForClicks('LeftButtonUp', 'MiddleButtonUp', 'RightButtonUp')
     *self:RegisterForDrag('LeftButton')
-    *ep.iconbox(self)
+    *ep.IconBox(self)
   OnMouseWheel:
     *self.container:manipulate(self, 'wheel', delta)
     *local scrollbar = self:GetParent().scrollbar
@@ -33,7 +33,7 @@ Frame epItemCollector(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
   Button $parentIcon(epIconBox, .icon):
     !TopLeft(10, -31)
     OnLoad:
-      *ep.iconbox(self, {enableBrowsing=true})
+      *ep.IconBox(self, {enableBrowsing=true})
   Frame $parentContainer(.container):
     !TopLeft(10, -73)
     !BottomRight(-33, 33)
@@ -44,19 +44,19 @@ Frame epItemCollector(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !TopRight(-10, -89)
     !BottomRight(-10, 49)
     OnLoad:
-      *ep.slider(self, {callback={ep.item.collector.update, self:GetParent()}})
+      *ep.Slider(self, {callback={ep.ItemCollector.update, self:GetParent()}})
   EditBox $parentSearch(epEditBox, .search):
     !BottomLeft(10, 10)
     !BottomRight(-94, 10)
     OnLoad:
-      *ep.editbox(self, {placeholder=ep_'search'})
+      *ep.EditBox(self, {placeholder=ep_'search'})
   Button $parentOptions(epDropBox, .options, text: 'Backpack'):
     !Size(80, 19)
     !BottomRight(-10, 10)
     OnClick:
       *self.menu:toggle()
   OnLoad:
-    *ep.item.collector(self)
+    *ep.ItemCollector(self)
 
 Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
   !Size(455, 350)
@@ -74,7 +74,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !TopLeft(56, -31)
     !TopRight(-159, -31)
     OnLoad:
-      *ep.editbox(self, {placeholder=ep_'name', tooltip=ep_'$item-name-tooltip'})
+      *ep.EditBox(self, {placeholder=ep_'name', tooltip=ep_'$item-name-tooltip'})
     OnTabPressed:
       *self:parent().f_inscription:SetFocus()
   Button $parentClass(epDropBox, .f_class):
@@ -83,12 +83,12 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Artwork:
       FontString(epLeftLabel, .label, text: 'class:')
     OnLoad:
-      *ep.dropbox(self, {default='it'})
+      *ep.DropBox(self, {default='it'})
   EditBox $parentInscription(epEditBox, .f_inscription):
     !TopLeft(56, -54)
     !TopRight(-159, -54)
     OnLoad:
-      *ep.editbox(self, {placeholder=ep_'inscription', tooltip=ep_'$item-inscription-tooltip'})
+      *ep.EditBox(self, {placeholder=ep_'inscription', tooltip=ep_'$item-inscription-tooltip'})
     OnTabPressed:
       *self:parent().facets:SetFocus()
   Button $parentQuality(epDropBox, .f_quality):
@@ -98,27 +98,27 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Artwork:
       FontString(epLeftLabel, .label, text: 'quality:')
     OnLoad:
-      *ep.dropbox(self, {default='c', items=ep.items.qualityMenuItems,
+      *ep.DropBox(self, {default='c', items=ep.items.qualityMenuItems,
       *  tooltip=ep_'$item-quality-tooltip'})
   EditBox $parentFacets(epEditBox, .f_facets):
     !TopLeft(10, -77)
     !TopRight(-159, -77)
     OnLoad:
-      *ep.editbox(self, {placeholder=ep_'facets'})
+      *ep.EditBox(self, {placeholder=ep_'facets'})
   Button $parentSound(epDropBox, .f_sound):
     !Size(100, 19)
     !TopRight(-10, -77)
     !Artwork:
       FontString(epLeftLabel, .label, text: 'sounds:')
     OnLoad:
-      *ep.dropbox(self, {default='it', items=ep.items.soundMenuItems})
+      *ep.DropBox(self, {default='it', items=ep.items.soundMenuItems})
   Frame $parentSelector(epTree, .selector):
     !Size(x: 100)
     !TopLeft(10, -100)
     !BottomLeft(10, 87)
     OnLoad:
-      *ep.tree(self, {flat=true, title=ep_'Details',
-      *  callback={ep.item.editor.selectSection, self}})
+      *ep.Tree(self, {flat=true, title=ep_'Details',
+      *  callback={ep.ItemEditor.selectSection, self}})
   Frame $parentSections(epMultiFrame, .sections):
     !TopLeft(104, -100)
     !BottomRight(-10, 87)
@@ -126,9 +126,9 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
       !TopLeft(10, 0)
       !BottomRight
       OnLoad:
-        *ep.editarea(self, {placeholder=ep_'Click here to edit the description of this item.'})
+        *ep.EditArea(self, {placeholder=ep_'Click here to edit the description of this item.'})
     OnLoad:
-      *ep.multiframe(self, {defaultFrame='Description', frames={
+      *ep.MultiFrame(self, {defaultFrame='Description', frames={
       *  Description = {client='Description'},
       *}})
       *self:hideBorders('tl', 'l', 'bl')
@@ -140,14 +140,14 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Size(90, 19)
     !BottomLeft(89, 64)
     OnLoad:
-      *ep.dropbox(self, {default='nn', items=ep.items.slotMenuItems})
+      *ep.DropBox(self, {default='nn', items=ep.items.slotMenuItems})
   EditBox $parentArchetype(epComboBox, .f_archetype):
     !Size(160, 19)
     !BottomRight(-10, 64)
     !Artwork:
       FontString(epLeftLabel, .label, text: 'archetype:')
     OnLoad:
-      *ep.combobox(self)
+      *ep.ComboBox(self)
   CheckButton $parentStackable(epCheckBox, .f_stackable, text: 'stackable:'):
     !BottomLeft(10, 44)
     OnClick:
@@ -156,7 +156,7 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Size(50, 19)
     !BottomLeft(89, 42)
     OnLoad:
-      *ep.spinner(self, {minimum=1, maximum=999, step=1})
+      *ep.Spinner(self, {minimum=1, maximum=999, step=1})
   CheckButton $parentHasWeight(epCheckBox, .f_hasweight, text: 'weight:'):
     !BottomLeft(160, 44)
     OnClick:
@@ -165,19 +165,19 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Size(60, 19)
     !BottomLeft(222, 42)
     OnLoad:
-      *ep.spinner(self, {minimum=0, maximum=9999, step=1, precision=1})
+      *ep.Spinner(self, {minimum=0, maximum=9999, step=1, precision=1})
   CheckButton $parentDisabled(epCheckBox, .f_disabled, text: 'disabled'):
     !BottomLeft(10, 12)
     OnLoad:
-      *ep.checkbox(self, {tooltip=ep_'$entity-disabled-tooltip'})
+      *ep.CheckBox(self, {tooltip=ep_'$entity-disabled-tooltip'})
   CheckButton $parentProtected(epCheckBox, .f_protected, text: 'protected'):
     !BottomLeft(89, 12)
     OnLoad:
-      *ep.checkbox(self, {tooltip=ep_'$entity-protected-tooltip'})
+      *ep.CheckBox(self, {tooltip=ep_'$entity-protected-tooltip'})
   CheckButton $parentDebugging(epCheckBox, .f_debugging, text: 'debugging'):
     !BottomLeft(168, 12)
     OnLoad:
-      *ep.checkbox(self, {tooltip=ep_'$entity-debugging-tooltip'})
+      *ep.CheckBox(self, {tooltip=ep_'$entity-debugging-tooltip'})
   Button $parentActions(epMultiButton, .actions, text: 'Save'):
     !Size(100, 19)
     !BottomRight(-10, 11)
@@ -185,8 +185,8 @@ Frame epItemEditor(epPanel, ^UIParent, frameStrata: DIALOG, hidden, virtual):
       *self:parent():save()
     OnLoad:
       *local parent = self:GetParent()
-      *ep.multibutton(self, {items = {
-      *  {label = ep_'Discard', callback = {parent.discard, parent}}
+      *ep.MultiButton(self, {items={
+      *  {label=ep_'Discard', callback={parent.discard, parent}}
       *}})
   OnLoad:
-    *ep.item.editor(self)
+    *ep.ItemEditor(self)

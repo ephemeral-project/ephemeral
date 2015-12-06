@@ -17,7 +17,7 @@ ep.scl = function()
   end
 end
 
-ep.location = ep.entities:define('ep.location', ep.entity, {
+ep.Location = ep.entities:define('ep.Location', ep.Entity, {
   detect = function(self, px, py)
     local box = self._detectionBox
     if px >= box[1] and py >= box[2] and px <= box[3] and py <= box[4] then
@@ -69,8 +69,8 @@ ep.location = ep.entities:define('ep.location', ep.entity, {
   end
 })
 
-ep.ex1 = ep.location({nm='ex1', rg=126, cx=122, cy=106, lw=2, lh=2, dw=4, dh=4, dt=true})
-ep.ix1 = ep.entity({nm='ix1'})
+ep.ex1 = ep.Location({nm='ex1', rg=126, cx=122, cy=106, lw=2, lh=2, dw=4, dh=4, dt=true})
+ep.ix1 = ep.Entity({nm='ix1'})
 
 function ept()
   ep.spatial:register(ep.ex1(), ep.ix1())

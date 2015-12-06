@@ -1,6 +1,6 @@
 %textures = 'Interface\AddOns\ephemeral\textures'
 
-Frame epConsole(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+Frame epConsole(epPanel, ^UIParent, frameStrata: HIGH, hidden):
   !Size(400, 400)
   !Center
   Frame $parentTabs(epTabbedFrame, .tabs):
@@ -13,19 +13,21 @@ Frame epConsole(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       !TopLeft(0, -20)
       !BottomRight
     OnLoad:
-      *ep.tabbedframe(self, {tabs={
-      *  {label = ep_'Interpreter', client = epConsoleTabsInterpreter},
-      *  {label = ep_'Debug Log', client = epConsoleTabsLog},
+      *ep.TabbedFrame(self, {tabs={
+      *  {label=ep_'Interpreter', client=epConsoleTabsInterpreter},
+      *  {label=ep_'Debug Log', client=epConsoleTabsLog},
       *}})
-  EditBox $parentInput(epEditBox, .input, font: epConsoleFont, historyLines: 32):
+  EditBox $parentInput(epEditBox, .input, font: epConsoleFont):
     !BottomLeft(10, 10)
     !BottomRight(-10, 10)
     OnEnterPressed:
       *self:parent():submit()
+    OnLoad:
+      *ep.EditBox(self, {historyEnabled=true, historyTable='ephemeral.consoleHistory'})
   OnLoad:
-    *ep.console(self)
+    *ep.Console(self)
 
-Frame epColorBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+Frame epColorBrowser(epPanel, ^UIParent, frameStrata: HIGH, hidden):
   !Size(400, 300)
   !Center
   !Artwork:
@@ -58,7 +60,7 @@ Frame epColorBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       FontString(epLabelFont, .label, text: 'Red:'):
         !Left(x: -40)
     OnLoad:
-      *ep.spinner(self, {minimum=0, maximum=255, onchange={ep.colorbrowser.update, self:GetParent(), 'r'}})
+      *ep.Spinner(self, {minimum=0, maximum=255, onchange={ep.ColorBrowser.update, self:GetParent(), 'r'}})
   EditBox $parentGValue(epSpinner, .gvalue):
     !Size(54, 19)
     !TopLeft(225, -95)
@@ -66,7 +68,7 @@ Frame epColorBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       FontString(epLabelFont, .label, text: 'Green:'):
         !Left(x: -30)
     OnLoad:
-      *ep.spinner(self, {minimum=0, maximum=255, onchange={ep.colorbrowser.update, self:GetParent(), 'g'}})
+      *ep.Spinner(self, {minimum=0, maximum=255, onchange={ep.ColorBrowser.update, self:GetParent(), 'g'}})
   EditBox $parentBValue(epSpinner, .bvalue):
     !Size(54, 19)
     !TopLeft(255, -118)
@@ -74,7 +76,7 @@ Frame epColorBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       FontString(epLabelFont, .label, text: 'Blue:'):
         !Left(x: -40)
     OnLoad:
-      *ep.spinner(self, {minimum=0, maximum=255, onchange={ep.colorbrowser.update, self:GetParent(), 'b'}})
+      *ep.Spinner(self, {minimum=0, maximum=255, onchange={ep.ColorBrowser.update, self:GetParent(), 'b'}})
   EditBox $parentAValue(epSpinner, .avalue):
     !Size(54, 19)
     !TopLeft(255, -141)
@@ -82,7 +84,7 @@ Frame epColorBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       FontString(epLabelFont, .label, text: 'Alpha:'):
         !Left(x: -40)
     OnLoad:
-      *ep.spinner(self, {minimum=0, maximum=255, onchange={ep.colorbrowser.update, self:GetParent(), 'a'}})
+      *ep.Spinner(self, {minimum=0, maximum=255, onchange={ep.ColorBrowser.update, self:GetParent(), 'a'}})
   EditBox $parentHexValue(epEditBox, .hexvalue):
     !Size(64, 19)
     !TopLeft(260, -164)
@@ -90,7 +92,7 @@ Frame epColorBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       FontString(epLabelFont, text: 'Hex:'):
         !Left(x: -40)
   OnLoad:
-    *ep.colorbrowser(self)
+    *ep.ColorBrowser(self)
 
 Button epDrawerButton(virtual):
   !Size(18, 18)
@@ -121,23 +123,23 @@ Frame epDrawer(^UIParent, frameStrata: DIALOG):
       OnClick:
         *epHome:display()
       OnLoad:
-        *ep.button(self, {c=ep_'$drawer-home-button-tooltip',
-        *  location={hook='BOTTOMLEFT', x=-7, y=-1}})
+        *ep.Button(self, {tooltip={c=ep_'$drawer-home-button-tooltip',
+        *  location={hook='BOTTOMLEFT', x=-7, y=-1}}})
     Button $parentBackpack(epDrawerButton, .backpack):
       !TopLeft(50, -10)
       NormalTexture(epBackpackIcon)
       HighlightTexture(epBackpackHighlightedIcon, alphaMode: ADD)
       DisabledTexture(epBackpackDisabledIcon)
       OnLoad:
-        *ep.button(self, {c=ep_'$drawer-backpack-button-tooltip',
-        *  location={hook='BOTTOMLEFT', x=-7, y=-1}})
+        *ep.Button(self, {tooltip={c=ep_'$drawer-backpack-button-tooltip',
+        *  location={hook='BOTTOMLEFT', x=-7, y=-1}}})
     Button $parentCharacter(epDrawerButton, .character):
       !TopLeft(74, -10)
       NormalTexture(epShieldIcon)
       HighlightTexture(epShieldHighlightedIcon, alphaMode: ADD)
       OnLoad:
-        *ep.button(self, {c=ep_'$drawer-character-button-tooltip',
-        *  location={hook='BOTTOMLEFT', x=-7, y=-1}})
+        *ep.Button(self, {tooltip={c=ep_'$drawer-character-button-tooltip',
+        *  location={hook='BOTTOMLEFT', x=-7, y=-1}}})
       DisabledTexture(epShieldDisabledIcon)
     Button $parentBook(epDrawerButton, .book):
       !TopLeft(98, -10)
@@ -145,24 +147,24 @@ Frame epDrawer(^UIParent, frameStrata: DIALOG):
       HighlightTexture(epBookHighlightedIcon, alphaMode: ADD)
       DisabledTexture(epBookDisabledIcon)
       OnLoad:
-        *ep.button(self, {c=ep_'$drawer-book-button-tooltip',
-        *  location={hook='BOTTOMLEFT', x=-7, y=-1}})
+        *ep.Button(self, {tooltip={c=ep_'$drawer-book-button-tooltip',
+        *  location={hook='BOTTOMLEFT', x=-7, y=-1}}})
     Button $parentHelp(epDrawerButton, .help):
       !TopLeft(122, -10)
       NormalTexture(epHelpIcon)
       HighlightTexture(epHelpHighlightedIcon, alphaMode: ADD)
       DisabledTexture(epHelpDisabledIcon)
       OnLoad:
-        *ep.button(self, {c=ep_'$drawer-help-button-tooltip',
-        *  location={hook='BOTTOMLEFT', x=-7, y=-1}})
+        *ep.Button(self, {tooltip={c=ep_'$drawer-help-button-tooltip',
+        *  location={hook='BOTTOMLEFT', x=-7, y=-1}}})
     Button $parentReload(epDrawerButton, .reload):
       !TopLeft(146, -10)
       NormalTexture(epReloadIcon)
       HighlightTexture(epReloadHighlightedIcon, alphaMode: ADD)
       DisabledTexture(epReloadDisabledIcon)
       OnLoad:
-        *ep.button(self, {c=ep_'$drawer-reload-button-tooltip',
-        *  location={hook='BOTTOMLEFT', x=-7, y=-1}})
+        *ep.Button(self, {tooltip={c=ep_'$drawer-reload-button-tooltip',
+        *  location={hook='BOTTOMLEFT', x=-7, y=-1}}})
     Button $parentPause(epDrawerButton, .pause):
       !TopLeft(170, -10)
       !Size(18, 18)
@@ -171,12 +173,12 @@ Frame epDrawer(^UIParent, frameStrata: DIALOG):
       HighlightTexture(epPauseHighlightedIcon, alphaMode: ADD)
       DisabledTexture(epPauseDisabled)
       OnLoad:
-        *ep.button(self, {c=ep_'$drawer-pause-button-tooltip',
-        *  location={hook='BOTTOMLEFT', x=-7, y=-1}})
+        *ep.Button(self, {tooltip={c=ep_'$drawer-pause-button-tooltip',
+        *  location={hook='BOTTOMLEFT', x=-7, y=-1}}})
     OnLoad:
-      *ep.drawer(self)
+      *ep.Drawer(self)
 
-Frame epHome(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+Frame epHome(epPanel, ^UIParent, frameStrata: HIGH, hidden):
   !Size(400, 300)
   !Center
   Frame $parentTabs(epTabbedFrame, .tabs):
@@ -198,7 +200,7 @@ Frame epHome(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       !TopLeft(0, -20)
       !BottomRight
     OnLoad:
-      *ep.tabbedframe(self, {showBottomBorder=true, tabs={
+      *ep.TabbedFrame(self, {showBottomBorder=true, tabs={
       *  {label=ep_'Summary', client='Summary'},
       *  {label=ep_'Modules', client='Modules'},
       *  {label=ep_'Settings', client='Settings'},
@@ -206,7 +208,7 @@ Frame epHome(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
       *  {label=ep_'About', client='About'}
       *}})
   OnLoad:
-    *ep.home(self)
+    *ep.Home(self)
 
 Button epIconBrowserButton(epIconBox, virtual):
   OnClick:
@@ -216,11 +218,11 @@ Button epIconBrowserButton(epIconBox, virtual):
     *  epIconBrowser:select(self.icon)
     *end
   OnLoad:
-    *ep.iconbrowserbutton(self)
+    *ep.IconBrowserButton(self)
   OnMouseWheel:
     *epIconBrowserScrollBar:move(-delta)
 
-Frame epIconBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+Frame epIconBrowser(epPanel, ^UIParent, frameStrata: HIGH, hidden):
   !Size(222, 312)
   !Center
   Frame $parentContainer(.container):
@@ -235,13 +237,13 @@ Frame epIconBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !TopRight(-10, -47)
     !BottomRight(-10, 49)
     OnLoad:
-      *ep.slider(self, {callback={ep.iconbrowser.update, self:GetParent()}})
+      *ep.Slider(self, {callback={ep.IconBrowser.update, self:GetParent()}})
   Button $parentSet(epDropBox, .setDropbox, text: 'All Sets'):
     !BottomLeft(10, 10)
     !BottomRight(-125, 10)
     OnLoad:
-      *ep.dropbox(self, {
-      *  callback = {ep.iconbrowser.setSet, self:GetParent()},
+      *ep.DropBox(self, {
+      *  callback = {ep.IconBrowser.setSet, self:GetParent()},
       *  items = {{'all', 'All Sets'}},
       *  value = 'all',
       *})
@@ -251,11 +253,11 @@ Frame epIconBrowser(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     OnClick:
       *self.menu:toggle()
   OnLoad:
-    *ep.iconbrowser(self)
+    *ep.IconBrowser(self)
 
 Frame epIconCursor(hidden):
   OnLoad:
-    *ep.iconcursor(self)
+    *ep.IconCursor(self)
   OnUpdate:
     *self:update()
 
@@ -275,7 +277,7 @@ Button epRibbonButton(epIconBox, virtual):
   OnLoad:
     *self:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
     *self:RegisterForDrag('LeftButton', 'RightButton')
-    *ep.ribbonbutton(self)
+    *ep.RibbonButton(self)
 
 Frame epRibbon(epPanel, virtual):
   !Size(200, 42)
@@ -286,16 +288,16 @@ Frame epRibbon(epPanel, virtual):
     !TopLeft(27, -10)
     !BottomRight(-10, 10)
   OnLoad:
-    *ep.ribbon(self)
+    *ep.Ribbon(self)
 
 Frame epTestRibbon(epRibbon, ^UIParent, hidden):
   !Center
   OnLoad:
-    *ep.ribbon(self)
+    *ep.Ribbon(self)
     *--self:display()
 
 
-Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
+Frame epTest(epPanel, ^UIParent, frameStrata: HIGH, hidden):
   !Size(400, 400)
   !Center
   Button $parentButton(epButton, text: 'Test This'):
@@ -307,31 +309,31 @@ Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !Size(110, 19)
     !TopLeft(12, -75)
     OnLoad:
-      *ep.dropbox(self, {default = 'nn', items = {
+      *ep.DropBox(self, {default = 'nn', items = {
       *  {'nn', 'None'}, {'bk', 'Back'}, {'bh', 'Both Hands'}
       *}})
   EditBox $parentComboBox(epComboBox):
     !Size(110, 19)
     !TopLeft(12, -98)
     OnLoad:
-      *ep.combobox(self, {default = 'nn', items = {
+      *ep.ComboBox(self, {default = 'nn', items = {
       *  {'nn', 'None'}, {'bk', 'Back'}, {'bh', 'Both Hands'}
       *}})
   Button $parentIconBox(epIconBox):
     !TopLeft(100, -32)
     OnLoad:
-      *ep.iconbox(self, {enableBrowsing=true})
+      *ep.IconBox(self, {enableBrowsing=true})
       *self.texture:SetTexture('interface\\icons\\inv_sword_109')
   Button $parentColorSpot(epColorSpot):
     !TopLeft(150, -32)
   Frame $parentList(epListBuilder):
-    !Size(200, 19)
+    !Size(200, 21)
     !TopLeft(180, -32)
   Button $parentMultiButton(epMultiButton, text: 'Save'):
     !Size(100, 19)
-    !TopLeft(180, -55)
+    !TopLeft(180, -75)
     OnLoad:
-      *ep.multibutton(self, {
+      *ep.MultiButton(self, {
       *  items = {
       *    {label = 'Discard', callback = function() d('Discard selected.') end}
       *  }
@@ -340,7 +342,7 @@ Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !Size(180, 170)
     !TopLeft(240, -121)
     OnLoad:
-      *ep.tree(self, {items=ep.testitems, defaultExpansion=1})
+      *ep.Tree(self, {items=ep.testitems, defaultExpansion=1})
   Frame $parentEditArea(epEditArea):
     !Size(200, 120)
     !TopLeft(12, -121)
@@ -348,7 +350,7 @@ Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !Size(160, 19)
     !TopLeft(12, -245)
     OnLoad:
-      *ep.editbox(self, {placeholder='label', clearable=true})
+      *ep.EditBox(self, {placeholder='label', clearable=true})
   EditBox $parentSpinner(epSpinner):
     !Size(80, 19)
     !TopLeft(12, -268)
@@ -356,19 +358,19 @@ Frame epTest(epPanel, ^UIParent, frameStrata: DIALOG, hidden):
     !Size(140, 19)
     !TopLeft(12, -291)
     OnLoad:
-      *ep.spinner(self, {values={'alpha', 'beta', 'gamma', 'delta'}, value='alpha'})
+      *ep.Spinner(self, {values={'alpha', 'beta', 'gamma', 'delta'}, value='alpha'})
   Frame $parentGrid(epGrid):
     !TopLeft(12, -314)
     !BottomRight(-12, 12)
     OnLoad:
-      *ep.grid(self, {header = true, data = ep.testdata, cells = {
+      *ep.Grid(self, {header = true, data = ep.testdata, cells = {
       *  {control = 'checkbox'},
       *  {field = 'id', title = 'Id', width = 60},
       *  {field = 'name', title = 'Name', width = 80},
       *  {field = 'description', title = 'Description', relWidth = 0.75},
       *  {field = 'value', title = 'Value', relWidth = 0.25}}})
   OnLoad:
-    *ep.basepanel(self, {
+    *ep.BasePanel(self, {
     *    title = 'Test',
     *    resizable = true,
     *    minsize = {300, 300},
