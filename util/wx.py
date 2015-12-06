@@ -16,8 +16,34 @@ proper_header = """<Ui xmlns="http://www.blizzard.com/wow/ui" xmlns:xsi="http://
 
 frame_types = ['Button', 'CheckButton', 'ColorSelect', 'EditBox', 'Frame',
     'ScrollFrame', 'ScrollingMessageFrame', 'Slider']
-implicit_flags = ['enableMouse', 'hidden', 'setAllPoints', 'virtual']
 
+frame_type_equivalents = {
+    'Button': ['Button', 'epButton'],
+    'CheckBox': ['CheckButton', 'epCheckBox'],
+    'ColorSpot': ['Button', 'epColorSpot'],
+    'ComboBox': ['EditBox', 'epComboBox'],
+    'DropBox': ['Button', 'epDropBox'],
+    'EditArea': ['Frame', 'epEditArea'],
+    'EditAreaBase': ['Frame', 'epEditAreaBase'],
+    'EditBox': ['EditBox', 'epEditBox'],
+    'Grid': ['Frame', 'epGrid'],
+    'IconBox': ['Button', 'epIconBox'],
+    'LeftLabel': ['FontString', 'epLeftLabel'],
+    'ListBuilder': ['Frame', 'epListBuilder'],
+    'MessageFrame': ['Frame', 'epMessageFrame'],
+    'MessageFrameBase': ['Frame', 'epMessageFrameBase'],
+    'MultiButton': ['Button', 'epMultiButton'],
+    'MultiFrame': ['Frame', 'epMultiFrame'],
+    'Panel': ['Frame', 'epPanel'],
+    'ScrollFrame': ['ScrollFrame', 'epScrollFrame'],
+    'Spinner': ['EditBox', 'epSpinner'],
+    'TabbedFrame': ['Frame', 'epTabbedFrame'],
+    'Tree': ['Frame', 'epTree'],
+    'VerticalScrollBar': ['Slider', 'epVerticalScrollBar'],
+    'VerticalSlider': ['Slider', 'epSlider'],
+}
+
+implicit_flags = ['enableMouse', 'hidden', 'setAllPoints', 'virtual']
 anchor_macros = ['bottomleft', 'bottomright', 'center', 'left', 'right', 'top', 'topleft', 'topright']
 layer_macros = ['artwork', 'background', 'border', 'overlay']
 
@@ -160,7 +186,12 @@ declaration_line = Line(declaration)
 script_line = Line(Token('\*[^\n]*'))
 
 def _parse_block(tokens):
-    block = {'type': tokens[0]}
+    equivalent = frame_type_equivalents.get(tokens[0])
+    if equivalent:
+        block = {'type': equivalent[0], 'inherits': equivalent[1]}
+    else:
+        block = {'type': tokens[0]}
+
     print 'parsing ' + tokens[0]
     i = 1
     if len(tokens) > i and isinstance(tokens[i], basestring) and not tokens[i].startswith('*'):
@@ -169,6 +200,8 @@ def _parse_block(tokens):
         i += 1
     if len(tokens) > i and isinstance(tokens[i], dict):
         block.update(tokens[i])
+        if block.get('inherits') == 'NoInherit':
+            del block['inherits']
         i += 1
     if len(tokens) > i and isinstance(tokens[i], basestring) and tokens[i].startswith('*'):
         block['script'] = '\n'.join(token.lstrip('*') for token in tokens[i:])

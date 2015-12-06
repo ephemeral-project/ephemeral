@@ -350,7 +350,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
   !Artwork:
     FontString $parentTitle(epTitleFont, .title):
       !TopLeft(11, -10)
-  Button $parentAnchor(.anchor):
+  Button $parentAnchor(NoInherit, .anchor):
     !Size(23, 23)
     !TopLeft(4, -4)
     !TopRight(-44, -4)
@@ -364,7 +364,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' then
       *  self:GetParent():StopMovingOrSizing()
       *end
-  Button $parentIconify(.iconifyButton, hidden):
+  Button $parentIconify(NoInherit, .iconifyButton, hidden):
     !Size(20, 20)
     !TopRight(-22, -6)
     NormalTexture(file: '%textures\iconify-normal'):
@@ -375,7 +375,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
     OnClick:
       *self:GetParent():iconify()
-  Button $parentClose(.closeButton):
+  Button $parentClose(NoInherit, .closeButton):
     !Size(20, 20)
     !TopRight(-6, -6)
     NormalTexture(file: '%textures\close-normal'):
@@ -386,7 +386,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
     OnClick:
       *self:GetParent():close()
-  Button $parentVerticalResize(.vr, hidden):
+  Button $parentVerticalResize(NoInherit, .vr, hidden):
     !Size(9, 9)
     !BottomLeft(4, 0)
     !BottomRight(-20, 0)
@@ -409,7 +409,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' then
       *  self:GetParent():stopResizing()
       *end
-  Button $parentHorizontalResize(.hr, hidden):
+  Button $parentHorizontalResize(NoInherit, .hr, hidden):
     !Size(9, 9)
     !TopRight(0, -27)
     !BottomRight(0, 20)
@@ -432,7 +432,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' then
       *  self:GetParent():stopResizing()
       *end
-  Button $parentFullResizeOne(hidden):
+  Button $parentFullResizeOne(NoInherit, hidden):
     !Size(20, 9)
     !BottomRight(0, 0)
     OnEnter:
@@ -450,7 +450,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' then
       *  self:GetParent():stopResizing()
       *end
-  Button $parentFullResizeTwo(hidden):
+  Button $parentFullResizeTwo(NoInherit, hidden):
     !Size(9, 11)
     !BottomRight(0, 9)
     OnEnter:

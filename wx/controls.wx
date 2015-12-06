@@ -75,7 +75,7 @@ Button epColorSpot(epControl, virtual):
 EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
   !Size(y: 19)
   !TextInsets(5, 22, 0, 0)
-  Button $parentOpener:
+  Button $parentOpener(NoInherit):
     !Size(19, 19)
     !TopRight
     !Border:
@@ -130,11 +130,11 @@ Frame epEditAreaBase(virtual):
     FontString $parentInnerLabel(epInnerLabelFont, .innerLabel, justifyH: LEFT, hidden):
       !TopLeft(6, -6)
       !TopRight(-6, -6)
-  ScrollFrame $parentScrolled(epScrollFrame, .scrollFrame):
+  ScrollFrame $parentScrolled(.scrollFrame):
     !TopLeft(6, -6)
     !BottomRight(-6, 6)
     ScrollChild:
-      EditBox $parentText(font: epNormalFont, letters: 2048, +multiline, -autoFocus):
+      EditBox $parentText(NoInherit, font: epNormalFont, letters: 2048, +multiline, -autoFocus):
         OnCursorChanged:
           *self:GetParent():GetParent():updateCursor(x, y)
         OnEditFocusGained:
@@ -161,7 +161,7 @@ EditBox epEditBox(epControl, font: epNormalFont, -autoFocus, virtual):
   !Border:
     FontString $parentInnerLabel(epInnerLabel, .innerLabel, hidden)
   !TextInsets(5, 4, 0, 1)
-  Button $parentClear(.clearButton, hidden):
+  Button $parentClear(NoInherit, .clearButton, hidden):
     !Size(20, 20)
     !TopRight(0, 1)
     NormalTexture(file: '%textures\close-normal'):
@@ -219,7 +219,7 @@ Frame epGrid(epControl, virtual):
       Texture(epControlEdgeB):
         !BottomLeft(0, -6)
         !BottomRight(0, -6)
-  Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
+  VerticalScrollBar $parentScrollBar(.scrollbar):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     OnLoad:
@@ -231,7 +231,7 @@ Frame epGrid(epControl, virtual):
     *  self:resize()
     *end
 
-Button epGridHeader(virtual):
+Button epGridHeader(NoInherit, virtual):
   !Size(y: 18)
   ButtonText $parentText:
     !Left(0, 0)
@@ -351,7 +351,7 @@ Button epListBuilderButton(epControlEdge, virtual):
 
 Frame epListBuilder(epControl, virtual):
   !Size(y: 21)
-  Button $parentAdd(.add):
+  Button $parentAdd(NoInherit, .add):
     !Size(21, 21)
     !TopRight(1, 1)
     NormalTexture(epPlus)
@@ -369,14 +369,14 @@ Frame epListBuilder(epControl, virtual):
         AbsInset(left: 1, right: 1, top: 1, bottom: 1)
       TileSize:
         AbsValue(val: 128)
-    EditBox $parentText(epComboBox, .text):
+    ComboBox $parentText(.text):
       !Size(100, 19)
       !TopLeft(4, -4)
       OnLoad:
         *ep.ComboBox(self, {})
-    Button $parentColor(epColorSpot, .color):
+    ColorSpot $parentColor(.color):
       !Right(-36)
-    Button $parentSave(.save):
+    Button $parentSave(NoInherit, .save):
       !Size(21, 21)
       !Right(1)
       NormalTexture(epPlus)
@@ -386,7 +386,7 @@ Frame epListBuilder(epControl, virtual):
   OnLoad:
     *ep.ListBuilder(self)
 
-Button epMenuButton(virtual):
+Button epMenuButton(NoInherit, virtual):
   !Size(128, 13)
   ButtonText $parentText:
     !Left(0, 0)
@@ -440,7 +440,7 @@ Frame epMessageFrameBase(virtual):
     !BottomRight(-18, 6)
     OnMouseWheel:
       *self:GetParent().scrollbar:move(-delta)
-  Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
+  VerticalScrollBar $parentScrollBar(.scrollbar):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     OnLoad:
@@ -452,7 +452,7 @@ Frame epMessageFrame(inherits: 'epControl,epMessageFrameBase', virtual)
 
 Button epMultiButton(epControl, virtual):
   !Size(y: 19)
-  Button $parentOpener(.opener):
+  Button $parentOpener(NoInherit, .opener):
     !Size(19, 19)
     !TopRight
     !Border:
@@ -492,8 +492,8 @@ Frame epMultiFrame(epControlEdge, virtual):
   OnLoad:
     *ep.MultiFrame(self)
 
-ScrollFrame epScrollFrame(virtual):
-  Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
+ScrollFrame epScrollFrame(NoInherit, virtual):
+  VerticalScrollBar $parentScrollBar(.scrollbar):
     !TopRight(6, -7)
     !BottomRight(6, 7)
     OnLoad:
@@ -520,7 +520,7 @@ EditBox epSpinner(epControl, font: epNormalFont, -autoFocus, virtual):
     Texture(epControlInnerEdgeB):
       !Size(17, 12)
       !TopRight(-1, -4)
-  Button $parentMore(.more):
+  Button $parentMore(NoInherit, .more):
     !Size(19, 9)
     !TopRight
     !Background:
@@ -534,7 +534,7 @@ EditBox epSpinner(epControl, font: epNormalFont, -autoFocus, virtual):
       *self:GetParent():spin(1, IsShiftKeyDown())
     OnMouseWheel:
       *self:GetParent():spin(delta)
-  Button $parentLess(.less):
+  Button $parentLess(NoInherit, .less):
     !Size(19, 9)
     !BottomRight
     !Background:
@@ -566,7 +566,7 @@ StatusBar epStatusBar(epControl, virtual):
   OnLoad:
     *ep.StatusBar(self)
 
-Button epTabButton(virtual):
+Button epTabButton(NoInherit, virtual):
   !Size(y: 21)
   ButtonText:
     !Center(0, 0)
@@ -644,7 +644,7 @@ Frame epTabbedFrame(virtual):
   OnLoad:
     *ep.TabbedFrame(self)
 
-Button epTreeButton(virtual):
+Button epTreeButton(NoInherit, virtual):
   !Size(128, 16)
   ButtonText $parentText(.text):
     !Left(0, 0)
@@ -658,7 +658,7 @@ Button epTreeButton(virtual):
     Texture $parentHighlight(epControlHighlight, .highlight, hidden):
       !TopLeft(-2, 0)
       !BottomRight(2, 0)
-  Button $parentArrow(.arrow, hidden):
+  Button $parentArrow(NoInherit, .arrow, hidden):
     !Size(20, 20)
     !Left(-7, -1)
     NormalTexture(epArrowRight)
@@ -689,7 +689,7 @@ Frame epTree(epControl, virtual):
     Texture $parentTitleDivider(epControlInnerEdgeB, .titleDivider, hidden):
       !TopLeft(1, -18)
       !TopRight(-1, -16)
-  Slider $parentScrollBar(epVerticalScrollBar, .scrollbar):
+  VerticalScrollBar $parentScrollBar(.scrollbar):
     !TopRight(0, -13)
     !BottomRight(0, 13)
     Onload:
@@ -713,7 +713,7 @@ Slider epVerticalScrollBar(orientation: VERTICAL, valueStep: 1, virtual):
       !TopLeft(-6, 12)
       !BottomLeft(-6, -12)
       !TexCoords(0, 0.1875, 0.1875, 0.8125)
-  Button $parentLess(.less):
+  Button $parentLess(NoInherit, .less):
     !Size(16, 16)
     !Anchor(point: BOTTOM, relativePoint: TOP, x: 0, y: -3)
     NormalTexture(epArrowUpBg)
@@ -726,7 +726,7 @@ Slider epVerticalScrollBar(orientation: VERTICAL, valueStep: 1, virtual):
       *if button == 'LeftButton' or button == 'RightButton' then
       *  self:GetParent():move(-1, (IsShiftKeyDown() or button == 'RightButton'))
       *end
-  Button $parentMore(.more):
+  Button $parentMore(NoInherit, .more):
     !Size(16, 16)
     !Anchor(point: TOP, relativePoint: BOTTOM, x: 0, y: 3)
     NormalTexture(epArrowDownBg)
@@ -775,7 +775,7 @@ Slider epVerticalSlider(orientation: VERTICAL, valueStep: 1, virtual):
       !BottomRight(-6, -22)
     Texture(epControlEdgeBR):
       !BottomRight(6, -22)
-  Button $parentLess(.less):
+  Button $parentLess(NoInherit, .less):
     !Size(19, 19)
     !Anchor(point: BOTTOM, relativePoint: TOP, x: 0, y: -3)
     NormalTexture(epArrowUpBg):
@@ -790,7 +790,7 @@ Slider epVerticalSlider(orientation: VERTICAL, valueStep: 1, virtual):
       *if button == 'LeftButton' or button == 'RightButton' then
       *  self:GetParent():move(-1, (IsShiftKeyDown() or button == 'RightButton'))
       *end
-  Button $parentMore(.more):
+  Button $parentMore(NoInherit, .more):
     !Size(19, 19)
     !Anchor(point: TOP, relativePoint: BOTTOM, x: 0, y: 3)
     NormalTexture(epArrowDownBg):
