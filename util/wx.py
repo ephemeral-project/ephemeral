@@ -40,7 +40,7 @@ frame_type_equivalents = {
     'TabbedFrame': ['Frame', 'epTabbedFrame'],
     'Tree': ['Frame', 'epTree'],
     'VerticalScrollBar': ['Slider', 'epVerticalScrollBar'],
-    'VerticalSlider': ['Slider', 'epSlider'],
+    'VerticalSlider': ['Slider', 'epVerticalSlider'],
 }
 
 implicit_flags = ['enableMouse', 'hidden', 'setAllPoints', 'virtual']

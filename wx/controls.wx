@@ -46,29 +46,10 @@ Button epColorSpot(epControl, virtual):
   HighlightTexture(epControlHighlight)
   !Border:
     Texture $parentColor(.spot):
-      !TopLeft(2, -2)
-      !BottomRight(-2, 2)
-  !Artwork:
-    Texture $parentT:
-      !Size(y: 2)
-      !TopLeft(2, -2)
-      !TopRight(-2, -2)
-      !Color(0.82, 0.76, 0.61, 1.0)
-    Texture $parentR:
-      !Size(x: 2)
-      !TopRight(-2, -2)
-      !BottomRight(-2, 2)
-      !Color(0.82, 0.76, 0.61, 1.0)
-    Texture $parentB:
-      !Size(y: 2)
-      !BottomLeft(2, 2)
-      !BottomRight(-2, 2)
-      !Color(0.82, 0.76, 0.61, 1.0)
-    Texture $parentL:
-      !Size(x: 2)
-      !TopLeft(2, -2)
-      !BottomLeft(2, 2)
-      !Color(0.82, 0.76, 0.61, 1.0)
+      !TopLeft(3, -3)
+      !BottomRight(-3, 3)
+  OnClick:
+    *self:selectColor()
   OnLoad:
     *ep.ColorSpot(self)
 
@@ -92,9 +73,9 @@ EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
     OnClick:
       *self:GetParent():open()
   OnEnterPressed:
-    *self:select(self:GetText())
+    *self:capture()
   OnEscapePressed:
-    *self:select(self:GetText())
+    *self:capture()
   OnEditFocusGained:
     *self:HighlightText()
   OnEditFocusLost:
@@ -275,7 +256,7 @@ Frame epGridRow(virtual):
   OnMouseUp:
     *self:manipulate(button)
   OnMouseWheel:
-    *self.Grid.scrollbar:move(-delta)
+    *self.grid.scrollbar:move(-delta)
 
 Frame epGridCell(virtual):
   !Size(y: 13)
@@ -329,11 +310,11 @@ Button epIconBox(epControl, virtual):
     *self:browse()
 
 Button epListBuilderButton(epControlEdge, virtual):
-  !Size(y: 19)
+  !Size(y: 17)
   HighlightTexture(epControlHighlight, alphaMode: ADD)
   PushedTexture(epControlHighlight, alphaMode: ADD)
   ButtonText:
-    !Center(0, 1)
+    !Center(0, 0)
   !PushedTextOffset(0, 0)
   !NormalFont(epLabelFont)
   !HighlightFont(epHighlightFont)
@@ -342,6 +323,8 @@ Button epListBuilderButton(epControlEdge, virtual):
       !TopLeft(0, -2)
       !BottomRight(0, 2)
       !Color(1, 1, 1, 0.2)
+  OnClick:
+    *self:edit()
   OnEnter:
     *self:enter()
   OnLeave:
@@ -350,39 +333,52 @@ Button epListBuilderButton(epControlEdge, virtual):
     *ep.ListBuilderButton(self)
 
 Frame epListBuilder(epControl, virtual):
-  !Size(y: 21)
+  !Size(y: 25)
+  !Border:
+    FontString $parentPlaceholder(epInnerLabel, .placeholderLabel, hidden):
+      !Right(x: -25)
   Button $parentAdd(NoInherit, .add):
-    !Size(21, 21)
-    !TopRight(1, 1)
+    !Size(25, 25)
+    !TopRight(0, 0)
     NormalTexture(epPlus)
     HighlightTexture(epPlusHighlight)
     OnClick:
-      *self:GetParent():open()
+      *self:GetParent():edit()
   Frame $parentEntries(.entryContainer):
-    !TopLeft(4, -2)
+    !TopLeft(4, -4)
     !BottomRight(-20, 1)
   Frame $parentEditor(epControlEdge, .editor, frameStrata: DIALOG, hidden):
     !Size(190, 27)
-    !TopLeft(0, -18)
+    !Anchor(point: TOPLEFT, relativePoint: BOTTOMLEFT, y: 1)
     Backdrop(bgFile: '%textures\panel-background', +tile):
       BackgroundInsets:
         AbsInset(left: 1, right: 1, top: 1, bottom: 1)
       TileSize:
         AbsValue(val: 128)
     ComboBox $parentText(.text):
-      !Size(100, 19)
+      !Size(y: 19)
       !TopLeft(4, -4)
+      !TopRight(-65, -4)
+      OnEnterPressed:
+        *self:GetParent():GetParent():submit()
       OnLoad:
         *ep.ComboBox(self, {})
     ColorSpot $parentColor(.color):
-      !Right(-36)
-    Button $parentSave(NoInherit, .save):
-      !Size(21, 21)
-      !Right(1)
+      !Right(-43)
+    Button $parentSave(NoInherit, .saveButton):
+      !Size(25, 25)
+      !Right(x: -19)
       NormalTexture(epPlus)
       HighlightTexture(epPlusHighlight)
       OnClick:
-        *self:GetParent():GetParent():save()
+        *self:GetParent():GetParent():submit()
+    Button $parentDelete(NoInherit, .deleteButton):
+      !Size(25, 25)
+      !Right
+      NormalTexture(epClose)
+      HighlightTexture(epCloseHighlight)
+      OnClick:
+        *self:GetParent():GetParent():delete()
   OnLoad:
     *ep.ListBuilder(self)
 

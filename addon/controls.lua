@@ -1,8 +1,8 @@
 local _, attachTooltip, attrsort, band, detachTooltip, exception, exceptional,
-      fieldsort, floor, invoke, put, ref, tclear, tindex, tint, tupdate
+      fieldsort, floor, invoke, put, ref, strip, tclear, tindex, tint, tupdate
     = ep.localize, ep.attachTooltip, ep.attrsort, bit.band, ep.detachTooltip,
       ep.exception, ep.exceptional, ep.fieldsort, math.floor, ep.invoke, ep.put,
-      ep.ref, ep.tclear, ep.tindex, ep.tint, ep.tupdate
+      ep.ref, ep.strip, ep.tclear, ep.tindex, ep.tint, ep.tupdate
 
 ep.Button = ep.control('ep.Button', 'epButton', ep.BaseControl, 'button', {
   initialize = function(self, params)
@@ -20,11 +20,13 @@ ep.Button = ep.control('ep.Button', 'epButton', ep.BaseControl, 'button', {
   disable = function(self)
     self:Disable()
     self:SetAlpha(0.6)
+    return self
   end,
 
   enable = function(self)
     self:Enable()
     self:SetAlpha(1.0)
+    return self
   end
 })
 
@@ -60,7 +62,9 @@ ep.CheckBox = ep.control('ep.CheckBox', 'epCheckBox', ep.BaseControl, 'checkbox'
     if state ~= nil then
       self:SetChecked(state)
     end
+
     self:SetAlpha(0.6)
+    return self
   end,
 
   enable = function(self, state)
@@ -68,7 +72,9 @@ ep.CheckBox = ep.control('ep.CheckBox', 'epCheckBox', ep.BaseControl, 'checkbox'
     if state ~= nil then
       self:SetChecked(state)
     end
+
     self:SetAlpha(1.0)
+    return self
   end,
 
   _gridSet = function(self, value)
@@ -81,18 +87,29 @@ ep.CheckBox.setValue = ep.CheckBox.SetChecked
 
 ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
   initialize = function(self, params)
-    local color = 'black'
-    if params and params.color then
-      color = params.color
-    end
+    params = params or {}
+    self.defaultColor = params.defaultColor or 'black'
 
-    self.color = tint(color)
+    self.color = tint(self.defaultColor)
     self.spot:SetTexture(unpack(self.color))
 
     if params and params.tooltip then
       attachTooltip(self, params.tooltip, {delay=1,
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
+  end,
+
+  getValue = function(self)
+    return self.color
+  end,
+
+  selectColor = function(self)
+    epColorBrowser:display({self.setValue, self}, self)
+  end,
+
+  setValue = function(self, value)
+    self.color = value
+    self.spot:SetTexture(unpack(self.color))
   end
 })
 
@@ -157,7 +174,9 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
     if cleared then
       self:SetText('')
     end
+
     self:Disable()
+    return self
   end,
 
   enable = function(self, value)
@@ -167,7 +186,13 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
     elseif self:GetText() == '' then
       self:setText(self.value)
     end
+
     self:Enable()
+    return self
+  end,
+
+  getValue = function(self)
+    return self.value
   end,
 
   open = function(self)
@@ -250,17 +275,24 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
 })
 
 ep.ComboBox = ep.control('ep.ComboBox', 'epComboBox', ep.DropBox, 'editbox', {
+  capture = function(self)
+    self:select(self:GetText())
+    return self
+  end,
+
   disable = function(self, cleared)
     self:ClearFocus()
     self:super():disable(cleared)
     self:EnableKeyboard(false)
     self:EnableMouse(false)
+    return self
   end,
 
   enable = function(self, value)
     self:super():enable(value)
     self:EnableKeyboard(true)
     self:EnableMouse(true)
+    return self
   end,
 
   select = function(self, value, quiet)
@@ -274,7 +306,9 @@ ep.ComboBox = ep.control('ep.ComboBox', 'epComboBox', ep.DropBox, 'editbox', {
     else
       self:SetText(value)
     end
+
     self:ClearFocus()
+    return self
   end
 })
 
@@ -415,13 +449,19 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
 
   addToHistory = function(self, value)
     if not (self.historyEnabled and #value > 0) then
+      self:cancelHistory()
       return
     end
 
     local history = self:getHistory()
     for i, line in ipairs(history) do
       if value == line then
-        return
+        if i > 1 then
+          tremove(history, i)
+        else
+          self:cancelHistory()
+          return
+        end
       end
     end
 
@@ -498,10 +538,6 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
     return historyTable
   end,
 
-  getValue = function(self)
-    return self:GetText()
-  end,
-
   setValue = function(self, value)
     local original = self:GetText()
     self:SetText(value or '')
@@ -525,11 +561,28 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
       return
     end
 
+    if IsControlKeyDown() then
+      self:setValue(self.historyStub or '')
+      self:cancelHistory()
+      return
+    end
+
     local history = self:getHistory()
+    if #history == 0 then
+      return
+    end
+
     if self.historyActive then
-      self.historyOffset = self.historyOffset + 1
-      if self.historyOffset > #history then
-        self.historyOffset = 1
+      if IsShiftKeyDown() then
+        self.historyOffset = self.historyOffset - 1
+        if self.historyOffset == 0 then
+          self.historyOffset = #history
+        end
+      else
+        self.historyOffset = self.historyOffset + 1
+        if self.historyOffset > #history then
+          self.historyOffset = 1
+        end
       end
     else
       self.historyActive = true
@@ -568,6 +621,8 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
     self:event(':changed', self)
   end
 })
+
+ep.EditBox.getValue = ep.EditBox.GetText
 
 ep.Grid = ep.control('ep.Grid', 'epGrid', ep.BaseFrame, nil, {
   controls = {
@@ -1011,57 +1066,149 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
     self.defaultColor = params.defaultColor
     self.entries = {}
     self.formatter = params.formatter
-    self.opened = false
+    self.placeholder = params.placeholder
     self.sorter = params.sorter or attrsort(1)
     self.supportColor = params.supportColor
     self.tooltipGenerator = params.tooltipGenerator
     self.validator = params.validator
+
+    if self.placeholder then
+      self.placeholderLabel:SetText(self.placeholder)
+      if not params.entries then
+        self.placeholderLabel:Show()
+      end
+    end
+
+    if params.entries then
+      self:setValue(params.entries)
+    end
+
+    if params.tooltip then
+      attachTooltip(self, params.tooltip, {delay=1,
+        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
+    end
+
+    if self.label then
+      self.label:SetText(_(self.label:GetText()))
+    end
   end,
 
   addEntry = function(self, entry, skipUpdate)
-    if self.formatter then
-      entry = self.formatter(entry)
+    entry = self._prepareEntry(entry)
+    if exceptional(entry) then
+      return entry
     end
 
-    if self.validator then
-      local failure = self.validator(entry)
-      if exceptional(failure) then
-        -- handle this properly
+    self._addIfUnique(entry, true)
+    if not skipUpdate then
+      self:update()
+    end
+    return entry
+  end,
+
+  close = function(self)
+    if self.currentEntry then
+      self.buttons[self.currentEntry[2]]:UnlockHighlight()
+      self.currentEntry = nil
+    end
+
+    self.editor:Hide()
+    self.editing = nil
+  end,
+
+  delete = function(self)
+    local entry = self.currentEntry
+    if entry then
+      tremove(self.entries, entry[2])
+      self:update()
+    end
+    self:close()
+  end,
+
+  edit = function(self, entry, index)
+    if self.editing then
+      if self.currentEntry and self.currentEntry ~= entry then
+        self.buttons[self.currentEntry[2]]:UnlockHighlight()
+      elseif not entry then
+        self:close()
         return
       end
     end
 
-    tinsert(self.entries, entry)
-    if not skipUpdate then
+    if entry then
+      self.editor.text:select(entry[1])
+      if entry[2] then
+        self.editor.color:setValue(entry[2])
+      end
+      self.currentEntry = {entry, index}
+      self.buttons[index]:LockHighlight()
+    else
+      self.editor.text:select('')
+    end
+
+    self.editor:SetWidth(self:GetWidth())
+    self.editor:Show()
+    self.editor.text:SetFocus()
+    self.editing = true
+  end,
+
+  getValue = function(self)
+    return self.entries
+  end,
+
+  setValue = function(self, entries)
+    self.entries = {}
+    for i, entry in ipairs(entries) do
+      entry = self:addEntry(entry, true)
+      if exceptional(entry) then
+        return entry
+      end
+    end
+    self:update()
+  end,
+
+  submit = function(self)
+    local value = self.editor.text:capture():getValue()
+    if value == nil or #strip(value) == 0 then
+      self:close()
+      return
+    end
+
+    local entry = self:_prepareEntry({value, self.editor.color:getValue()})
+    if exceptional(entry) then
+      -- handle this
+      return
+    end
+
+    if self.currentEntry then
+      local currentEntry, currentIndex = unpack(self.currentEntry)
+      if entry[1] ~= currentEntry[1] or entry[2] ~= currentEntry[2] then
+        tremove(self.entries, currentIndex)
+        self:_addIfUnique(entry, true)
+        self:update()
+      end
+    else
+      self:_addIfUnique(entry, true)
       self:update()
     end
-  end,
-
-  cancel = function(self)
-    if self.opened then
-      self.editor:Hide()
-      self.opened = false
-    end
-  end,
-
-  open = function(self)
-    if self.opened then
-      self:cancel()
-    else
-      self.editor:SetWidth(self:GetWidth())
-      self.editor:Show()
-      self.opened = true
-    end
+    self:close()
   end,
 
   update = function(self)
     table.sort(self.entries, self.sorter)
+    if self.placeholder then
+      if #self.entries > 0 then
+        self.placeholderLabel:Hide()
+      else
+        self.placeholderLabel:Show()
+      end
+    end
 
-    local width, x, y, bw = self:GetWidth() - 24, 0, 0 
+    local width, x, y, bw = self:GetWidth() - 24, 4, -4 
     for i, entry in ipairs(self.entries) do
       local button = self.buttons[i]
       if not button then
-        button = ep.ListBuilderButton(self.name..'Entry'..i, self.entryContainer, self, i)
+        button = ep.ListBuilderButton(self.name..'Entry'..i, self, self, i)
         self.buttons[i] = button
       end
     
@@ -1072,14 +1219,14 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
 
       bw = button:GetWidth()
       if (x + bw) > width then
-        x, y = 0, y - 18
+        x, y = 4, y - 20
       end
 
-      button:SetPoint('TOPLEFT', self.entryContainer, 'TOPLEFT', x, y)
-      x = x + bw + 4
+      button:SetPoint('TOPLEFT', self, 'TOPLEFT', x, y)
+      x = x + bw + 3
     end
 
-    self:SetHeight(y + 21)
+    self:SetHeight(math.abs(y) + 21)
 
     local idx = #self.entries + 1
     while true do
@@ -1092,6 +1239,32 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
         break
       end
     end
+  end,
+
+  _addIfUnique = function(self, entry, updateColor)
+    for i, existing in ipairs(self.entries) do
+      if entry[1] == existing[1] then
+        if updateColor then
+          existing[2] = entry[2]
+        end
+        return
+      end
+    end
+    tinsert(self.entries, entry)
+  end,
+
+  _prepareEntry = function(self, entry)
+    if self.formatter then
+      entry = self.formatter(entry)
+    end
+
+    if self.validator then
+      local failure = self.validator(entry)
+      if exceptional(failure) then
+        return failure
+      end
+    end
+    return entry
   end
 })
 
@@ -1102,6 +1275,10 @@ ep.ListBuilderButton = ep.control('ep.ListBuilderButton', 'epListBuilderButton',
     self.frame = frame
     self.id = id
     self:setBorderColors(1, 1, 1, 0.5)
+  end,
+
+  edit = function(self)
+    self.frame:edit(self.entry, self.id)
   end,
 
   enter = function(self)
@@ -1121,7 +1298,7 @@ ep.ListBuilderButton = ep.control('ep.ListBuilderButton', 'epListBuilderButton',
       else
         self.font:SetTextColor(unpack(tint.label))
       end
-      self:SetWidth(self:GetTextWidth() + 2)
+      self:SetWidth(self:GetTextWidth() + 11)
     end
   end
 })

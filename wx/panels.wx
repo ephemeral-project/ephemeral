@@ -326,8 +326,10 @@ Panel epTest(^UIParent, frameStrata: HIGH, hidden):
   ColorSpot $parentColorSpot:
     !TopLeft(150, -32)
   ListBuilder $parentList:
-    !Size(200, 21)
+    !Size(200, 25)
     !TopLeft(180, -32)
+    OnLoad:
+      *ep.ListBuilder(self, {placeholder='facets'})
   MultiButton $parentMultiButton(text: 'Save'):
     !Size(100, 19)
     !TopLeft(180, -75)
