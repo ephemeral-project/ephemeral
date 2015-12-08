@@ -25,7 +25,7 @@ CheckButton epCheckBox(virtual):
   HighlightTexture(epControlHighlight):
     !TopLeft(1, -1)
     !BottomRight(-1, 1)
-  ButtonText:
+  ButtonText $parentText(.text):
     !Anchor(point: LEFT, relativePoint: RIGHT, x: 4, y: 0)
   !PushedTextOffset(0, 0)
   !NormalFont(epLabelFont, LEFT)
@@ -34,12 +34,12 @@ CheckButton epCheckBox(virtual):
     *ep.CheckBox(self)
 
 CheckButton epReversedCheckBox(epCheckBox, virtual):
-  ButtonText:
+  ButtonText $parentText(.reversedText):
     !Anchor(point: RIGHT, relativePoint: LEFT, x: -4, y: 0)
   !NormalFont(epLabelFont, RIGHT)
   !HighlightFont(epHighlightFont, RIGHT)
   OnLoad:
-    *ep.CheckBox(self, {reversed=true})
+    *ep.CheckBox(self)
 
 Button epColorSpot(epControl, virtual):
   !Size(16, 16)
@@ -359,8 +359,6 @@ Frame epListBuilder(epControl, virtual):
       !Size(y: 19)
       !TopLeft(4, -4)
       !TopRight(-65, -4)
-      OnEnterPressed:
-        *self:GetParent():GetParent():submit()
       OnLoad:
         *ep.ComboBox(self, {})
     ColorSpot $parentColor(.color):
@@ -545,9 +543,9 @@ EditBox epSpinner(epControl, font: epNormalFont, -autoFocus, virtual):
     OnMouseWheel:
       *self:GetParent():spin(delta)
   OnEnterPressed:
-    *self:set(self:GetText())
+    *self:setValue(self:GetText())
   OnEscapePressed:
-    *self:set(self:GetText())
+    *self:setValue(self:GetText())
   OnEditFocusGained:
     *self:HighlightText()
   OnEditFocusLost:

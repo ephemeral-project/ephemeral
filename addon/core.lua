@@ -1,7 +1,7 @@
-local concat, exception, exceptional, format, invoke, ref, put,
+local concat, exception, exceptional, format, invoke, isprototype, ref, put,
       split, surrogate, tclear, tinsert, tkeys, tremove
     = table.concat, ep.exception, ep.exceptional, string.format, ep.invoke,
-      ep.ref, ep.put, ep.split, ep.surrogate, ep.tclear, table.insert,
+      ep.isprototype, ep.ref, ep.put, ep.split, ep.surrogate, ep.tclear, table.insert,
       ep.tkeys, table.remove
 
 local events = {}
@@ -276,6 +276,14 @@ ep.DataStore = ep.prototype('ep.DataStore', {
 
     self.container = self:construct()
     self:reindex()
+  end,
+
+  __repr = function(self)
+    if isprototype(self) then
+      return ep.metatype.__repr(self)
+    end
+    return format("ep.DataStore('%s')",
+      self.specification.location or 'internal')
   end,
 
   construct = function(self)

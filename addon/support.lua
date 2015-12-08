@@ -145,6 +145,21 @@ ep.metatype = {
     return value
   end,
 
+  __repr = function(self)
+    if rawget(self, '__prototypical') then
+      local name = rawget(self, '__name')
+      if name then
+        local base, baseclass = rawget(self, '__base'), ''
+        if type(base) == 'table' then
+          baseclass = base.__name or ''
+        end
+        return format('[prototype %s(%s)]', name, baseclass)
+      end
+    elseif self.__name then
+      return self.__name..'()'
+    end
+  end,
+
   __supercall = {
     __call = function(object, ...)
       local value = rawget(object, '__value')
@@ -173,18 +188,6 @@ ep.metatype = {
       return object
     end
   },
-
-  repr = function(self)
-    if rawget(self, '__prototypical') then
-      if rawget(self, '__name') then
-        local baseclass = ''
-        if type(rawget(self, '__base')) == 'table' then
-          baseclass = rawget(self, '__base').__name or ''
-        end
-        return format('[prototype %s(%s)]', self.__name, baseclass)
-      end
-    end
-  end,
 
   super = function(object)
     return setmetatable({__ref=object}, ep.metatype.__supercall)
@@ -398,19 +401,15 @@ function ep.hash(object)
 end
 
 function ep.invoke(invocation, ...)
-  local callable, arguments = invocation, {...}
-  if type(invocation) == 'table' then
-    callable = invocation[1]
-    for i = #invocation, 2, -1 do
-      tinsert(arguments, 1, invocation[i])
-    end
+  if type(invocation) == 'function' then
+    return invocation(...)
   end
 
-  if callable then
-    return callable(unpack(arguments))
-  else
-    ep.debug('invalid invocation', {invocation}, true, true)
+  local callable, arguments = invocation[1], {...}
+  for i = #invocation, 2, -1 do
+    tinsert(arguments, 1, invocation[i])
   end
+  return callable(unpack(arguments))
 end
 
 function ep.isderived(candidate, prototype, strict)
@@ -426,6 +425,25 @@ function ep.isderived(candidate, prototype, strict)
     base = base.__base
   end
   return false
+end
+
+function ep.isinstance(candidate, prototype)
+  if type(candidate) ~= 'table' or rawget(candidate, '__prototypical') then
+    return false
+  end
+
+  base = getmetatable(candidate)
+  while base do
+    if base == prototype then
+      return true
+    end
+    base = base.__base
+  end
+  return false
+end
+
+function ep.isprototype(candidate)
+  return rawget(candidate, '__prototypical')
 end
 
 function ep.iterkeys(tbl, sorted)
@@ -564,8 +582,8 @@ end
 function ep.repr(object, strLimit, naive)
   local objtype, strLimit, representation, length = type(object), limit or 100
   if objtype == 'table' then
-    if object.repr and not naive then
-      representation = object:repr()
+    if not naive and object.__repr then
+      representation = object:__repr()
       if representation then
         return representation
       end
@@ -1036,6 +1054,15 @@ ep.PriorityQueue = ep.prototype('ep.PriorityQueue', {
     self.field, self.items = field, {}
   end,
 
+  __repr = function(self)
+    if ep.isprototype(self) then
+      return ep.metatype.__repr(self)
+    else
+      return format("ep.PriorityQueue(field='%s', items={%s})",
+        self.field, ep.reprtable(self.items))
+    end
+  end,
+
   peek = function(self, threshold)
     if self.items[1] and (not threshold or self.items[1][self.field] <= threshold) then
       return self.items[1]
@@ -1118,14 +1145,6 @@ ep.Timer = ep.prototype('ep.Timer', {
     return self.accrued
   end,
 
-  repr = function(self)
-    local name = ''
-    if self.name then
-      name = "'"..self.name.."'"
-    end
-    return format('[ep.timer(%s)]', name)
-  end,
-
   reset = function(self, start)
     self.accrued, self.moment = 0, 0
     if start then
@@ -1168,6 +1187,14 @@ ep.Timestamp = ep.prototype('ep.Timestamp', {
     end
   end,
 
+  __repr = function(self)
+    if ep.isprototype(self) then
+      return ep.metatype.__repr(self)
+    else
+      return format("ep.Timestamp('%s')", self:format())
+    end
+  end,
+
   format = function(self, specification)
     specification = specification or '%Y-%m-%d %H:%M:%S'
     return date(specification, self.value)
@@ -1197,10 +1224,6 @@ ep.Timestamp = ep.prototype('ep.Timestamp', {
       value[part] = val
     end
     self.value = time(value)
-  end,
-
-  repr = function(self)
-    return format('[ep.timestamp(%s)]', self:format())
   end,
 
   values = function(self)

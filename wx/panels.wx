@@ -28,69 +28,101 @@ Panel epConsole(^UIParent, frameStrata: HIGH, hidden):
     *ep.Console(self)
 
 Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
-  !Size(400, 300)
+  !Size(370, 300)
   !Center
-  !Artwork:
-    FontString(epLabelFont, text: 'Color:'):
-      !TopLeft(220, -34)
-    Texture $parentColorTexture(.colortexture):
-      !Size(64, 19)
-      !TopLeft(260, -32)
+  !Border:
+    Texture $parentLowerDivider(epControlInnerEdgeB, .lowerDivider):
+      !BottomLeft(5, 30)
+      !BottomRight(-5, 30)
   ColorSelect $parentWheel(epControl, .wheel, enableMouse):
-    !Size(198, 148)
+    !Size(207, 159)
     !TopLeft(11, -32)
     ColorWheelTexture:
-      !Size(128, 128)
+      !Size(139, 139)
       !TopLeft(10, -10)
     ColorWheelThumbTexture(file: 'Interface\Buttons\UI-ColorPicker-Buttons'):
       !Size(10, 10)
       !TexCoords(0, 0.15625, 0, 0.625)
     ColorValueTexture:
-      !Size(32, 128)
-      !TopLeft(152, -10)
+      !Size(32, 139)
+      !TopLeft(161, -10)
     ColorValueThumbTexture(file: 'Interface\Buttons\UI-ColorPicker-Buttons'):
       !Size(48, 14)
       !TexCoords(0.25, 1.0, 0.0, 0.875)
     OnColorSelect:
-      *self:GetParent():set()
-  Spinner $parentRValue(.rvalue):
-    !Size(54, 19)
-    !TopLeft(260, -57)
+      *if not self.suppressEvent then
+      *  self:GetParent():setColor({self:GetColorRGB()})
+      *end
+      *self.suppressEvent = nil
+  Frame $parentColors(epControl, .colors):
+    !Size(80, 44)
+    !TopRight(-11, -32)
     !Artwork:
-      FontString(epLabelFont, .label, text: 'Red:'):
-        !Left(x: -40)
+      FontString(epLabelFont, .currentLabel, text: 'Current:'):
+        !Anchor(point: TOPRIGHT, relativeTo: $parent, relativePoint: TOPLEFT, x: -4, y: -6)
+      FontString(epLabelFont, .originalLabel, text: 'Original:'):
+        !Anchor(point: TOPRIGHT, relativeTo: $parent, relativePoint: TOPLEFT, x: -4, y: -26)
+      Texture $parentCurrent(.current):
+        !Size(y:19)
+        !TopLeft(3, -3)
+        !TopRight(-3, -3)
+        !Color(0, 0, 0)
+    Frame $parentOriginal(.original):
+      !Size(y: 19)
+      !TopLeft(3, -22)
+      !TopRight(-3, -22)
+      !Background:
+        Texture $parentTexture(.texture, setAllPoints):
+          !Color(1, 0, 0)
+      OnMouseDown:
+        *self:GetParent():GetParent():revertToOriginal()
+  Spinner $parentRValue(.rValue):
+    !Size(60, 19)
+    !TopRight(-31, -80)
+    !Artwork:
+      FontString(epLeftLabel, .label, text: 'Red:')
     OnLoad:
-      *ep.Spinner(self, {minimum=0, maximum=255, onchange={ep.ColorBrowser.update, self:GetParent(), 'r'}})
-  Spinner $parentGValue(.gvalue):
-    !Size(54, 19)
-    !TopLeft(225, -95)
+      *ep.Spinner(self, {minimum=0, maximum=255, onValueChanged=
+      *  {ep.ColorBrowser.updateColor, self:GetParent(), 'red'}})
+  Spinner $parentGValue(.gValue):
+    !Size(60, 19)
+    !TopRight(-31, -103)
     !Artwork:
-      FontString(epLabelFont, .label, text: 'Green:'):
-        !Left(x: -30)
+      FontString(epLeftLabel, .label, text: 'Green:')
     OnLoad:
-      *ep.Spinner(self, {minimum=0, maximum=255, onchange={ep.ColorBrowser.update, self:GetParent(), 'g'}})
-  Spinner $parentBValue(.bvalue):
-    !Size(54, 19)
-    !TopLeft(255, -118)
+      *ep.Spinner(self, {minimum=0, maximum=255, onValueChanged=
+      *  {ep.ColorBrowser.updateColor, self:GetParent(), 'green'}})
+  Spinner $parentBValue(.bValue):
+    !Size(60, 19)
+    !TopRight(-31, -126)
     !Artwork:
-      FontString(epLabelFont, .label, text: 'Blue:'):
-        !Left(x: -40)
+      FontString(epLeftLabel, .label, text: 'Blue:')
     OnLoad:
-      *ep.Spinner(self, {minimum=0, maximum=255, onchange={ep.ColorBrowser.update, self:GetParent(), 'b'}})
-  Spinner $parentAValue(.avalue):
-    !Size(54, 19)
-    !TopLeft(255, -141)
+      *ep.Spinner(self, {minimum=0, maximum=255, onValueChanged=
+      *  {ep.ColorBrowser.updateColor, self:GetParent(), 'blue'}})
+  Spinner $parentAValue(.aValue):
+    !Size(60, 19)
+    !TopRight(-31, -149)
     !Artwork:
-      FontString(epLabelFont, .label, text: 'Alpha:'):
-        !Left(x: -40)
+      FontString(epLeftLabel, .label, text: 'Alpha:')
     OnLoad:
-      *ep.Spinner(self, {minimum=0, maximum=255, onchange={ep.ColorBrowser.update, self:GetParent(), 'a'}})
-  EditBox $parentHexValue(.hexvalue):
-    !Size(64, 19)
-    !TopLeft(260, -164)
+      *ep.Spinner(self, {minimum=0, maximum=255, onValueChanged=
+      *  {ep.ColorBrowser.updateColor, self:GetParent(), 'alpha'}})
+  EditBox $parentHexValue(.hexValue):
+    !Size(80, 19)
+    !TopRight(-11, -172)
     !Artwork:
-      FontString(epLabelFont, text: 'Hex:'):
-        !Left(x: -40)
+      FontString(epLeftLabel, .label, text: 'Hex:')
+  Button $parentCancel(.cancelButton, text: 'Cancel'):
+    !Size(80, 19)
+    !BottomRight(-95, 11)
+    OnClick:
+      *self:GetParent():cancel()
+  Button $parentSelect(.selectButton, text: 'Select'):
+    !Size(80, 19)
+    !BottomRight(-11, 11)
+    OnClick:
+      *self:GetParent():select()
   OnLoad:
     *ep.ColorBrowser(self)
 
@@ -243,7 +275,7 @@ Panel epIconBrowser(^UIParent, frameStrata: HIGH, hidden):
     !BottomRight(-125, 10)
     OnLoad:
       *ep.DropBox(self, {
-      *  callback = {ep.IconBrowser.setSet, self:GetParent()},
+      *  onValueChanged = {ep.IconBrowser.setSet, self:GetParent()},
       *  items = {{'all', 'All Sets'}},
       *  value = 'all',
       *})

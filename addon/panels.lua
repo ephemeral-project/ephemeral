@@ -1,5 +1,5 @@
-local _, exceptional, floor, invoke, iterkeys, itersplit, repr, strip
-    = ep.localize, ep.exceptional, math.floor, ep.invoke, ep.iterkeys,
+local _, Color, exceptional, floor, invoke, isinstance, iterkeys, itersplit, repr, strip
+    = ep.localize, ep.Color, ep.exceptional, math.floor, ep.invoke, ep.isinstance, ep.iterkeys,
       ep.itersplit, ep.repr, ep.strip
 
 ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
@@ -7,28 +7,83 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
     self:super():initialize({
       title = _'Color Browser',
     })
+
+    self.lowerDivider:SetVertexColor(1, 1, 1, 0.5)
   end,
 
-  display = function(self, callback, anchor)
-    if not self.callback then
-      self.callback, self.anchor = callback, anchor
-      if self.anchor then
-        self:position(anchor, {x = 3})
-      end
-      self:Show()
+  display = function(self, params)
+    params = params or {}
+    self.onCancel = params.onCancel
+    self.onSelect = params.onSelect
+
+    if params.anchor then
+      self:position(anchor, {x=3})
     end
-  end,
 
-  set = function(self, color, source)
-    self.color = ep.tint(color, 'all')
-    if source ~= 'wheel' then
-      self.wheel:SetColorRGB(self.color.color[1], self.color.color[2], self.color.color[3])
+    self.original = params.color or Color('default')
+    if not isinstance(self.original, Color) then
+      self.original = Color(self.original)
     end
-    self.colortexture:SetTexture(unpack(self.color.color))
+    self.colors.original.texture:SetTexture(unpack(self.original:toNative()))
+
+    self:setColor(self.original)
+    self:Show()
   end,
 
-  update = function(self, slot, value, control)
-    --ep.debug('update', {slot, value})
+  cancel = function(self)
+    if self.onCancel then
+      invoke(self.onCancel)
+    end
+    self:close()
+  end,
+
+  close = function(self)
+    self.onCancel, self.onSelect = nil, nil
+    self:Hide()
+  end,
+
+  revertToOriginal = function(self)
+    self:setColor(self.original)
+  end,
+
+  select = function(self)
+    if self.onSelect then
+      invoke(self.onSelect, self.color)
+    end
+    self:close()
+  end,
+
+  setColor = function(self, color)
+    if not isinstance(color, Color) then
+      color = Color(color)
+    end
+    if color == self.color then
+      return
+    end
+
+    self.color = color
+    self:updatePresentation(source)
+  end,
+
+  updatePresentation = function(self)
+    local color = self.color
+    self.colors.current:SetTexture(unpack(color:toNative()))
+
+    self.wheel.suppressEvent = true
+    self.wheel:SetColorRGB(unpack(color:toNative()))
+
+    self.hexValue:setValue(color:toHex(), true)
+
+    local rgba = color:toRgb(false)
+    self.rValue:setValue(rgba[1], true)
+    self.gValue:setValue(rgba[2], true)
+    self.bValue:setValue(rgba[3], true)
+    self.aValue:setValue(rgba[4], true)
+  end,
+
+  updateColor = function(self, slot, value)
+    self.color:setField(slot, value, true)
+    self:updatePresentation()
   end
 })
 
@@ -213,7 +268,7 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
     self.categoryDropbox.menu = ep.Menu('epIconBrowserCategoryMenu', self.categoryDropbox, {
       callback = {self.setCategory, self},
       items = self.categories,
-      location = {anchor = self.categoryDropbox, x = 0, y = -18},
+      location = {anchor=self.categoryDropbox, x=0, y=-18},
       width = self.categoryDropbox,
     })
   end,
@@ -341,10 +396,10 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
       for i = 1, self.icons do
         button, icon = self.buttons[i], iterator()
         if icon then
-          button:set(icon)
+          button:setValue(icon)
           button:Show()
         else
-          button:clear()
+          button:setValue()
           button:Hide()
         end
       end

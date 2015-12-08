@@ -1,6 +1,13 @@
 local exception, tinject
     = ep.exception, ep.tinject
 
+ep.ItemLocation = ep.prototype('ep.ItemLocation', {
+  
+})
+
+
+
+
 ep.ItemLocationProvider = ep.prototype('ep.ItemLocationProvider', {
   addToOrderedContainer = function(cls, container, id, position)
     container.n = container.n + 1
@@ -36,9 +43,27 @@ ep.BackpackLocationProvider = ep.prototype('ep.BackpackLocationProvider', ep.Ite
 
   end,
 
+  deploy = function(cls)
+    if not ep.character.backpack then
+      ep.character.backpack = {n=0, i=0}
+    end
+  end,
+
+  displayLocation = function(cls, location)
+    
+  end,
+
+  getLocation = function(cls, location)
+    local character = location.character
+    if not character.backpack then
+      character.backpack = {n=0, i=0}
+    end
+    return character.backpack
+  end,
+
   parseLocation = function(cls, location)
     local tokens = {split(location, ':')}
-    if #tokens < 2 or #tokens > 3 or tokens[1] ~= 'bk' then
+    if #tokens ~= 3 or tokens[1] ~= 'bk' then
       return exception('InvalidLocation')
     end
 
@@ -47,20 +72,18 @@ ep.BackpackLocationProvider = ep.prototype('ep.BackpackLocationProvider', ep.Ite
       return exception('InvalidLocation')
     end
 
-    location = {type='bk', character=character}
-    if #tokens == 2 then
-      return location
-    end
-
-    location.position = tonumber(tokens[3])
-    if location.position and location.position >= 1 then
-      return location
+    local position = tonumber(tokens[3])
+    if position and position >= 1 then
+      return {type='bk', id=tokens[2], character=character, position=position}
     else
       return exception('InvalidLocation')
     end
   end,
 
   move = function(cls, item, location)
+
+
+
     local backpack = ep.items:getBackpack(location.character)
     location.position = cls:addToOrderedContainer(backpack, item.id, location.position)
     return format('bk:%s:%d', location.character.id, location.position)
@@ -75,12 +98,32 @@ ep.BackpackLocationProvider = ep.prototype('ep.BackpackLocationProvider', ep.Ite
     end
   end,
 
-  validateLocation = function(cls, item, location)
-    if not location.character then
-      location.character = ep.characters:get(location.target)
-    end
-    if not location.character then
+  validateLocation = function(cls, location)
+    if location.type ~= 'bk' then
       return exception('InvalidLocation')
+    end
+
+    if location.id then
+      if location.character then
+        if location.character.id ~= location.id then
+          return exception('InvalidLocation')
+        end
+      else
+        location.character = ep.characters:get(location.id)
+        if not location.character then
+          return exception('InvalidLocation')
+        end
+      end
+    elseif location.character then
+      location.id = location.character.id
+    else
+      return exception('InvalidLocation')
+    end
+
+    if location.position then
+      if not (type(location.position) == 'number' and location.position >= 1) then
+        return exception('InvalidLocation')
+      end
     end
     return location
   end
@@ -100,7 +143,7 @@ ep.ContainerLocationProvider = ep.prototype('ep.ContainerLocationProvider', ep.I
 
     position = tonumber(tokens[3])
     if position and position >= 1 then
-      return {type='cn', container=container, position=position}
+      return {type='cn', id=tokens[2], container=container, position=position}
     else
       return exception('InvalidLocation')
     end
@@ -118,19 +161,48 @@ ep.ContainerLocationProvider = ep.prototype('ep.ContainerLocationProvider', ep.I
     end
   end,
 
-  validateLocation = function(cls, item, location)
-    if not location.container then
-      location.container = ep.instances:get(location.target)
+  validateLocation = function(cls, location)
+    if location.type ~= 'cn' then
+      return exception('InvalidLocation')
     end
-    if location.container then
-      return location
+
+    if location.id then
+      if location.container then
+        if location.container.id ~= location.id then
+          return exception('InvalidLocation')
+        end
+      else
+        location.container = ep.instances:get(location.id)
+        if not location.container then
+          return exception('InvalidLocation')
+        end
+      end
+    elseif location.container then
+      location.id = location.container.id
     else
       return exception('InvalidLocation')
     end
+
+    if not location.container.cn or type(location.container.cn) ~= 'table' then
+      return exception('InvalidLocation')
+    end
+
+    if location.position then
+      if type(location.position) ~= 'number' or location.position < 1 then
+        return exception('InvalidLocation')
+      end
+    end
+    return location
   end
 })
 
 ep.EquipmentLocationProvider = ep.prototype('ep.EquipmentLocationProvider', ep.ItemLocationProvider, {
+  deploy = function(cls)
+    if not ep.character.equipment then
+      ep.character.equipment = {}
+    end
+  end,
+
   parseLocation = function(cls, location)
     local tokens = {split(location, ':')}
     if #tokens ~= 4 or tokens[1] ~= 'eq' then
@@ -142,13 +214,14 @@ ep.EquipmentLocationProvider = ep.prototype('ep.EquipmentLocationProvider', ep.I
       return exception('InvalidLocation')
     end
 
-    if not ep.items.slots[tokens[3]] then
+    if not ep.items.slotTokens[tokens[3] then
       return exception('InvalidLocation')
     end
 
-    local position = tonumber(tokens[4])
+    local position = tonumnber(tokens[4])
     if position and position >= 1 then
-      return {type='eq', character=character, slot=tokens[3], position=position}
+      return {type='eq', id=tokens[2], character=character,
+        slot=tokens[3], position=position}
     else
       return exception('InvalidLocation')
     end
@@ -156,6 +229,40 @@ ep.EquipmentLocationProvider = ep.prototype('ep.EquipmentLocationProvider', ep.I
 
   move = function(cls, item, location)
     local equipment = ep.items:getEquipment(location.character)
+  end,
+
+  validateLocation = function(cls, location)
+    if location.type ~= 'eq' then
+      return exception('InvalidLocation')
+    end
+
+    if location.id then
+      if location.character then
+        if location.character.id ~= location.id then
+          return exception('InvalidLocation')
+        end
+      else
+        location.character = ep.characters:get(location.id)
+        if not location.character then
+          return exception('InvalidLocation')
+        end
+      end
+    else
+      locaton.id = location.character.id
+    else
+      return exception('InvalidLocation')
+    end
+
+    if location.slot and not ep.items.slotTokens[location.slot] then
+      return exception('InvalidLocation')
+    end
+
+    if location.position then
+      if type(location.position) ~= 'number' or location.position < 1 then
+        return exception('InvalidLocation')
+      end
+    end
+    return location
   end
 })
 

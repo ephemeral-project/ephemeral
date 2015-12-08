@@ -1,5 +1,5 @@
-local format, tupdate
-    = string.format, ep.tupdate
+local format, isprototype, tupdate
+    = string.format, ep.isprototype, ep.tupdate
 
 CHARACTER_GENDERS = {'unknown', 'male', 'female'}
 
@@ -10,6 +10,14 @@ ep.Character = ep.prototype('ep.Character', {
     if aspects then
       self.__aspects = aspects
     end
+  end,
+
+  __repr = function(self)
+    if isprototype(self) then
+      return ep.metatype.__repr(self)
+    end
+    return format("ep.Character(id='%s', name='%s', realm='%s')",
+      self.id, self.name, self.realm)
   end,
 
   describeCharacter = function(cls, target)

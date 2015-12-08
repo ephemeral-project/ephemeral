@@ -69,6 +69,7 @@ ep.items = {
   description = _'Ephemeral Items',
 
   definitions = {},
+  locationProviders = {},
 
   classMenuItems = {},
   qualityMenuItems = QUALITY_MENU_ITEMS,
@@ -93,13 +94,23 @@ ep.items = {
       end
     end
 
-    local character = ep.character
-    if not character.backpack then
-      character.backpack = {n = 0, i = 0}
+    for name, provider in pairs(self.locationProviders) do
+      provider:deploy()
     end
-    if not character.equipment then
-      character.equipment = {}
+  end,
+
+  displayLocation = function(self, location)
+    local provider = self:getLocationProvider(location)
+    if not provider then
+      return exception('InvalidLocation')
     end
+
+    location = provider:validateLocation(location)
+    if exceptional(location) then
+      return location
+    end
+
+    provider:displayLocation(location)
   end,
 
   getBackpack = function(self, character)
@@ -116,9 +127,13 @@ ep.items = {
     return character.equipment
   end,
 
-  getLocationProvider = function(self, token)
-    token = select(1, split(token, ':', 1))
-    return self.locationProviders[token]
+  getLocationProvider = function(self, location)
+    if type(location) == 'string' then
+      location = select(1, split(location, ':', 1))
+    else
+      location = location.type
+    end
+    return self.locationProviders[location]
   end,
 
   refreshInterfaces = function(self)
@@ -241,11 +256,11 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
     self:Hide()
   end,
 
-  display = function(cls, location, items, context)
-    local collectors, id, collector = cls.collectors
+  display = function(cls, context)
+    local collectors, collector, id = cls.collectors
     for i, frame in ipairs(collectors) do
-      if frame:IsShown() and frame.location then
-        if frame.location == location then
+      if frame:IsShown() and frame.context then
+        if frame.context.location == context.location then
           return
         end
       else
@@ -260,7 +275,7 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
       collectors[id] = collector
       collector:layout()
     end
-    collector:show(location, items, context)
+    collector:show(context)
   end,
 
   filter = function(self)
@@ -399,23 +414,18 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
   end,
 
   selectOption = function(self, value)
-
   end,
 
-  show = function(self, location, items, context)
+  show = function(self, context)
     self.context = context
-    self.items = items
-    self.location = location
+    self.items = context.items
 
-    self.icon:set(context.icon or self.defaultIcon)
+    self.icon:setValue(context.icon or self.defaultIcon)
     if context.iconCallback then
-      self.iconCallback = context.iconCallback
       self.icon:enable()
     else
-      self.iconCallback = nil
       self.icon:disable()
     end
-    self.iconTooltip = context.iconTooltip
 
     self:setTitle(context.title or 'Container')
     self.options:SetText(context.buttonText or 'Options')
@@ -433,11 +443,11 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
         if self.items[idx] then
           item = ep.instances:get(self.items[idx])
           if item then
-            button:set(item.ic)
+            button:setValue(item.ic)
             button.item, button.idx = item, idx
           end
         else
-          button:clear()
+          button:setValue(nil)
           button.item, button.idx = nil, nil
         end
         idx = idx + 1
@@ -484,6 +494,8 @@ ep.ItemEditor = ep.panel('ep.ItemEditor', 'epItemEditor', {
 
     self.lowerDivider:SetVertexColor(1, 1, 1, 0.5)
     self.f_class:populate(ep.items.classMenuItems)
+
+    self:linkSizeTo(self.f_facets, 'height')
   end,
 
   close = function(self, discarding)
@@ -516,21 +528,21 @@ ep.ItemEditor = ep.panel('ep.ItemEditor', 'epItemEditor', {
 
   populateFields = function(self)
     local item = self.item
-    self.f_icon:set(item.ic)
+    self.f_icon:setValue(item.ic)
     self.f_name:setValue(item.nm or '')
-    self.f_class:select(item.cl)
+    self.f_class:setValue(item.cl)
     self.f_inscription:setValue(item.ir or '')
-    self.f_quality:select(item.qu)
+    self.f_quality:setValue(item.qu)
     self.f_disabled:setValue(item.di)
     self.f_protected:setValue(item.pt)
     self.f_debugging:setValue(item.db)
 
     if item.sl then
       self.f_equippable:setValue(true)
-      self.f_slot:select(item.sl)
+      self.f_slot:setValue(item.sl)
     else
       self.f_equippable:setValue(false)
-      self.f_slot:select()
+      self.f_slot:setValue()
     end
 
     self.sections.f_description:setValue(item.ds or '')

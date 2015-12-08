@@ -58,7 +58,7 @@ Panel epItemCollector(^UIParent, frameStrata: DIALOG, hidden, virtual):
   OnLoad:
     *ep.ItemCollector(self)
 
-Panel epItemEditor(^UIParent, frameStrata: DIALOG, hidden, virtual):
+Panel epItemEditor(^UIParent, frameStrata: HIGH, hidden, virtual):
   !Size(455, 350)
   !Center
   !Border:
@@ -100,11 +100,11 @@ Panel epItemEditor(^UIParent, frameStrata: DIALOG, hidden, virtual):
     OnLoad:
       *ep.DropBox(self, {default='c', items=ep.items.qualityMenuItems,
       *  tooltip=ep_'$item-quality-tooltip'})
-  EditBox $parentFacets(.f_facets):
+  ListBuilder $parentFacets(.f_facets):
     !TopLeft(10, -77)
     !TopRight(-159, -77)
     OnLoad:
-      *ep.EditBox(self, {placeholder=ep_'facets'})
+      *ep.ListBuilder(self, {placeholder=ep_'facets'})
   DropBox $parentSound(.f_sound):
     !Size(100, 19)
     !TopRight(-10, -77)
@@ -114,13 +114,13 @@ Panel epItemEditor(^UIParent, frameStrata: DIALOG, hidden, virtual):
       *ep.DropBox(self, {default='it', items=ep.items.soundMenuItems})
   Tree $parentSelector(.selector):
     !Size(x: 100)
-    !TopLeft(10, -100)
+    !Anchor(point: TOPLEFT, relativeTo: $parentFacets, relativePoint: BOTTOMLEFT, y: -4)
     !BottomLeft(10, 87)
     OnLoad:
       *ep.Tree(self, {flat=true, title=ep_'Details',
-      *  callback={ep.ItemEditor.selectSection, self}})
+      *  onSelectionChanged={ep.ItemEditor.selectSection, self:GetParent()}})
   MultiFrame $parentSections(.sections):
-    !TopLeft(104, -100)
+    !Anchor(point: TOPLEFT, relativeTo: $parentFacets, relativePoint: BOTTOMLEFT, x: 94, y: -4)
     !BottomRight(-10, 87)
     EditAreaBase $parentDescription(.f_description, hidden):
       !TopLeft(10, 0)

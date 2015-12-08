@@ -1,6 +1,8 @@
-local _, exceptional, floor, invoke, schedule, tcombine, tempty, tupdate
-    = ep.localize, ep.exceptional, math.floor, ep.invoke, ep.schedule,
-      ep.tcombine, ep.tempty, ep.tupdate
+local _, ceil, exceptional, floor, invoke, isinstance, isprototype, schedule,
+      tcombine, tempty, tupdate
+    = ep.localize, math.ceil, ep.exceptional, math.floor, ep.invoke,
+      ep.isinstance, ep.isprototype, ep.schedule, ep.tcombine, ep.tempty,
+      ep.tupdate
 
 local _pendingControlArgs = {}
 local _referenceFrames = {
@@ -48,6 +50,14 @@ ep.ControlType.__call = function(proto, object, ...)
 end
 
 ep.BaseControl = ep.prototype('ep.BaseControl', {
+  __repr = function(self)
+    if isprototype(self) then
+      return ep.metatype.__repr(self)
+    elseif self.__name then
+      return format("[%s('%s')]", self.__name, self.name)
+    end
+  end,
+
   child = function(self, name)
     return _G[self.name..name]
   end,
@@ -63,10 +73,10 @@ ep.BaseControl = ep.prototype('ep.BaseControl', {
   event = function(self, event, ...)
     local invoke, events, subscriptions = invoke, self.events
     if events then
-      subscriptions = events[event]
+      subscriptions = events[event:lower()]
       if subscriptions then
         for i, invocation in ipairs(subscriptions) do
-          invoke(invocation, event, ...)
+          invoke(invocation, ...)
         end
       end
     end
@@ -79,6 +89,34 @@ ep.BaseControl = ep.prototype('ep.BaseControl', {
         self[attr]:Hide()
       end
     end
+  end,
+
+  linkSizeTo = function(self, frame, axis, size)
+    axis = axis or 'both'
+    if not size then
+      size = {ceil(frame:GetWidth()), ceil(frame:GetHeight())}
+    end
+
+    local links = self._sizeLinks
+    if links then
+      links[frame] = size
+    else
+      links = {[frame] = size}
+      self._sizeLinks = links
+    end
+
+    frame:subscribe('OnSizeChanged', function(_, _, width, height)
+      local size, width, height = links[frame], ceil(width), ceil(height)
+      if size then
+        if size[1] ~= width and (axis == 'width' or axis == 'both') then
+          self:SetWidth(self:GetWidth() + (width - size[1]))
+        end
+        if size[2] ~= height and (axis == 'height' or axis == 'both') then
+          self:SetHeight(self:GetHeight() + (height - size[2]))
+        end
+      end
+      links[frame] = {width, height}
+    end)
   end,
 
   parent = function(self, scope)
@@ -105,18 +143,6 @@ ep.BaseControl = ep.prototype('ep.BaseControl', {
     self:SetPoint(edge, anchor, hook, x, y)
   end,
 
-  repr = function(self)
-    if rawget(self, '__prototypical') then
-      return ep.metatype.repr(self)
-    end
-
-    if self.__name then
-     return format("[%s('%s')]", self.__name, self.name)
-    else
-      return ep.repr(self, nil, true)
-    end
-  end,
-
   setBorderColors = function(self, r, g, b, a)
     self.ce_tl:SetVertexColor(r, g, b, a)
     self.ce_t:SetVertexColor(r, g, b, a)
@@ -129,8 +155,7 @@ ep.BaseControl = ep.prototype('ep.BaseControl', {
   end,
 
   subscribe = function(self, event, invocation)
-    local events, idx, subscriptions = self.events, 1
-    event = event:lower()
+    local events, event, idx, subscriptions = self.events, event:lower(), 1
     if events then
       subscriptions = events[event]
       if subscriptions then
@@ -140,17 +165,27 @@ ep.BaseControl = ep.prototype('ep.BaseControl', {
           return {event, idx}
         end
       else
-        events[event] = {invocation}
+        subscriptions = {invocation}
+        events[event] = subscriptions
       end
     else
-      self.events = {[event] = {invocation}}
+      subscriptions = {invocation}
+      self.events = {[event] = subscriptions}
     end
 
-    if not event:find(':', 1, true) then
-      self:SetScript(event, function(self, ...)
-        self:event(event, ...)
-      end)
+    if event:find(':', 1, true) then
+      return {event, idx}
     end
+
+    local script = self:GetScript(event)
+    self:SetScript(event, function(self, ...)
+      if script then
+        script(self, ...)
+      end
+      for i, invocation in ipairs(subscriptions) do
+        invoke(invocation, self, event, ...)
+      end
+    end)
     return {event, idx}
   end,
 
@@ -332,6 +367,173 @@ ep.BasePanel = ep.control('ep.BasePanel', 'epPanel', ep.BaseFrame, nil, {
 function ep.panel(name, structure, properties)
   return ep.control(name, structure, ep.BasePanel, nil, properties)
 end
+
+ep.Color = ep.prototype('ep.Color', {
+  default = {0.0, 0.0, 0.0, 1.0},
+
+  initialize = function(self, color, format)
+    self:setColor(color, format)
+  end,
+
+  __eq = function(self, other)
+    local first, second = self.color, other.color
+    return (first[1] == second[1] and first[2] == second[2]
+      and first[3] == second[3] and first[4] == second[4])
+  end,
+
+  __repr = function(self)
+    if isprototype(self) then
+      return ep.metatype.__repr(self)
+    end
+
+    local color = self.color
+    return format('ep.Color(r=%0.2f, g=%0.2f, b=%0.2f, a=%0.2f)', color[1],
+      color[2], color[3], color[4])
+  end,
+
+  applyTokens = function(self, content)
+    return self:toToken()..content..'|r'
+  end,
+
+  getField = function(self, field, asRgb)
+    local field, value = field:sub(1, 1)
+    if field == 'r' then
+      value = self.color[1]
+    elseif field == 'g' then
+      value = self.color[2]
+    elseif field == 'b' then
+      value = self.color[3]
+    elseif field == 'a' then
+      value = self.color[4]
+    else
+      return nil
+    end
+
+    if asRgb then
+      value = ceil(value * 255)
+    end
+    return value
+  end,
+
+  hexToNative = function(color)
+    if color:sub(1, 1) == '#' then
+      color = color:sub(2)
+    end
+
+    local alpha = 1.0
+    if #color == 8 then
+      alpha = tonumber(color:sub(7, 8), 16) / 255
+    end
+    
+    return {tonumber(color:sub(1, 2), 16) / 255,
+      tonumber(color:sub(3, 4), 16) / 255,
+      tonumber(color:sub(5, 6), 16) / 255, alpha}
+  end,
+
+  rgbToNative = function(color)
+    local alpha = 1.0
+    if #color == 4 then
+      alpha = value[4] / 255
+    end
+    return {value[1] / 255, value[2] / 255, value[3] / 255, alpha}
+  end,
+
+  setField = function(self, field, value, isRgb)
+    if isRgb or value > 1 then
+      value = value / 255
+    end
+
+    field = field:sub(1, 1)
+    if field == 'r' then
+      self.color[1] = value
+    elseif field == 'g' then
+      self.color[2] = value
+    elseif field == 'b' then
+      self.color[3] = value
+    elseif field == 'a' then
+      self.color[4] = value
+    end
+    return self
+  end,
+
+  setColor = function(self, color, format)
+    if type(color) == 'string' then
+      if format == 'hex' or color:sub(1, 1) == '#' then
+        self.color = self.hexToNative(color)
+      else
+        self.color = self[color] or self.default
+      end
+    elseif type(color) == 'table' then
+      if format == 'rgb'or color[1] > 1 or color[2] > 1 or color[3] > 1 then
+        self.color = self.rgbToNative(color)
+      else
+        self.color = color
+      end
+    else
+      self.color = self.default
+    end
+
+    if #self.color == 3 then
+      self.color[4] = 1.0
+    end
+  end,
+
+  toHex = function(self, excludeAlpha)
+    local color, alpha = self.color, ''
+    if excludeAlpha == false or (excludeAlpha ~= true and color[4] ~= 1.0) then
+      alpha = format('%02x', color[4] * 255)
+    end
+
+    return format('#%02x%02x%02x%s', self.color[1] * 255, self.color[2] * 255,
+      self.color[3] * 255, alpha)
+  end,
+
+  toNative = function(self, withNamedFields)
+    local color = self.color
+    if withNamedFields then
+      return {r=color[1], g=color[2], b=color[3], a=color[4]}
+    else
+      return color
+    end
+  end,
+
+  toRgb = function(self, excludeAlpha)
+    local value = {ceil(self.color[1] * 255), ceil(self.color[2] * 255),
+      ceil(self.color[3] * 255)}
+
+    if excludeAlpha == false or (excludeAlpha ~= true and self.color[4] ~= 1.0) then
+      value[4] = ceil(self.color[4] * 255)
+    end
+    return value
+  end,
+
+  toToken = function(self)
+    local color = self.color
+    return format('|cFF%02x%02x%02x', color[1] * 255, color[2] * 255, color[3] * 255)
+  end,
+
+  black = {0.0, 0.0, 0.0, 1.0},
+  blue = {0.0, 0.0, 1.0, 1.0},
+  cyan = {0.0, 1.0, 1.0, 1.0},
+  green = {0.0, 1.0, 0.0, 1.0},
+  magenta = {1.0, 0.0, 1.0, 1.0},
+  red = {1.0, 0.0, 0.0, 1.0},
+  white = {1.0, 1.0, 1.0, 1.0},
+  yellow = {1.0, 1.0, 0.0, 1.0},
+
+  console = {0.32, 0.28, 0.24, 1.0},
+  label = {0.2, 0.2, 0.2, 1.0},
+  principal = {0.05, 0.05, 0.05, 1.0},
+  standard = {0.15, 0.15, 0.15, 1.0},
+
+  poor = {0.62, 0.62, 0.62, 1.0},
+  common = {1.0, 1.0, 1.0, 1.0},
+  uncommon = {0.12, 1.0, 0.0, 1.0},
+  rare = {0.0, 0.44, 0.87, 1.0},
+  epic = {0.64, 0.21, 0.93, 1.0},
+  legendary = {1.0, 0.5, 0.0, 1.0},
+  artifact = {0.9, 0.8, 0.5, 1.0},
+})
 
 ep.icon = ep.pseudotype{
   categories = {
