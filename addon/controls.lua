@@ -1,8 +1,8 @@
 local _, Color, attachTooltip, attrsort, band, detachTooltip, exception, exceptional,
-      fieldsort, floor, invoke, isinstance, put, ref, strip, tclear, tindex, tint, tupdate
+      fieldsort, floor, invoke, isinstance, put, ref, strip, tclear, tindex, tupdate
     = ep.localize, ep.Color, ep.attachTooltip, ep.attrsort, bit.band, ep.detachTooltip,
       ep.exception, ep.exceptional, ep.fieldsort, math.floor, ep.invoke, ep.isinstance, ep.put,
-      ep.ref, ep.strip, ep.tclear, ep.tindex, ep.tint, ep.tupdate
+      ep.ref, ep.strip, ep.tclear, ep.tindex, ep.tupdate
 
 ep.Button = ep.control('ep.Button', 'epButton', ep.BaseControl, 'button', {
   initialize = function(self, params)
@@ -108,6 +108,24 @@ ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
     end
   end,
 
+  disable = function(self, cleared)
+    self:SetAlpha(0.6)
+    if cleared then
+      self.spot:SetTexture(0, 0, 0, 0)
+    end
+
+    self:Disable()
+    return self
+  end,
+
+  enable = function(self, value)
+    self:SetAlpha(1.0)
+    self:setValue(value or self.color, true)
+
+    self:Enable()
+    return self
+  end,
+
   getValue = function(self)
     return self.color
   end,
@@ -146,11 +164,13 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
     self.values = {}
 
     if params.prefix then
-      self.prefix = tint:format('label', params.prefix..': ')
+      self.prefix = ep.Color('label'):applyToken(params.prefix..': ')
     end
 
     self.menu = ep.Menu(self.name..'Menu', self, {
-      callback = {self.setValue, self},
+      callback = function(value)
+        self:setValue(value)
+      end,
       items = self.items,
       location = {anchor=self, x=0, y=-18},
       scrollable = (params.scrollable or false),
@@ -285,6 +305,7 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
   setValue = function(self, value, suppressEvent)
     if self.values[value] and self.value ~= value then
       self.value = value
+      P(suppressEvent)
       if not suppressEvent then
         self:event(':valueChanged', value)
       end
@@ -574,10 +595,12 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
   end,
 
   setValue = function(self, value)
-    local original = self:GetText()
-    self:SetText(value or '')
+    if type(value) ~= 'string' or value == self:GetText() then
+      return self
+    end
 
-    if #self:GetText() == 0 then
+    self:SetText(value)
+    if #value == 0 then
       self.clearButton:Hide()
       if self.placeholder and self:HasFocus() then
         self.innerLabel:Show()
@@ -588,7 +611,7 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
         self.clearButton:Show()
       end
     end
-    return original
+    return self
   end,
 
   showHistory = function(self)
@@ -1102,7 +1125,7 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
   initialize = function(self, params)
     params = params or {}
     self.buttons = {}
-    self.defaultColor = params.defaultColor
+    self.defaultColor = Color(params.defaultColor or 'label')
     self.entries = {}
     self.formatter = params.formatter
     self.placeholder = params.placeholder
@@ -1362,9 +1385,9 @@ ep.ListBuilderButton = ep.control('ep.ListBuilderButton', 'epListBuilderButton',
     if self.entry then
       self:SetText(self.entry[1])
       if self.entry[2] then
-        self.font:SetTextColor(unpack(tint(self.entry[2])))
+        Color:setTextColor(self.font, self.entry[2])
       else
-        self.font:SetTextColor(unpack(tint.label))
+        Color:setTextColor(self.font, self.frame.defaultColor)
       end
       self:SetWidth(self:GetTextWidth() + 11)
     else
@@ -1380,6 +1403,7 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
     params = params or {}
     self.buttons = {}
     self.callback = params.callback
+    self.defaultColor = Color(params.defaultColor or 'label')
     self.items = params.items
     self.generator = params.generator
     self.location = params.location
@@ -1662,9 +1686,9 @@ ep.MenuButton = ep.control('ep.MenuButton', 'epMenuButton', ep.Button, nil, {
     if self.item then
       self:SetText(self.item.label)
       if self.item.color then
-        self.font:SetTextColor(unpack(tint(self.item.color)))
+        Color:setTextColor(self.font, self.item.color)
       else
-        self.font:SetTextColor(unpack(tint.label))
+        Color:setTextColor(self.font, self.frame.defaultColor)
       end
 
       if self.item.checkable then
@@ -1695,16 +1719,21 @@ ep.MenuButton = ep.control('ep.MenuButton', 'epMenuButton', ep.Button, nil, {
 ep.MessageFrame = ep.control('ep.MessageFrame', 'epMessageFrame', ep.BaseControl, 'messageframe', {
   initialize = function(self, params)
     self.range = 0
-    if params and params.color then
-      self.color = tint(params.color)
+    if params and params.defaultColor then
+      self.defaultColor = Color(params.color):toNative()
     else
-      self.color = tint.standard
+      self.defaultColor = Color('standard'):toNative()
     end
   end,
 
   append = function(self, text, color, id)
-    color = (color) and tint(color) or self.color
+    if color then
+      color = Color(color):toNative()
+    else
+      color = self.defaultColor
+    end
     self.messages:AddMessage(text, color[1], color[2], color[3], id)
+
     self.range = self.messages:GetNumMessages() - 1
     self.scrollbar:SetMinMaxValues(0, self.range)
     self.scrollbar:SetValue(self.range)

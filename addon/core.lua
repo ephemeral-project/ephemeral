@@ -72,32 +72,30 @@ end
 
 function ep.interpretInput(text)
   local tokens, script, err, result, reference
-  if text then
-    if text == GetBindingKey('RELOADUI') then
-      ReloadUI()
-    end
+  if not text then
+    return {}
+  end
 
-    script, err = loadstring('return '..text)
-    if not script then
-      script, err = loadstring(text)
-    end
+  if text == GetBindingKey('RELOADUI') then
+    ReloadUI()
+  end
 
-    if script then
-      result = {pcall(script)}
-      if tremove(result, 1) then
-        if #result == 1 then
-          return result[1]
-        elseif #result > 1 then
-          return resul
-        end
-      else
-        return exception('LuaError', result[1])
-      end
-    elseif not text:find('[^%.%[%]%w]') then
-      return ref(text)
+  script, err = loadstring('return '..text)
+  if not script then
+    script, err = loadstring(text)
+  end
+
+  if script then
+    result = {pcall(script)}
+    if tremove(result, 1) then
+      return result
     else
-      return exception('LuaError', err)
+      return {exception('LuaError', result[1], nil, true)}
     end
+  elseif not text:find('[^%.%[%]%w]') then
+    return {ref(text)}
+  else
+    return {exception('LuaError', err, nil, true)}
   end
 end
 

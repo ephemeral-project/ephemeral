@@ -28,12 +28,15 @@ Panel epConsole(^UIParent, frameStrata: HIGH, hidden):
     *ep.Console(self)
 
 Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
-  !Size(370, 300)
+  !Size(378, 298)
   !Center
   !Border:
     Texture $parentLowerDivider(epControlInnerEdgeB, .lowerDivider):
       !BottomLeft(5, 30)
       !BottomRight(-5, 30)
+  !Artwork:
+    FontString $parentRecentLabel(epLabelFont, .recentLabel, text: 'Recent:'):
+      !TopRight(-133, -200)
   ColorSelect $parentWheel(epControl, .wheel, enableMouse):
     !Size(207, 159)
     !TopLeft(11, -32)
@@ -113,6 +116,13 @@ Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
     !TopRight(-11, -172)
     !Artwork:
       FontString(epLeftLabel, .label, text: 'Hex:')
+  DropBox $parentGroup(.groupSelector):
+    !Size(130, 19)
+    !TopLeft(48, -195)
+    !Artwork:
+      FontString(epLeftLabel, .label, text: 'Group:')
+    OnLoad:
+      *ep.DropBox(self, {sorted=true, onValueChanged={ep.ColorBrowser.setGroup, self:GetParent()}})
   Button $parentCancel(.cancelButton, text: 'Cancel'):
     !Size(80, 19)
     !BottomRight(-95, 11)

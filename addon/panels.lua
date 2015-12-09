@@ -1,17 +1,77 @@
-local _, Color, exceptional, floor, invoke, isinstance, iterkeys, itersplit, repr, strip
-    = ep.localize, ep.Color, ep.exceptional, math.floor, ep.invoke, ep.isinstance, ep.iterkeys,
-      ep.itersplit, ep.repr, ep.strip
+local _, Color, ColorSpot, exception, exceptional, floor, invoke, isinstance, iterkeys,
+      itersplit, maxn, repr, strip, tcompare, titlecase
+    = ep.localize, ep.Color, ep.ColorSpot, ep.exception, ep.exceptional, math.floor,
+      ep.invoke, ep.isinstance, ep.iterkeys, ep.itersplit, table.maxn, ep.repr, ep.strip,
+      ep.tcompare, ep.titlecase
 
 ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
   initialize = function(self)
     self:super():initialize({
-      title = _'Color Browser',
+      title = _'Color Selector',
     })
 
     self.lowerDivider:SetVertexColor(1, 1, 1, 0.5)
   end,
 
+  addRecentColor = function(self, color)
+    local recentColors, color = self:getRecentColors(), color:toNative(false)
+    for i, recentColor in ipairs(recentColors) do
+      if tcompare(color, recentColor) then
+        tremove(recentColors, i)
+        tinsert(recentColors, 1, color)
+        return
+      end
+    end
+
+    tinsert(recentColors, 1, color)
+    while #recentColors > 6 do
+      tremove(recentColors)
+    end
+  end,
+
+  cancel = function(self)
+    if self.onCancel then
+      invoke(self.onCancel)
+    end
+    self:close()
+  end,
+
+  close = function(self)
+    self.onCancel, self.onSelect = nil, nil
+    self:Hide()
+  end,
+
+  constructButtons = function(self)
+    self.groupButtons = {}
+    self.recentButtons = {}
+
+    local x, y, id = 11, -218, 1
+    for r = 1, 2 do
+      for c = 1, 18 do
+        self.groupButtons[id] = self:_createButton('GroupButton', id, 'TOPLEFT', x, y)
+        id, x = id + 1, x + 20
+      end
+      x, y = 11, y - 20
+    end
+
+    x, y = -11, -198
+    for id = 6, 1, -1 do
+      self.recentButtons[id] = self:_createButton('RecentButton', id, 'TOPRIGHT', x, y)
+      x = x - 20
+    end
+
+    local groups = {}
+    for name, group in pairs(ep.Color.groups) do
+      tinsert(groups, {value=name, label=titlecase(name:gsub('_', ' '))})
+    end
+    self.groupSelector:populate(groups, 'primary_colors')
+  end,
+
   display = function(self, params)
+    if not self.groupButtons then
+      self:constructButtons()
+    end
+
     params = params or {}
     self.onCancel = params.onCancel
     self.onSelect = params.onSelect
@@ -27,19 +87,19 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
     self.colors.original.texture:SetTexture(unpack(self.original:toNative()))
 
     self:setColor(self.original)
+    self.groupSelector:setValue('primary_colors')
+
+    self:_updateRecentColors()
     self:Show()
   end,
 
-  cancel = function(self)
-    if self.onCancel then
-      invoke(self.onCancel)
+  getRecentColors = function(cls)
+    local recentColors = ephemeral.recentColors
+    if not recentColors then
+      recentColors = {}
+      ephemeral.recentColors = recentColors
     end
-    self:close()
-  end,
-
-  close = function(self)
-    self.onCancel, self.onSelect = nil, nil
-    self:Hide()
+    return recentColors
   end,
 
   revertToOriginal = function(self)
@@ -47,6 +107,7 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
   end,
 
   select = function(self)
+    self:addRecentColor(self.color)
     if self.onSelect then
       invoke(self.onSelect, self.color)
     end
@@ -63,6 +124,14 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
 
     self.color = color
     self:updatePresentation(source)
+  end,
+
+  setGroup = function(self, group)
+    P(group)
+    if group ~= self.group then
+      self.group = group
+      self:_updateGroupColors()
+    end
   end,
 
   updatePresentation = function(self)
@@ -84,21 +153,61 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
   updateColor = function(self, slot, value)
     self.color:setField(slot, value, true)
     self:updatePresentation()
+  end,
+
+  _createButton = function(self, prefix, id, point, x, y)
+    local button = ColorSpot('epColorBrowser'..prefix..id, self)
+    button.id = id
+
+    button:SetPoint(point, self, point, x, y)
+    button:SetScript('OnClick', function(this)
+      if this.color then
+        self:setColor(this.color)
+      end
+    end)
+    return button
+  end,
+
+  _updateGroupColors = function(self)
+    local groupColors, name, color = ep.Color.groups[self.group]:iteritems()
+    for i, button in ipairs(self.groupButtons) do
+      name, color = groupColors()
+      if name and color then
+        button:enable(Color(color))
+      else
+        button:disable(true)
+      end
+    end
+  end,
+
+  _updateRecentColors = function(self)
+    local recentColors, color, button = self:getRecentColors()
+    for i = 1, 6 do 
+      button, color = self.recentButtons[i], recentColors[i]
+      if color then
+        button:enable(color)
+      else
+        button:disable(true)
+      end
+    end
   end
 })
 
 ep.Console = ep.panel('ep.Console', 'epConsole', {
+  commands = {},
+
   initialize = function(self)
-    self.interpreter, self.debuglog = self:children('TabsInterpreter', 'TabsLog')
-    self.interpreter:setFontObject(epConsoleFont)
-    self.debuglog:setFontObject(epConsoleFont)
     self:super():initialize({
       title = 'Ephemeral '.._'Console',
       resizable = true,
       minsize = {300, 300},
       maxsize = {1000, 1000},
-      initsize = {400, 400}
+      initsize = {500, 600}
     })
+
+    self.interpreter, self.debuglog = self:children('TabsInterpreter', 'TabsLog')
+    self.interpreter:setFontObject(epConsoleFont)
+    self.debuglog:setFontObject(epConsoleFont)
   end,
 
   display = function(self, section)
@@ -136,21 +245,41 @@ ep.Console = ep.panel('ep.Console', 'epConsole', {
     end
   end,
 
+  registerCommand = function(self, command, implementation)
+  end,
+
   submit = function(self)
-    local text, result = strip(self.input:setValue(''))
-    if text then
-      if text ~= '.' and text ~= '\\' then
-        self.input:addToHistory(text)
-      end
-      self.interpreter:append('>> '..text, ep.tint.console)
-      result = ep.interpretInput(text)
+    local text = strip(self.input:getValue())
+    self.input:setValue('')
+
+    self.tabs:select(1)
+    if #text == 0 then
+      return
+    end
+
+    self.interpreter:append('>> '..text, ep.Color.console)
+    if text ~= '.' and text ~= '\\' then
+      self.input:addToHistory(text)
+    end
+
+    local results, showNil = ep.interpretInput(text), false
+    if #results > 1 then
+      showNil = true
+    end
+
+    local result
+    for i = 1, maxn(results) do
+      result = results[i]
       if exceptional(result) then
-        self.interpreter:append('!! '..result.exception..': '..result.description)
-      elseif result then
-        self:notify(repr(result, -1))
+        self.interpreter:append(result.exception..': '..result.description, ep.Color.error)
+      elseif type(result) == 'nil' then
+        if showNil then
+          self.interpreter:append('nil')
+        end
+      else
+        self.interpreter:append(repr(result, -1))
       end
     end
-    self.tabs:select(1)
   end
 })
 

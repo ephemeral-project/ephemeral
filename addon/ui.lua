@@ -1,7 +1,7 @@
-local _, ceil, exceptional, floor, invoke, isinstance, isprototype, schedule,
-      tcombine, tempty, tupdate
-    = ep.localize, math.ceil, ep.exceptional, math.floor, ep.invoke,
-      ep.isinstance, ep.isprototype, ep.schedule, ep.tcombine, ep.tempty,
+local _, OrderedDict, ceil, exceptional, floor, invoke, isinstance, isprototype, schedule,
+      split, tcombine, tempty, tupdate
+    = ep.localize, ep.OrderedDict, math.ceil, ep.exceptional, math.floor, ep.invoke,
+      ep.isinstance, ep.isprototype, ep.schedule, ep.split, ep.tcombine, ep.tempty,
       ep.tupdate
 
 local _pendingControlArgs = {}
@@ -370,8 +370,12 @@ end
 
 ep.Color = ep.prototype('ep.Color', {
   default = {0.0, 0.0, 0.0, 1.0},
+  groups = {},
 
   initialize = function(self, color, format)
+    if isinstance(color, ep.Color) then
+      color = color:toNative(false)
+    end
     self:setColor(color, format)
   end,
 
@@ -391,8 +395,31 @@ ep.Color = ep.prototype('ep.Color', {
       color[2], color[3], color[4])
   end,
 
-  applyTokens = function(self, content)
+  applyToken = function(self, content)
     return self:toToken()..content..'|r'
+  end,
+
+  byName = function(cls, color)
+    local candidate = self[color]
+    if candidate then
+      return candidate
+    end
+
+    local group, name = split(color, '.', 1)
+    if name then
+      group = cls.groups[group]
+      if group then
+        return group[name]
+      end
+    else
+      name = group
+      for _, group in pairs(cls.groups) do
+        candidate = group[name]
+        if candidate then
+          return candidate
+        end
+      end
+    end
   end,
 
   getField = function(self, field, asRgb)
@@ -461,7 +488,7 @@ ep.Color = ep.prototype('ep.Color', {
       if format == 'hex' or color:sub(1, 1) == '#' then
         self.color = self.hexToNative(color)
       else
-        self.color = self[color] or self.default
+        self.color = self:byName(color) or self.default
       end
     elseif type(color) == 'table' then
       if format == 'rgb'or color[1] > 1 or color[2] > 1 or color[3] > 1 then
@@ -476,6 +503,10 @@ ep.Color = ep.prototype('ep.Color', {
     if #self.color == 3 then
       self.color[4] = 1.0
     end
+  end,
+
+  setTextColor = function(cls, frame, color, format)
+    frame:SetTextColor(unpack(cls(color, format):toNative(false)))
   end,
 
   toHex = function(self, excludeAlpha)
@@ -512,27 +543,48 @@ ep.Color = ep.prototype('ep.Color', {
     return format('|cFF%02x%02x%02x', color[1] * 255, color[2] * 255, color[3] * 255)
   end,
 
-  black = {0.0, 0.0, 0.0, 1.0},
-  blue = {0.0, 0.0, 1.0, 1.0},
-  cyan = {0.0, 1.0, 1.0, 1.0},
-  green = {0.0, 1.0, 0.0, 1.0},
-  magenta = {1.0, 0.0, 1.0, 1.0},
-  red = {1.0, 0.0, 0.0, 1.0},
-  white = {1.0, 1.0, 1.0, 1.0},
-  yellow = {1.0, 1.0, 0.0, 1.0},
+  groups = {
+    primary_colors = OrderedDict({
+      'black', {0.0, 0.0, 0.0, 1.0},
+      'white', {1.0, 1.0, 1.0, 1.0},
+      'red', {0.957, 0.263, 0.212, 1.0},
+      'pink', {0.914, 0.118, 0.388, 1.0},
+      'purple', {0.612, 0.153, 0.690, 1.0},
+      'violet', {0.404, 0.227, 0.718, 1.0},
+      'indigo', {0.247, 0.318, 0.710, 1.0},
+      'blue', {0.129, 0.588, 0.953, 1.0},
+      'lightblue',  {0.012, 0.663, 0.957, 1.0},
+      'cyan', {0.000, 0.737, 0.831, 1.0},
+      'teal', {0.000, 0.588, 0.533, 1.0},
+      'darkgreen', {0.106, 0.369, 0.125, 1.0},
+      'green', {0.298, 0.686, 0.314, 1.0},
+      'lightgreen', {0.545, 0.765, 0.290, 1.0},
+      'lime', {0.804, 0.863, 0.224, 1.0},
+      'yellow', {1.000, 0.922, 0.231, 1.0},
+      'amber', {1.000, 0.757, 0.027, 1.0},
+      'orange', {1.000, 0.596, 0.000, 1.0},
+      'deeporange', {1.000, 0.341, 0.133, 1.0},
+      'brown', {0.475, 0.333, 0.282, 1.0},
+      'bluegrey', {0.376, 0.490, 0.545, 1.0},
+      'grey', {0.620, 0.620, 0.620, 1.0}
+    }),
+    item_quality = OrderedDict({
+      'poor', {0.62, 0.62, 0.62, 1.0},
+      'common', {1.0, 1.0, 1.0, 1.0},
+      'uncommon', {0.12, 1.0, 0.0, 1.0},
+      'rare', {0.0, 0.44, 0.87, 1.0},
+      'epic', {0.64, 0.21, 0.93, 1.0},
+      'legendary', {1.0, 0.5, 0.0, 1.0},
+      'artifact', {0.9, 0.8, 0.5, 1.0},
+    })
+  },
 
+  black = {0.0, 0.0, 0.0, 1.0},
   console = {0.32, 0.28, 0.24, 1.0},
   label = {0.2, 0.2, 0.2, 1.0},
   principal = {0.05, 0.05, 0.05, 1.0},
   standard = {0.15, 0.15, 0.15, 1.0},
-
-  poor = {0.62, 0.62, 0.62, 1.0},
-  common = {1.0, 1.0, 1.0, 1.0},
-  uncommon = {0.12, 1.0, 0.0, 1.0},
-  rare = {0.0, 0.44, 0.87, 1.0},
-  epic = {0.64, 0.21, 0.93, 1.0},
-  legendary = {1.0, 0.5, 0.0, 1.0},
-  artifact = {0.9, 0.8, 0.5, 1.0},
+  error = {0.55, 0.21, 0.19, 1.0},
 })
 
 ep.icon = ep.pseudotype{
@@ -787,102 +839,6 @@ ep.sound = ep.pseudotype{
   mi = {title=_'Miscellaneous', default=''},
 }
 
-ep.tint = ep.pseudotype{
-  instantiate = function(self, color, style)
-    if type(color) ~= 'table' then
-      if self[color] then
-        color = self[color]
-      else
-        color = self.default
-      end
-    end
-    if #color == 3 then
-      color[4] = 1.0
-    end
-    if style == 'all' then
-      return {color=color, r=floor(color[1] * 255), g=floor(color[2] * 255),
-        b=floor(color[3] * 255), a=floor(color[4] * 255), hex=self:toHex(color)}
-    elseif style == 'token' then
-      return format('|c%02x%02x%02x%02x', color[4] * 255, color[1] * 255,
-        color[2] * 255, color[3] * 255)
-    else
-      return color
-    end
-  end,
-
-  format = function(color, content)
-    return ep.tint(color, 'token')..content..'|r'
-  end,
-
-  fromHex = function(value, style)
-    local alpha = 1.0
-    if #value == 8 then
-      alpha = tonumber(value:sub(1, 2), 16) / 255
-      value = value:sub(3)
-    end
-
-    return ep.tint({tonumber(value:sub(1, 2), 16) / 255,
-      tonumber(value:sub(3, 4), 16) / 255,
-      tonumber(value:sub(5, 6), 16) / 255, alpha}, style)
-  end,
-
-  fromRGB = function(value, style)
-    local alpha = 1.0
-    if #value == 4 then
-      alpha = value[4] / 255
-    end
-
-    return ep.tint({value[1] / 255, value[2] / 255, value[3] / 255,
-      alpha}, style)
-  end,
-
-  toHex = function(self, color)
-    local alpha = color[4] or 1.0
-    return format('%02x%02x%02x%02x', alpha * 255, color[1] * 255, color[2] * 255,
-      color[3] * 255)
-  end,
-
-  black = {0.0, 0.0, 0.0, 1.0},
-  blue = {0.0, 0.0, 1.0, 1.0},
-  cyan = {0.0, 1.0, 1.0, 1.0},
-  green = {0.0, 1.0, 0.0, 1.0},
-  magenta = {1.0, 0.0, 1.0, 1.0},
-  red = {1.0, 0.0, 0.0, 1.0},
-  white = {1.0, 1.0, 1.0, 1.0},
-  yellow = {1.0, 1.0, 0.0, 1.0},
-
-  gray1 = {0.1, 0.1, 0.1, 1.0},
-  gray3 = {0.3, 0.3, 0.3, 1.0},
-  gray5 = {0.5, 0.5, 0.5, 1.0},
-  gray7 = {0.7, 0.7, 0.7, 1.0},
-  gray9 = {0.9, 0.9, 0.9, 1.0},
-
-  bluegray = {0.37, 0.62, 0.62, 1.0},
-  darkforest = {0.36, 0.54, 0.36, 1.0},
-  darkgreen = {0.0, 0.5, 0.0, 1.0},
-  darkmarron = {0.36, 0.54, 0.54, 1.0},
-  darkteal = {0.36, 0.54, 0.54, 1.0},
-  forest = {0.46, 0.64, 0.46, 1.0},
-  khaki = {0.94, 0.9, 0.55, 1.0},
-  lightblue = {0.69, 0.77, 0.87, 1.0},
-  marron = {0.64, 0.46, 0.46, 1.0},
-  orange = {1.0, 0.65, 0, 1.0},
-  teal = {0.46, 0.64, 0.64, 1.0},
-
-  console = {0.32, 0.28, 0.24, 1.0},
-  label = {0.2, 0.2, 0.2, 1.0},
-  principal = {0.05, 0.05, 0.05, 1.0},
-  standard = {0.15, 0.15, 0.15, 1.0},
-
-  poor = {0.62, 0.62, 0.62, 1.0},
-  common = {1.0, 1.0, 1.0, 1.0},
-  uncommon = {0.12, 1.0, 0.0, 1.0},
-  rare = {0.0, 0.44, 0.87, 1.0},
-  epic = {0.64, 0.21, 0.93, 1.0},
-  legendary = {1.0, 0.5, 0.0, 1.0},
-  artifact = {0.9, 0.8, 0.5, 1.0},
-}
-
 ep.Tooltip = ep.control('ep.Tooltip', 'epTooltip', ep.BaseFrame, nil, {
   defaultLocation = {edge='TOPLEFT', hook='CENTER'},
 
@@ -1083,5 +1039,21 @@ function ep.detachTooltip(control)
     control:SetScript('onenter', nil)
     control:SetScript('onleave', nil)
     control.hasTooltipAttached = nil
+  end
+end
+
+function ep.mover(frame, point, parent)
+  if not parent then
+    parent = frame:GetParent()
+  end
+
+  return function(x, y)
+    if not x then
+      local x, y = select(4, frame:GetPoint(1))
+      return x, y
+    else
+      frame:ClearAllPoints()
+      frame:SetPoint(point, parent, point, x, y)
+    end
   end
 end

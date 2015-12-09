@@ -32,6 +32,15 @@ function ep.alert(context, message, level)
   end
 end
 
+function P(...)
+  for i, obj in ipairs({...}) do
+    if type(obj) ~= 'string' then
+      obj = ep.repr(obj)
+    end
+    ep.alert('debug', obj)
+  end
+end
+
 function ep.debug(message, objects, stacktrace, showConsole)
   local lines, line = {}
   if ep.exceptional(message) then
@@ -86,7 +95,7 @@ function ep.debug(message, objects, stacktrace, showConsole)
   end
 end
 
-function d(...)
+function D(...)
   ep.debug(3, {...}, nil, true)
 end
 
@@ -316,11 +325,11 @@ function ep.deepcopy(tbl, memo)
   return result
 end
 
-function ep.exception(exception, description, aspects)
+function ep.exception(exception, description, aspects, noLogging)
   exc = aspects or {}
   exc.__exceptional, exc.exception, exc.description = true, exception, description
 
-  if ep.logExceptions then
+  if ep.logExceptions and not noLogging then
     ep.debug(exc, nil, true, true)
   end
   return exc
@@ -780,6 +789,15 @@ function ep.tcombine(keys, values)
   return result
 end
 
+function ep.tcompare(first, second)
+  for k, v in pairs(first) do
+    if second[k] ~= v then
+      return false
+    end
+  end
+  return true
+end
+
 function ep.tcontains(tbl, value)
   for i, v in ipairs(tbl) do
     if v == value then
@@ -916,6 +934,17 @@ function ep.tinject(tbl, value)
   return index
 end
 
+function ep.titlecase(value)
+  local segments = {}
+  for segment in ep.itersplit(value, ' ') do
+    if #segment > 0 then
+      segment = segment:sub(1, 1):upper()..segment:sub(2)
+    end
+    tinsert(segments, segment)
+  end
+  return concat(segments, ' ')
+end
+
 function ep.tkeys(tbl, sorted)
   local keys, idx = {}, 1
   for key, value in pairs(tbl) do
@@ -1046,6 +1075,51 @@ ep.Locale = ep.prototype('ep.Locale', {
       end
     end
     _G['ep_'] = ep.localize
+  end
+})
+
+ep.OrderedDict = ep.prototype('ep.OrderedDict', {
+  initialize = function(self, values)
+    rawset(self, '__ordering', {})
+    self:update(values)
+  end,
+
+  __newindex = function(self, key, value)
+    if type(value) ~= nil then
+      if not self[key] then
+        tinsert(self.__ordering, key)
+      end
+      rawset(self, key, value)
+    else
+      if self[key] then
+        ep.textract(self.__ordering, key)
+        rawset(self, key, nil)
+      end
+    end
+  end,
+
+  iteritems = function(self)
+    local ordering, idx = self.__ordering, 1
+    return function()
+      local key = ordering[idx]
+      idx = idx + 1
+      return key, self[key]
+    end
+  end,
+
+  update = function(self, values)
+    if not values then
+      return
+    end
+
+    local ordering, key, value = self.__ordering
+    for i = 1, #values, 2 do
+      key, value = values[i], values[i + 1]
+      if not self[key] then
+        tinsert(ordering, key)
+      end
+      rawset(self, key, value)
+    end
   end
 })
 
