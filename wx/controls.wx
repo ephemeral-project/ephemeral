@@ -239,6 +239,8 @@ Frame epGrid(epControl, virtual):
       *ep.Slider(self, {callback={ep.Grid.update, self:GetParent()}})
   OnLoad:
     *ep.Grid(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
   OnSizeChanged:
     *if self.resize then
     *  self:resize()
@@ -272,6 +274,8 @@ Button epGridHeader(NoInherit, virtual):
     *self:leave()
   OnLoad:
     *ep.GridHeader(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self.grid)
 
 Frame epGridRow(virtual):
   !Background:
@@ -286,7 +290,7 @@ Frame epGridRow(virtual):
   OnLoad:
     *ep.GridRow(self)
   OnMouseDown:
-    *ep.event(':controlActivated', self)
+    *ep.event(':controlActivated', self.grid)
   OnMouseUp:
     *self:manipulate(button)
   OnMouseWheel:
@@ -305,7 +309,7 @@ Frame epGridCell(virtual):
   OnLoad:
     *ep.GridCell(self)
   OnMouseDown:
-    *ep.event(':controlActivated', self)
+    *ep.event(':controlActivated', self.row.grid)
   OnMouseUp:
     *self.row:manipulate(button)
   OnMouseWheel:
@@ -615,6 +619,8 @@ StatusBar epStatusBar(epControl, virtual):
   BarTexture $parentBar(epControlHighlight)
   OnLoad:
     *ep.StatusBar(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 Button epTabButton(NoInherit, virtual):
   !Size(y: 21)
