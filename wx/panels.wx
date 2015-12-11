@@ -96,7 +96,7 @@ Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
     !Artwork:
       FontString(epLeftLabel, .label, text: 'Red:')
     OnLoad:
-      *ep.Spinner(self, {minimum=0, maximum=255, onValueChanged=
+      *ep.Spinner(self, {minimumValue=0, maximumValue=255, onValueChanged=
       *  {ep.ColorBrowser.updateColor, self:GetParent(), 'red'}})
   Spinner $parentGValue(.gValue):
     !Size(60, 19)
@@ -104,7 +104,7 @@ Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
     !Artwork:
       FontString(epLeftLabel, .label, text: 'Green:')
     OnLoad:
-      *ep.Spinner(self, {minimum=0, maximum=255, onValueChanged=
+      *ep.Spinner(self, {minimumValue=0, maximumValue=255, onValueChanged=
       *  {ep.ColorBrowser.updateColor, self:GetParent(), 'green'}})
   Spinner $parentBValue(.bValue):
     !Size(60, 19)
@@ -112,7 +112,7 @@ Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
     !Artwork:
       FontString(epLeftLabel, .label, text: 'Blue:')
     OnLoad:
-      *ep.Spinner(self, {minimum=0, maximum=255, onValueChanged=
+      *ep.Spinner(self, {minimumValue=0, maximumValue=255, onValueChanged=
       *  {ep.ColorBrowser.updateColor, self:GetParent(), 'blue'}})
   Spinner $parentAValue(.aValue):
     !Size(60, 19)
@@ -120,13 +120,18 @@ Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
     !Artwork:
       FontString(epLeftLabel, .label, text: 'Alpha:')
     OnLoad:
-      *ep.Spinner(self, {minimum=0, maximum=255, onValueChanged=
+      *ep.Spinner(self, {minimumValue=0, maximumValue=255, onValueChanged=
       *  {ep.ColorBrowser.updateColor, self:GetParent(), 'alpha'}})
   EditBox $parentHexValue(.hexValue):
-    !Size(80, 19)
-    !TopRight(-11, -172)
+    !Size(60, 19)
+    !TopRight(-31, -172)
     !Artwork:
       FontString(epLeftLabel, .label, text: 'Hex:')
+    OnLoad:
+      *ep.EditBox(self, {formatter=ep.ColorBrowser.formatHexValue,
+      *  highlightOnFocus=true, validator=ep.ColorBrowser.validateHexValue,
+      *  rejectInvalidValues=true,
+      *  onValueChanged={ep.ColorBrowser.setColor, self:GetParent()}})
   DropBox $parentGroup(.groupSelector):
     !Size(130, 19)
     !TopLeft(48, -195)
@@ -138,12 +143,12 @@ Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
     !Size(80, 19)
     !BottomRight(-95, 11)
     OnClick:
-      *self:GetParent():cancel()
+      *self:GetParent():close()
   Button $parentSelect(.selectButton, text: 'Select'):
     !Size(80, 19)
     !BottomRight(-11, 11)
     OnClick:
-      *self:GetParent():select()
+      *self:GetParent():close(true)
   OnLoad:
     *ep.ColorBrowser(self)
 

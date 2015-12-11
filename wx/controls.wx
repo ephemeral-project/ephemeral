@@ -409,20 +409,20 @@ Frame epListBuilder(epControl, virtual):
         *ep.ComboBox(self, {})
     ColorSpot $parentColor(.color):
       !Right(-43)
-    Button $parentSave(NoInherit, .saveButton):
-      !Size(25, 25)
-      !Right(x: -19)
-      NormalTexture(epPlus)
-      HighlightTexture(epPlusHighlight)
-      OnClick:
-        *self:GetParent():GetParent():submit()
     Button $parentDelete(NoInherit, .deleteButton):
       !Size(25, 25)
-      !Right
+      !Right(x: -19)
       NormalTexture(epClose)
       HighlightTexture(epCloseHighlight)
       OnClick:
         *self:GetParent():GetParent():delete()
+    Button $parentSave(NoInherit, .saveButton):
+      !Size(25, 25)
+      !Right
+      NormalTexture(epPlus)
+      HighlightTexture(epPlusHighlight)
+      OnClick:
+        *self:GetParent():GetParent():submit()
   OnMouseDown:
     *ep.event(':controlActivated', self)
   OnLoad:

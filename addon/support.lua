@@ -107,13 +107,13 @@ end
 
 ep.metatype = {
   __call = function(prototype, ...)
-    local instantiator, object, referrent, initializer = rawget(prototype, 'instantiate')
+    local instantiator, instantiated, object, arguments = rawget(prototype, 'instantiate')
     if instantiator then
-      object = instantiator(prototype, ...)
-      if object then
+      instantiated, object = instantiator(prototype, ...)
+      if instantiated then
         return object
-      elseif object == false then
-        return nil
+      else
+        arguments = object
       end
     end
 
@@ -123,7 +123,7 @@ ep.metatype = {
     end
     setmetatable(object, prototype)
 
-    referrent, initializer = prototype, rawget(prototype, 'initialize')
+    local referrent, initializer = prototype, rawget(prototype, 'initialize')
     while not initializer do
       referrent = rawget(referrent, '__base')
       if referrent then
@@ -134,7 +134,11 @@ ep.metatype = {
     end
 
     if initializer then
-      initializer(object, ...)
+      if arguments then
+        initializer(object, unpack(arguments))
+      else
+        initializer(object, ...)
+      end
     end
     return object
   end,
@@ -617,6 +621,8 @@ function ep.repr(object, strLimit, naive)
     else
       return format("'%s'", object)
     end
+  elseif objtype == 'nil' then
+    return 'nil'
   else
     return tostring(object)
   end
@@ -1203,15 +1209,20 @@ ep.Ring = ep.prototype('ep.Ring', {
 ep.Timer = ep.prototype('ep.Timer', {
   timers = {},
 
+  instantiate = function(cls, name)
+    local timer = cls.timers[name]
+    if timer then
+      return true, timer
+    else
+      return false
+    end
+  end,
+
   initialize = function(self, name)
     self.accrued, self.moment, self.name = 0, 0, name
     if name then
       self.timers[name] = self
     end
-  end,
-
-  instantiate = function(self, name)
-    return self.timers[name]
   end,
 
   check = function(self)

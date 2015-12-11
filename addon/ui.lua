@@ -1,6 +1,6 @@
-local _, OrderedDict, ceil, exceptional, floor, invoke, isinstance, isprototype, schedule,
+local _, OrderedDict, ceil, exception, exceptional, floor, invoke, isinstance, isprototype, schedule,
       split, tcombine, tempty, tupdate
-    = ep.localize, ep.OrderedDict, math.ceil, ep.exceptional, math.floor, ep.invoke,
+    = ep.localize, ep.OrderedDict, math.ceil, ep.exception, ep.exceptional, math.floor, ep.invoke,
       ep.isinstance, ep.isprototype, ep.schedule, ep.split, ep.tcombine, ep.tempty,
       ep.tupdate
 
@@ -87,11 +87,11 @@ ep.BaseControl = ep.prototype('ep.BaseControl', {
     if not panel then
       panel = self
       while panel do
-        panel = panel:GetParent()
         if isinstance(panel, ep.BasePanel) then
           self.containingPanel = panel
           break
         end
+        panel = panel:GetParent()
       end
     end
     return panel
@@ -387,11 +387,21 @@ ep.Color = ep.prototype('ep.Color', {
   default = {0.0, 0.0, 0.0, 1.0},
   groups = {},
 
-  initialize = function(self, color, format)
+  instantiate = function(cls, color, format)
     if isinstance(color, ep.Color) then
-      color = color:toNative(false)
+      return true, color
     end
-    self:setColor(color, format)
+
+    color = cls:parseColor(color, format)
+    if exceptional(color) then
+      return true, color
+    else
+      return false, {color}
+    end
+  end,
+
+  initialize = function(self, color)
+    self.color = color
   end,
 
   __eq = function(self, other)
@@ -498,26 +508,29 @@ ep.Color = ep.prototype('ep.Color', {
     return self
   end,
 
-  setColor = function(self, color, format)
+  parseColor = function(cls, color, format)
     if type(color) == 'string' then
       if format == 'hex' or color:sub(1, 1) == '#' then
-        self.color = self.hexToNative(color)
+        color = cls.hexToNative(color)
       else
-        self.color = self:byName(color) or self.default
+        color = cls:byName(color)
       end
     elseif type(color) == 'table' then
       if format == 'rgb'or color[1] > 1 or color[2] > 1 or color[3] > 1 then
-        self.color = self.rgbToNative(color)
-      else
-        self.color = color
+        color = cls.rgbToNative(color)
       end
     else
-      self.color = self.default
+      color = cls.default
     end
 
-    if #self.color == 3 then
-      self.color[4] = 1.0
+    if not color then
+      return exception('InvalidValue')
     end
+
+    if #color == 3 then
+      color[4] = 1.0
+    end
+    return color
   end,
 
   setTextColor = function(self, target, alpha)

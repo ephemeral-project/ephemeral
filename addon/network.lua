@@ -439,6 +439,15 @@ Conduit = ep.prototype('ep.Conduit', Transport, {
 Channel = ep.prototype('ep.Channel', Transport, {
   channels = {},
 
+  instantiate = function(cls, name)
+    local channel = cls.channels[name]
+    if channel then
+      return true, channel
+    else
+      return false
+    end
+  end,
+  
   initialize = function(self, name)
     self.conferences = {}
     self.connected = false
@@ -451,10 +460,6 @@ Channel = ep.prototype('ep.Channel', Transport, {
       self:connect()
     end
     self.channels[name] = self
-  end,
-
-  instantiate = function(self, name)
-    return self.channels[name]
   end,
 
   close = function(self, signature)
@@ -615,6 +620,19 @@ Channel = ep.prototype('ep.Channel', Transport, {
 })
 
 Conference = ep.prototype('ep.Conference', {
+  instantiate = function(cls, channel, descriptor, signature)
+    if type(channel) ~= 'table' then
+      channel = ep.Channel(channel)
+    end
+
+    local conference = channel.conferences[signature]
+    if conference then
+      return true, conference
+    else
+      return false, {channel, descriptor, signature}
+    end
+  end,
+
   initialize = function(self, channel, descriptor, signature)
     if type(channel) ~= 'table' then
       channel = ep.Channel(channel)
@@ -628,15 +646,6 @@ Conference = ep.prototype('ep.Conference', {
 
     channel.conferences[self.signature] = self
     channel.onconnect({self.join, self})
-  end,
-
-  instantiate = function(self, channel, descriptor, signature)
-    if type(channel) ~= 'table' then
-      channel = Channel.channels[channel]
-    end
-    if channel then
-      return channel.conferences[signature]
-    end
   end,
 
   join = function(self, channel)

@@ -150,14 +150,16 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
     end
   end,
 
-  cancel = function(self)
-    if self.onCancel then
-      invoke(self.onCancel)
+  close = function(self, selected)
+    if selected then
+      self:addRecentColor(self.color)
+      if self.onSelect then
+        invoke(self.onSelect, self.color)
+      end
+    elseif self.onCancel then
+      invoke(self.onCancel, self.original)
     end
-    self:close()
-  end,
 
-  close = function(self)
     self.onCancel, self.onSelect = nil, nil
     self:Hide()
   end,
@@ -214,6 +216,13 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
     self:Show()
   end,
 
+  formatHexValue = function(value)
+    if type(value) == 'string' and #value >= 1 and value:sub(1, 1) ~= '#' then
+      value = '#'..value
+    end
+    return value
+  end,
+
   getRecentColors = function(cls)
     local recentColors = ephemeral.recentColors
     if not recentColors then
@@ -225,14 +234,6 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
 
   revertToOriginal = function(self)
     self:setColor(self.original)
-  end,
-
-  select = function(self)
-    self:addRecentColor(self.color)
-    if self.onSelect then
-      invoke(self.onSelect, self.color)
-    end
-    self:close()
   end,
 
   setColor = function(self, color)
@@ -275,14 +276,24 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
     self:updatePresentation()
   end,
 
+  validateHexValue = function(value)
+    if #value == 7 and string.match(value, '^#%x%x%x%x%x%x$') then
+      return value
+    elseif #value == 9 and string.match(value, '^#%x%x%x%x%x%x%x%x$') then
+      return value
+    else
+      return exception('InvalidValue')
+    end
+  end,
+
   _createButton = function(self, prefix, id, point, x, y)
     local button = ColorSpot('epColorBrowser'..prefix..id, self)
     button.id = id
 
     button:SetPoint(point, self, point, x, y)
     button:SetScript('OnClick', function(this)
-      if this.color then
-        self:setColor(this.color)
+      if this.value then
+        self:setColor(this.value)
       end
     end)
     return button
@@ -295,7 +306,7 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
       if name and color then
         button:enable(Color(color))
       else
-        button:disable(true)
+        button:disable('clear')
       end
     end
   end,
@@ -307,8 +318,7 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
       if color then
         button:enable(color)
       else
-        button:setValue('blank', true)
-        button:disable()
+        button:disable('clear')
       end
     end
   end
@@ -392,7 +402,11 @@ ep.Console = ep.panel('ep.Console', 'epConsole', {
     for i = 1, maxn(results) do
       result = results[i]
       if exceptional(result) then
-        self.interpreter:append(result.exception..': '..result.description, ep.Color.error)
+        local text = result.exception
+        if result.description then
+          text = text..': '..result.description
+        end
+        self.interpreter:append(text, ep.Color.error)
       elseif type(result) == 'nil' then
         if showNil then
           self.interpreter:append('nil')

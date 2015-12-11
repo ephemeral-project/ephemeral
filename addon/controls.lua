@@ -101,9 +101,9 @@ ep.CheckBox = ep.control('ep.CheckBox', 'epCheckBox', ep.BaseControl, 'checkbox'
 ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
   initialize = function(self, params)
     params = params or {}
-    self.defaultColor = params.defaultColor or 'black'
+    self.defaultValue = Color(params.defaultValue or 'black')
 
-    self:setValue(self.defaultColor, true)
+    self:setValue(self.defaultValue, true)
     if params.onValueChanged then
       self:subscribe(':valueChanged', params.onValueChanged)
     end
@@ -120,8 +120,12 @@ ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
 
   disable = function(self, behavior)
     self:SetAlpha(0.6)
-    if behavior == 'hide' then
+    if behavior == 'clear' then
+      self:setValue(Color('blank'))
+    elseif behavior == 'hide' then
       self.spot:SetTexture(0, 0, 0, 0)
+    elseif behavior == 'reset' then
+      self:setValue(self.defaultValue)
     end
 
     self:Disable()
@@ -133,7 +137,7 @@ ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
     if value then
       self:setValue(value, true, true)
     elseif self.value then
-      self.spot:SetTexture(unpack(self.color:toNative()))
+      self.spot:SetTexture(unpack(self.value:toNative()))
     end
 
     self:Enable()
@@ -144,14 +148,25 @@ ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
     return self.value
   end,
 
+  resetValue = function(self, suppressEvent, force)
+    self:setValue(self.defaultValue, suppressEvent, force)
+    return self
+  end,
+
   selectColor = function(self)
     epColorBrowser:display({anchor=self, color=self.value,
       onSelect={self.setValue, self}})
   end,
 
+  setDefaultValue = function(self, value)
+    self.defaultValue = Color(value)
+    return self
+  end,
+
   setValue = function(self, value, suppressEvent, force)
-    if not isinstance(value, Color) then
-      value = Color(value or self.defaultColor)
+    value = Color(value)
+    if exceptional(value) then
+      return value
     end
 
     if value == self.value and not force then
@@ -254,6 +269,8 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
 
     if behavior == 'hide' then
       self:SetText('')
+    elseif behavior == 'reset' and self.defaultValue then
+      self:setValue(self.defaultValue)
     end
 
     self:Disable()
@@ -372,6 +389,7 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
     self.historyEnabled = params.historyEnabled
     self.historyLimit = params.historyLimit or 30
     self.historyTable = params.historyTable
+    self.rejectInvalidValues = params.rejectInvalidValues
     self.validator = params.validator
 
     if not self.editbox then
@@ -400,7 +418,7 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
       self:subscribe(':valueChanged', params.onValueChanged)
     end
 
-    if params.lockedInitially then
+    if params.locked then
       self:lock()
     end
 
@@ -459,6 +477,8 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
 
     if behavior == 'clear' then
       self:setValue('')
+    elseif behavior == 'reset' then
+      self:setValue(self.defaultValue)
     elseif behavior == 'hide' then
       editbox:SetText('')
     end
@@ -558,12 +578,17 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
     end
 
     local invalid = false
-    if self.validator then
+    if self.validator and #value > 0 then
       local failure = self.validator(value)
       if exceptional(failure) then
         if isUserInput then
-          invalid = true
-          self:setStatus('error')
+          if self.rejectInvalidValues then
+            self.editbox:SetText(self.value)
+            return
+          else
+            invalid = true
+            self:setStatus('error')
+          end
         else
           return failure
         end
@@ -1221,10 +1246,12 @@ ep.IconBox = ep.control('ep.IconBox', 'epIconBox', ep.Button, nil, {
 })
 
 ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil, {
+  standardColor = Color('normal'):toHex(),
+
   initialize = function(self, params)
     params = params or {}
     self.buttons = {}
-    self.defaultColor = Color(params.defaultColor or 'label')
+    self.defaultColor = Color(params.defaultColor or 'normal'):toHex()
     self.entries = {}
     self.formatter = params.formatter
     self.placeholder = params.placeholder
@@ -1254,22 +1281,21 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
     end
 
     self.editor.text:subscribe('OnEnterPressed', {self.submit, self})
+    self.editor.color:SetScript('OnMouseDown', nil)
+
     if self.label then
       self.label:SetText(_(self.label:GetText()))
     end
 
     ep.subscribe(':controlActivated', function(event, control)
-      if control ~= self and self.editing then
+      if self.editing and control ~= self and control ~= self.editor.text
+          and control:getContainingPanel() ~= epColorBrowser then
         self:close()
       end
     end)
   end,
 
   addEntry = function(self, entry, skipUpdate)
-    if not entry[2] then
-      entry[2] = self.defaultColor
-    end
-
     entry = self:_prepareEntry(entry)
     if exceptional(entry) then
       return entry
@@ -1335,6 +1361,8 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
       self.editor.text:setValue(entry[1])
       if entry[2] then
         self.editor.color:setValue(entry[2])
+      else
+        self.editor.color:setValue(self.defaultColor)
       end
       self.currentEntry = {entry, index}
       self.buttons[index]:LockHighlight()
@@ -1398,7 +1426,12 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
       return
     end
 
-    local entry = self:_prepareEntry({value, self.editor.color:getValue()})
+    local entry, color = {value}, self.editor.color:getValue()
+    if color ~= self.standardColor then
+      entry[2] = color:toHex()
+    end
+
+    local entry = self:_prepareEntry(entry)
     if exceptional(entry) then
       -- handle this
       return
@@ -1494,8 +1527,8 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
 ep.ListBuilderButton = ep.control('ep.ListBuilderButton', 'epListBuilderButton', ep.Button, nil, {
   initialize = function(self, frame, id)
     self.entry = nil
-    self.font = self:GetNormalFontObject()
     self.frame = frame
+    self.font = self:GetNormalFontObject()
     self.id = id
     self:setBorderColors(1, 1, 1, 0.5)
   end,
@@ -1522,17 +1555,22 @@ ep.ListBuilderButton = ep.control('ep.ListBuilderButton', 'epListBuilderButton',
     epTooltip:hide()
   end,
 
+  setFontColor = function(self, color)
+    if color then
+      Color(color):setTextColor(self.font)
+    else
+      Color(self.frame.defaultColor):setTextColor(self.font)
+    end
+    self:SetNormalFontObject(self.font)
+  end,
+
   update = function(self, entry)
     self.entry = entry
     self.tooltip = nil
 
     if self.entry then
       self:SetText(self.entry[1])
-      if self.entry[2] then
-        Color(self.entry[2]):setTextColor(self.font)
-      else
-        Color(self.frame.defaultColor):setTextColor(self.font)
-      end
+      self:setFontColor(self.entry[2])
       self:SetWidth(self:GetTextWidth() + 11)
     else
       self:SetText('')
@@ -2123,12 +2161,6 @@ ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.BaseControl, 'editbox', {
       self:setValue(self.defaultValue or self.minimumValue or 0, true)
     end
 
-    self.disableInput = params.disableInput
-    if self.disableInput then
-      self:EnableKeyboard(false)
-      self:EnableMouse(false)
-    end
-
     if params.onValueChanged then
       self:subscribe(':valueChanged', params.onValueChanged)
     end
@@ -2141,6 +2173,12 @@ ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.BaseControl, 'editbox', {
     if self.label then
       self.label:SetText(_(self.label:GetText()))
     end
+
+    ep.subscribe(':controlActivated', function(event, control)
+      if control ~= self and self:HasFocus() then
+        self:ClearFocus()
+      end
+    end)
   end,
 
   disable = function(self, hideValue)
@@ -2219,7 +2257,12 @@ ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.BaseControl, 'editbox', {
     else
       value = tonumber(value)
       if type(value) ~= 'number' then
-        return exception('InvalidValue')
+        if isUserInput then
+          self:update()
+          return
+        else
+          return exception('InvalidValue')
+        end
       elseif self.minimumValue and value < self.minimumValue then
         value = self.minimumValue
       elseif self.maximumValue and value > self.maximumValue then
