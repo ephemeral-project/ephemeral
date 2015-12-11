@@ -2,6 +2,7 @@ local concat, floor, fmod, format, tinsert, tremove, random, sort, strrep
     = table.concat, math.floor, math.fmod, string.format, table.insert,
       table.remove, math.random, table.sort, string.rep
 
+local printCounter = 1
 local promises = {}
 local prototypeRegistries = {}
 local _pseudoidChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -37,8 +38,9 @@ function P(...)
     if type(obj) ~= 'string' then
       obj = ep.repr(obj)
     end
-    ep.alert('debug', obj)
+    ep.alert(format('debug[%d]', printCounter), obj)
   end
+  printCounter = printCounter + 1
 end
 
 function ep.debug(message, objects, stacktrace, showConsole)

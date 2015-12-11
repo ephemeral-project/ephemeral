@@ -249,7 +249,7 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
   end,
 
   disable = function(self, behavior)
-    self:toggleMenu(false)
+    self:toggleMenu('closed')
     self:SetAlpha(0.6)
 
     if behavior == 'hide' then
@@ -361,59 +361,6 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
   end,
 })
 
-ep.ComboBox = ep.control('ep.ComboBox', 'epComboBox', ep.DropBox, 'editbox', {
-  initialize = function(self, params)
-    params = params or {}
-    self.formatter = params.formatter
-    self.placeholder = params.placeholder
-    self.validator = params.validator
-
-    ep.DropBox.initialize(self, params)
-
-    if self.placeholder then
-      self.innerLabel:SetText(self.placeholder)
-      if self:GetText() == '' then
-        self.innerLabel:Show()
-      end
-    end
-  end,
-  
-  capture = function(self)
-    self:setValue(self:GetText())
-    return self
-  end,
-
-  disable = function(self, behavior)
-    self:ClearFocus()
-    ep.DropBox.disable(self, hideValue)
-
-    self:EnableKeyboard(false)
-    self:EnableMouse(false)
-    return self
-  end,
-
-  enable = function(self, value)
-    ep.DropBox.enable(self, value)
-    self:EnableKeyboard(true)
-    self:EnableMouse(true)
-    return self
-  end,
-
-  setValue = function(self, value, suppressEvent)
-    if value ~= self.value then
-      self.value = value
-      if not suppressEvent then
-        self:event(':valueChanged', value)
-      end
-      -- TODO reconcile this with dropbox's approach to values
-      self:SetText(value)
-    end
-
-    self:ClearFocus()
-    return self
-  end,
-})
-
 ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
   initialize = function(self, params)
     params = params or {}
@@ -431,8 +378,21 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
       self.editbox = self
     end
 
-    if self.placeholder then
-      self.innerLabel:SetText(self.placeholder)
+    if self.clearable then
+      self:SetTextInsets(5, 17, 0, 0)
+    end
+
+    local placeholder = self.placeholder
+    if placeholder then
+      if type(placeholder) == 'table' then
+        self.innerLabel:SetText(placeholder[1])
+        if placeholder[2] then
+          self.innerLabel:ClearAllPoints()
+          self.innerLabel:SetPoint(placeholder[2], self, placeholder[2], 5, 0)
+        end
+      else
+        self.innerLabel:SetText(placeholder)
+      end
     end
 
     self:setValue(self.defaultValue, true, true)
@@ -453,11 +413,13 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
       self.label:SetText(_(self.label:GetText()))
     end
 
-    ep.subscribe(':controlActivated', function(event, control)
-      if control ~= self and self.editbox:HasFocus() then
-        self.editbox:ClearFocus()
-      end
-    end)
+    if not self.activationSubscription then
+      self.activationSubscription = ep.subscribe(':controlActivated', function(event, control)
+        if control ~= self and self.editbox:HasFocus() then
+          self.editbox:ClearFocus()
+        end
+      end)
+    end
   end,
 
   addToHistory = function(self, value)
@@ -692,10 +654,100 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
   end
 })
 
+ep.ComboBox = ep.control('ep.ComboBox', 'epComboBox', ep.EditBox, nil, {
+  sortByLabel = attrsort('label'),
+
+  initialize = function(self, params)
+    params = params or {}
+    self.options = {}
+    self.sorted = params.sorted
+
+    if params.highlightOnFocus ~= false then
+      params.highlightOnFocus = true
+    end
+
+    self.menu = ep.Menu(self.name..'Menu', self, {
+      callback = function(value)
+        self:setValue(value)
+      end,
+      items = self.options,
+      location = {anchor=self, x=0, y=-18},
+      scrollable = params.scrollable,
+      window = params.scrollWindow,
+      width = self
+    })
+
+    if params.options then
+      self:setOptions(params.options)
+    end
+
+    self.activationSubscription = ep.subscribe(':controlActivated', function(event, control)
+      if control ~= self then
+        self:toggleMenu('closed')
+        if self:HasFocus() then
+          self:ClearFocus()
+        end
+      end
+    end)
+
+    ep.EditBox.initialize(self, params)
+    if self.clearable then
+      self:SetTextInsets(5, 38, 0, 0)
+    else
+      self:SetTextInsets(5, 22, 0, 0)
+    end
+  end,
+
+  disable = function(self, behavior)
+    self:toggleMenu('closed')
+    return ep.EditBox.disable(self, behavior)
+  end,
+
+  initiateInput = function(self)
+    self:toggleMenu('closed', true)
+    ep.EditBox.initiateInput(self)
+  end,
+
+  setOptions = function(self, candidates, defaultValue, initialValue)
+    local options = tclear(self.options)
+    for i, candidate in ipairs(candidates) do
+      options[i] = {value=candidate, label=candidate}
+    end
+
+    self.menu:rebuild()
+    if self.sorted then
+      sort(options, self.sortByLabel)
+    end
+  end,
+
+  toggleMenu = function(self, state, ignoreFocus)
+    if not ignoreFocus and self:HasFocus() then
+      self:ClearFocus()
+    end
+
+    local opened = self.menu:IsShown()
+    if (state == 'open' and opened) or (state == 'closed' and not opened) then
+      return self
+    elseif state == 'open' or not opened then
+      self.menu:display()
+    elseif state == 'closed' or opened then
+      self.menu:close()
+    end
+    return self
+  end
+})
+
 ep.EditArea = ep.control('ep.EditArea', 'epEditArea', ep.EditBox, nil, {
   initialize = function(self, params)
     self.editbox = self.scrollFrame:GetScrollChild()
     ep.EditBox.initialize(self, params)
+  end,
+
+  activate = function(self, button)
+    ep.event(':controlActivated', self)
+    if button == 'LeftButton' and self.editbox:IsMouseEnabled() then
+      self.editbox:SetFocus()
+    end
   end,
 
   updateCursor = function(self, x, y)

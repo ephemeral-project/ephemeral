@@ -372,9 +372,8 @@ Panel epTest(^UIParent, frameStrata: HIGH, hidden):
     !Size(110, 19)
     !TopLeft(12, -98)
     OnLoad:
-      *ep.ComboBox(self, {default = 'nn', items = {
-      *  {'nn', 'None'}, {'bk', 'Back'}, {'bh', 'Both Hands'}
-      *}})
+      *ep.ComboBox(self, {clearable=true, placeholder='label', onValueChanged=D,
+      *  options={'alpha', 'beta', 'gamma'}})
   IconBox $parentIconBox:
     !TopLeft(100, -32)
     OnLoad:
@@ -404,6 +403,8 @@ Panel epTest(^UIParent, frameStrata: HIGH, hidden):
   EditArea $parentEditArea:
     !Size(200, 120)
     !TopLeft(12, -121)
+    OnLoad:
+      *ep.EditArea(self, {placeholder='Click here.', onValueChanged=D})
   EditBox $parentEditBox:
     !Size(160, 19)
     !TopLeft(12, -245)

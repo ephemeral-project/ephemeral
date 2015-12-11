@@ -64,6 +64,13 @@ Button epColorSpot(epControl, virtual):
 EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
   !Size(y: 19)
   !TextInsets(5, 22, 0, 0)
+  !Border:
+    Texture $parentOverlay(.overlay, hidden):
+      !TopLeft(1, -1)
+      !BottomRight(-1, 1)
+  !Artwork:
+    FontString $parentInnerLabel(epInnerLabel, .innerLabel, hidden):
+      !Right(-24, 0)
   Button $parentOpener(NoInherit):
     !Size(19, 19)
     !TopRight
@@ -79,15 +86,25 @@ EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
       !Size(17, 17)
       !TopRight(-1, -1)
     OnClick:
-      *self:GetParent():open()
+      *self:GetParent():toggleMenu()
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
+  Button $parentClear(NoInherit, .clearButton, hidden):
+    !Size(20, 20)
+    !Right(-19, 0)
+    NormalTexture(epClose)
+    HighlightTexture(epCloseHighlight)
+    OnClick:
+      *ep.event(':controlActivated', self:GetParent())
+      *self:GetParent():setValue('')
   OnEnterPressed:
-    *self:captureValue()
+    *self:ClearFocus()
   OnEscapePressed:
-    *self:captureValue()
+    *self:ClearFocus()
   OnEditFocusGained:
     *self:initiateInput()
   OnEditFocusLost:
-    *self:HighlightText(0, 0)
+    *self:processInput()
   OnLoad:
     *ep.ComboBox(self)
 
@@ -140,36 +157,33 @@ Frame epEditAreaBase(virtual):
           *self:ClearFocus()
         OnMouseWheel:
           *self:GetParent().scrollbar:move(-delta)
+    OnMouseDown:
+      *self:GetParent():activate(button)
     OnLoad:
       *ep.ScrollFrame(self, {managed=true})
   OnLoad:
     *ep.EditArea(self)
   OnMouseDown:
-    *if not self.disabled and button == 'LeftButton' then
-    *  self.editbox:SetFocus()
-    *end
+    *self:activate(button)
 
 Frame epEditArea(inherits: 'epControl,epEditAreaBase', virtual)
 
 EditBox epEditBox(epControl, font: epNormalFont, -autoFocus, virtual):
   !Size(y: 19)
+  !TextInsets(5, 4, 0, 0)
   !Border:
     Texture $parentOverlay(.overlay, hidden):
       !TopLeft(1, -1)
       !BottomRight(-1, 1)
   !Artwork:
     FontString $parentInnerLabel(epInnerLabel, .innerLabel, hidden)
-  !TextInsets(5, 4, 0, 1)
   Button $parentClear(NoInherit, .clearButton, hidden):
     !Size(20, 20)
-    !TopRight(0, 1)
-    NormalTexture(file: '%textures\close-normal'):
-      !Size(20, 20)
-      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
-    HighlightTexture(file: '%textures\close-highlight'):
-      !Size(20, 20)
-      !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
+    !Right(0, 0)
+    NormalTexture(epClose)
+    HighlightTexture(epCloseHighlight)
     OnClick:
+      *ep.event(':controlActivated', self:GetParent())
       *self:GetParent():setValue('')
   OnEnterPressed:
     *self:ClearFocus()
