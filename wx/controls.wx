@@ -11,6 +11,8 @@ Button epButton(epControl, virtual):
   !HighlightFont(epHighlightFont)
   OnLoad:
     *ep.Button(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 CheckButton epCheckBox(virtual):
   !Size(16, 16)
@@ -30,8 +32,12 @@ CheckButton epCheckBox(virtual):
   !PushedTextOffset(0, 0)
   !NormalFont(epLabelFont, LEFT)
   !HighlightFont(epHighlightFont, LEFT)
+  OnClick:
+    *self:setValue(self:GetChecked())
   OnLoad:
     *ep.CheckBox(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 CheckButton epReversedCheckBox(epCheckBox, virtual):
   ButtonText $parentText(.reversedText):
@@ -52,6 +58,8 @@ Button epColorSpot(epControl, virtual):
     *self:selectColor()
   OnLoad:
     *ep.ColorSpot(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
   !Size(y: 19)
@@ -73,11 +81,11 @@ EditBox epComboBox(epControl, font: epNormalFont, -autoFocus, virtual):
     OnClick:
       *self:GetParent():open()
   OnEnterPressed:
-    *self:capture()
+    *self:captureValue()
   OnEscapePressed:
-    *self:capture()
+    *self:captureValue()
   OnEditFocusGained:
-    *self:HighlightText()
+    *self:initiateInput()
   OnEditFocusLost:
     *self:HighlightText(0, 0)
   OnLoad:
@@ -102,12 +110,18 @@ Button epDropBox(epControl, virtual):
     !Size(17, 17)
     !TopRight(-1, -1)
   OnClick:
-    *self:open()
+    *self:toggleMenu()
   OnLoad:
     *ep.DropBox(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 Frame epEditAreaBase(virtual):
   !Border:
+    Texture $parentOverlay(.overlay, hidden):
+      !TopLeft(1, -1)
+      !BottomRight(-1, 1)
+  !Artwork:
     FontString $parentInnerLabel(epInnerLabelFont, .innerLabel, justifyH: LEFT, hidden):
       !TopLeft(6, -6)
       !TopRight(-6, -6)
@@ -119,9 +133,9 @@ Frame epEditAreaBase(virtual):
         OnCursorChanged:
           *self:GetParent():GetParent():updateCursor(x, y)
         OnEditFocusGained:
-          *self:GetParent():GetParent().innerLabel:Hide()
+          *self:GetParent():GetParent():initiateInput()
         OnEditFocusLost:
-          *self:GetParent():GetParent():_focusLost()
+          *self:GetParent():GetParent():processInput()
         OnEscapePressed:
           *self:ClearFocus()
         OnMouseWheel:
@@ -140,6 +154,10 @@ Frame epEditArea(inherits: 'epControl,epEditAreaBase', virtual)
 EditBox epEditBox(epControl, font: epNormalFont, -autoFocus, virtual):
   !Size(y: 19)
   !Border:
+    Texture $parentOverlay(.overlay, hidden):
+      !TopLeft(1, -1)
+      !BottomRight(-1, 1)
+  !Artwork:
     FontString $parentInnerLabel(epInnerLabel, .innerLabel, hidden)
   !TextInsets(5, 4, 0, 1)
   Button $parentClear(NoInherit, .clearButton, hidden):
@@ -158,9 +176,9 @@ EditBox epEditBox(epControl, font: epNormalFont, -autoFocus, virtual):
   OnEscapePressed:
     *self:ClearFocus()
   OnEditFocusGained:
-    *self.innerLabel:Hide()
+    *self:initiateInput()
   OnEditFocusLost:
-    *self:_focusLost()
+    *self:processInput()
   OnTabPressed:
     *self:showHistory()
   OnLoad:
@@ -253,6 +271,8 @@ Frame epGridRow(virtual):
     *self:leave()
   OnLoad:
     *ep.GridRow(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
   OnMouseUp:
     *self:manipulate(button)
   OnMouseWheel:
@@ -270,6 +290,8 @@ Frame epGridCell(virtual):
     *self.row:leave()
   OnLoad:
     *ep.GridCell(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
   OnMouseUp:
     *self.row:manipulate(button)
   OnMouseWheel:
@@ -304,10 +326,12 @@ Button epIconBox(epControl, virtual):
       !TopLeft(2, -2)
       !BottomLeft(2, 2)
       !Color(0.82, 0.76, 0.61, 1.0)
-  OnLoad:
-    *ep.IconBox(self)
   OnClick:
     *self:browse()
+  OnLoad:
+    *ep.IconBox(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 Button epListBuilderButton(epControlEdge, virtual):
   !Size(y: 17)
@@ -329,6 +353,8 @@ Button epListBuilderButton(epControlEdge, virtual):
     *self:enter()
   OnLeave:
     *self:leave()
+  OnMouseDown:
+    *ep.event(':controlActivated', self.frame)
   OnLoad:
     *ep.ListBuilderButton(self)
 
@@ -342,6 +368,8 @@ Frame epListBuilder(epControl, virtual):
     !TopRight(0, 0)
     NormalTexture(epPlus)
     HighlightTexture(epPlusHighlight)
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
     OnClick:
       *self:GetParent():edit()
   Frame $parentEntries(.entryContainer):
@@ -377,6 +405,8 @@ Frame epListBuilder(epControl, virtual):
       HighlightTexture(epCloseHighlight)
       OnClick:
         *self:GetParent():GetParent():delete()
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
   OnLoad:
     *ep.ListBuilder(self)
 
@@ -441,6 +471,8 @@ Frame epMessageFrameBase(virtual):
       *ep.Slider(self, {window=2, callback={ep.MessageFrame.scroll, self:GetParent()}})
   OnLoad:
     *ep.MessageFrame(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 Frame epMessageFrame(inherits: 'epControl,epMessageFrameBase', virtual)
 
@@ -464,7 +496,9 @@ Button epMultiButton(epControl, virtual):
       !Size(17, 17)
       !TopRight(-1, -1)
     OnClick:
-      *self:GetParent():open()
+      *self:GetParent():toggleMenu()
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
   ButtonText:
     !Center(-9, 0)
   HighlightTexture(epControlHighlight, alphaMode: ADD):
@@ -476,6 +510,8 @@ Button epMultiButton(epControl, virtual):
   !HighlightFont(epHighlightFont)
   OnLoad:
     *ep.MultiButton(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 Frame epMultiFrame(epControlEdge, virtual):
   !Background:
@@ -495,6 +531,8 @@ ScrollFrame epScrollFrame(NoInherit, virtual):
       *  callback={ep.ScrollFrame.updateScroll, self:GetParent()}})
   OnLoad:
     *ep.ScrollFrame(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
   OnMouseWheel:
     *self.scrollbar:move(-delta)
   OnScrollRangeChanged:
@@ -526,6 +564,8 @@ EditBox epSpinner(epControl, font: epNormalFont, -autoFocus, virtual):
       !BottomRight(-1, 0)
     OnClick:
       *self:GetParent():spin(1, IsShiftKeyDown())
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
     OnMouseWheel:
       *self:GetParent():spin(delta)
   Button $parentLess(NoInherit, .less):
@@ -540,16 +580,18 @@ EditBox epSpinner(epControl, font: epNormalFont, -autoFocus, virtual):
       !BottomRight(-1, 1)
     OnClick:
       *self:GetParent():spin(-1, IsShiftKeyDown())
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
     OnMouseWheel:
       *self:GetParent():spin(delta)
   OnEnterPressed:
-    *self:setValue(self:GetText())
+    *self:ClearFocus()
   OnEscapePressed:
-    *self:setValue(self:GetText())
+    *self:ClearFocus()
   OnEditFocusGained:
-    *self:HighlightText()
+    *self:initiateInput()
   OnEditFocusLost:
-    *self:HighlightText(0, 0)
+    *self:processInput()
   OnLoad:
     *ep.Spinner(self)
   OnMouseWheel:
@@ -586,6 +628,8 @@ Button epTabButton(NoInherit, virtual):
     *self.frame:select(self.id)
   OnLoad:
     *ep.TabButton(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self:GetParent())
 
 Frame epTabbedFrame(virtual):
   !Background:
@@ -637,6 +681,8 @@ Frame epTabbedFrame(virtual):
       !Anchor(point: BOTTOMLEFT, relativeTo: $parentLeftCorner, relativePoint: TOPLEFT, x: -1, y: 0)
   OnLoad:
     *ep.TabbedFrame(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 Button epTreeButton(NoInherit, virtual):
   !Size(128, 16)
@@ -662,6 +708,8 @@ Button epTreeButton(NoInherit, virtual):
       *self:GetParent():enter()
     OnLeave:
       *self:GetParent():leave()
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent():GetParent())
     OnMouseWheel:
       *self:GetParent():scroll(delta)
   OnClick:
@@ -672,6 +720,8 @@ Button epTreeButton(NoInherit, virtual):
     *self:leave()
   OnLoad:
     *ep.TreeButton(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self:GetParent())
   OnMouseWheel:
     *self:scroll(delta)
 
@@ -690,6 +740,8 @@ Frame epTree(epControl, virtual):
       *ep.Slider(self, {callback={ep.Tree.update, self:GetParent()}})
   OnLoad:
     *ep.Tree(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
   OnSizeChanged:
     *if self.resize then
     *  self:resize()
@@ -716,6 +768,8 @@ Slider epVerticalScrollBar(orientation: VERTICAL, valueStep: 1, virtual):
       Texture(epControlEdgeB):
         !Size(14, 12)
         !Anchor(point: TOP, relativePoint: BOTTOM, x: 0, y: 6)
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
     OnMouseUp:
       *if button == 'LeftButton' or button == 'RightButton' then
       *  self:GetParent():move(-1, (IsShiftKeyDown() or button == 'RightButton'))
@@ -729,12 +783,16 @@ Slider epVerticalScrollBar(orientation: VERTICAL, valueStep: 1, virtual):
       Texture(epControlEdgeT):
         !Size(14, 12)
         !Anchor(point: BOTTOM, relativePoint: TOP, x: 0, y: -6)
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
     OnMouseUp:
       *if button == 'LeftButton' or button == 'RightButton' then
       *  self:GetParent():move(1, (IsShiftKeyDown() or button == 'RightButton'))
       *end
   OnLoad:
     *ep.Slider(self)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
   OnMouseWheel:
     *self:move(-delta)
   OnValueChanged:
@@ -780,6 +838,8 @@ Slider epVerticalSlider(orientation: VERTICAL, valueStep: 1, virtual):
       Texture(epControlEdgeB):
         !Size(17, 12)
         !Anchor(point: TOP, relativePoint: BOTTOM, x: 0, y: 6)
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
     OnMouseUp:
       *if button == 'LeftButton' or button == 'RightButton' then
       *  self:GetParent():move(-1, (IsShiftKeyDown() or button == 'RightButton'))
@@ -795,6 +855,8 @@ Slider epVerticalSlider(orientation: VERTICAL, valueStep: 1, virtual):
       Texture(epControlEdgeT):
         !Size(17, 12)
         !Anchor(point: BOTTOM, relativePoint: TOP, x: 0, y: -6)
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
     OnMouseUp:
       *if button == 'LeftButton' or button == 'RightButton' then
       *  self:GetParent():move(1, (IsShiftKeyDown() or button == 'RightButton'))
@@ -803,6 +865,8 @@ Slider epVerticalSlider(orientation: VERTICAL, valueStep: 1, virtual):
     *ep.Slider(self)
   OnMouseWheel:
     *self:move(-delta)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
   OnValueChanged:
     *if self.update then
     *  self:update(value)

@@ -54,7 +54,7 @@ ep.BaseControl = ep.prototype('ep.BaseControl', {
     if isprototype(self) then
       return ep.metatype.__repr(self)
     elseif self.__name then
-      return format("[%s('%s')]", self.__name, self.name)
+      return format("[%s('%s')]", self.__name, self.name or '')
     end
   end,
 
@@ -80,6 +80,21 @@ ep.BaseControl = ep.prototype('ep.BaseControl', {
         end
       end
     end
+  end,
+
+  getContainingPanel = function(self)
+    local panel = self.containingPanel
+    if not panel then
+      panel = self
+      while panel do
+        panel = panel:GetParent()
+        if isinstance(panel, ep.BasePanel) then
+          self.containingPanel = panel
+          break
+        end
+      end
+    end
+    return panel
   end,
 
   hideBorders = function(self, ...)
@@ -400,7 +415,7 @@ ep.Color = ep.prototype('ep.Color', {
   end,
 
   byName = function(cls, color)
-    local candidate = self[color]
+    local candidate = cls[color]
     if candidate then
       return candidate
     end
@@ -505,8 +520,14 @@ ep.Color = ep.prototype('ep.Color', {
     end
   end,
 
-  setTextColor = function(cls, frame, color, format)
-    frame:SetTextColor(unpack(cls(color, format):toNative(false)))
+  setTextColor = function(self, target, alpha)
+    local r, g, b, a = unpack(self:toNative(false))
+    target:SetTextColor(r, g, b, alpha or a)
+  end,
+
+  setTexture = function(self, frame, alpha)
+    local r, g, b, a = unpack(self:toNative(false))
+    frame:SetTexture(r, g, b, alpha or a)
   end,
 
   toHex = function(self, excludeAlpha)
@@ -579,12 +600,15 @@ ep.Color = ep.prototype('ep.Color', {
     })
   },
 
+  blank = {0.0, 0.0, 0.0, 0.0},
   black = {0.0, 0.0, 0.0, 1.0},
-  console = {0.32, 0.28, 0.24, 1.0},
-  label = {0.2, 0.2, 0.2, 1.0},
-  principal = {0.05, 0.05, 0.05, 1.0},
-  standard = {0.15, 0.15, 0.15, 1.0},
+  white = {1.0, 1.0, 1.0, 1.0},
+
   error = {0.55, 0.21, 0.19, 1.0},
+  innerLabel = {0.25, 0.25, 0.25, 0.75},
+  label = {0.2, 0.2, 0.2, 1.0},
+  normal = {0.1, 0.1, 0.1, 1.0},
+  title = {0.0, 0.0, 0.0, 1.0},
 })
 
 ep.icon = ep.pseudotype{

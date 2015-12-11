@@ -493,7 +493,7 @@ ep.ItemEditor = ep.panel('ep.ItemEditor', 'epItemEditor', {
     })
 
     self.lowerDivider:SetVertexColor(1, 1, 1, 0.5)
-    self.f_class:populate(ep.items.classMenuItems)
+    self.f_class:setOptions(ep.items.classMenuItems)
 
     self:linkSizeTo(self.f_facets, 'height')
   end,

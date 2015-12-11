@@ -1,8 +1,129 @@
 local _, Color, ColorSpot, exception, exceptional, floor, invoke, isinstance, iterkeys,
-      itersplit, maxn, repr, strip, tcompare, titlecase
+      itersplit, max, maxn, repr, strip, tcompare, titlecase
     = ep.localize, ep.Color, ep.ColorSpot, ep.exception, ep.exceptional, math.floor,
-      ep.invoke, ep.isinstance, ep.iterkeys, ep.itersplit, table.maxn, ep.repr, ep.strip,
+      ep.invoke, ep.isinstance, ep.iterkeys, ep.itersplit, math.max, table.maxn, ep.repr, ep.strip,
       ep.tcompare, ep.titlecase
+
+ep.Confirmation = ep.control('ep.Confirmation', 'epConfirmation', ep.BaseFrame, nil, {
+  defaultColor = Color('normal'),
+  defaultButtons = {{'OK', true}, {'Cancel', false}},
+  defaultLocation = {edge='CENTER', anchor=UIParent, hook='CENTER'},
+
+  styles = {
+    compact = {minimumButtonWidth=60, minimumTextWidth=200, outerPadding=11, verticalPadding=6},
+    standard = {minimumButtonWidth=100, minimumTextWidth=200, outerPadding=11, verticalPadding=12},
+  },
+
+  initialize = function(self)
+    self.buttons = {}
+    self:initializeBackground()
+  end,
+
+  close = function(self, value)
+    self:Hide()
+    if type(value) ~= nil then
+      invoke(self.callback, value)
+    end
+    self.callback = nil
+  end,
+
+  display = function(self, params)
+    local buttonWidth, style, textWidth, verticalOffset
+    if not params then
+      return
+    end
+
+    self.callback = params.callback
+
+    style = self.styles[params.style or 'standard']
+    buttonWidth = self:updateButtons(style, params.buttons or self.defaultButtons)
+
+    verticalOffset = style.outerPadding
+    textWidth = max(style.minimumTextWidth, buttonWidth)
+
+    if params.title then
+      self.title:SetWidth(textWidth)
+      self.title:SetText(params.title)
+      self.title:SetPoint('TOP', self, 'TOP', 0, -verticalOffset)
+
+      if params.titleColor then
+        Color(params.titleColor):setTextColor(self.title)
+      else
+        self.defaultColor:setTextColor(self.title)
+      end
+
+      self.title:Show()
+      verticalOffset = verticalOffset + self.title:GetTextHeight() + 6
+    else
+      self.title:Hide()
+    end
+
+    self.content:SetWidth(textWidth)
+    self.content:SetText(params.content)
+    self.content:SetPoint('TOP', self, 'TOP', 0, -verticalOffset)
+
+    if params.contentColor then
+      Color(params.contentColor):setTextColor(self.content)
+    else
+      self.defaultColor:setTextColor(self.content)
+    end
+
+    verticalOffset = verticalOffset + self.content:GetTextHeight() + style.verticalPadding
+    self.buttonsContainer:SetPoint('TOP', self, 'TOP', 0, -verticalOffset)
+
+    self:SetWidth(max(buttonWidth, textWidth) + style.outerPadding)
+    self:SetHeight(verticalOffset + style.outerPadding)
+
+    self:position(aspects.location, self.defaultLocation)
+    self:Show()
+  end,
+
+  updateButtons = function(self, style, candidates)
+    local buttons, maxWidth = self.buttons, 0
+    for i, candidate in ipairs(candidates) do
+      button = buttons[i]
+      if not buttons then
+        button = ep.Button('epConfirmationButtons'..i, self.buttonsContainer)
+        if i == 1 then
+          button:SetPoint('TOPLEFT', self.buttonsContainer, 'TOPLEFT')
+        else
+          button:SetPoint('TOPLEFT', buttons[i - 1], 'TOPRIGHT', 4, 0)
+        end
+
+        button:SetScript('OnClick', function(this)
+          self:close(this.value)
+        end)
+        buttons[i] = button
+      end
+
+      button.value = candidate[2]
+      button:SetText(candidate[1])
+
+      maxWidth = max(maxWidth, button:GetTextWidth())
+      button:Show()
+    end
+
+    local buttonWidth = maxWidth + 10
+    if buttonWidth < style.minimumButtonWidth then
+      buttonWidth = style.minimumButtonWidth
+    end
+
+    for i = #candidates + 1, #buttons do
+      buttons[i]:Hide()
+    end
+
+    local width = 0
+    for i = 1, #candidates do
+      button = self.buttons[i]
+      button:SetWidth(buttonWidth)
+      width = width + buttonWidth + 4
+    end
+    width = width - 4
+
+    self.buttonsContainer:SetWidth(width)
+    return width
+  end
+})
 
 ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
   initialize = function(self)
@@ -64,7 +185,7 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
     for name, group in pairs(ep.Color.groups) do
       tinsert(groups, {value=name, label=titlecase(name:gsub('_', ' '))})
     end
-    self.groupSelector:populate(groups, 'primary_colors')
+    self.groupSelector:setOptions(groups, 'primary_colors')
   end,
 
   display = function(self, params)
@@ -87,7 +208,7 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
     self.colors.original.texture:SetTexture(unpack(self.original:toNative()))
 
     self:setColor(self.original)
-    self.groupSelector:setValue('primary_colors')
+    self.groupSelector:setValue('primary_colors', false, true)
 
     self:_updateRecentColors()
     self:Show()
@@ -127,7 +248,6 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
   end,
 
   setGroup = function(self, group)
-    P(group)
     if group ~= self.group then
       self.group = group
       self:_updateGroupColors()
@@ -187,7 +307,8 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
       if color then
         button:enable(color)
       else
-        button:disable(true)
+        button:setValue('blank', true)
+        button:disable()
       end
     end
   end
@@ -416,7 +537,7 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
   display = function(self, callback, anchor, category, set)
     if ep.icon:deployIconsets() then
       for token in iterkeys(ep.icon.sets, true) do
-        self.setDropbox:add(token, ep.icon.sets[token].title)
+        self.setDropbox:addOption(token, ep.icon.sets[token].title)
       end
     end
 

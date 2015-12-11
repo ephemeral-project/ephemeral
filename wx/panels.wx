@@ -1,5 +1,16 @@
 %textures = 'Interface\AddOns\ephemeral\textures'
 
+Frame epConfirmation(epFrame, ^UIParent, frameStrata: DIALOG, hidden):
+  !Size(200, 200)
+  !Center
+  !Artwork:
+    FontString $parentTitle(epNormalFont, .title, maxLines: 2, justifyV: TOP)
+    FontString $parentContent(epNormalFont, .content, maxLines: 10, justifyV: TOP)
+  Frame $parentButtons(.buttonsContainer):
+    !Size(y: 19)
+  OnLoad:
+    *ep.Confirmation(self)
+
 Panel epConsole(^UIParent, frameStrata: HIGH, hidden):
   !Size(400, 400)
   !Center
@@ -286,8 +297,8 @@ Panel epIconBrowser(^UIParent, frameStrata: HIGH, hidden):
     OnLoad:
       *ep.DropBox(self, {
       *  onValueChanged = {ep.IconBrowser.setSet, self:GetParent()},
-      *  items = {{'all', 'All Sets'}},
-      *  value = 'all',
+      *  options = {{'all', 'All Sets'}},
+      *  initialValue = 'all',
       *})
   DropBox $parentCategory(.categoryDropbox, text: 'All Icons'):
     !Size(111, 19)
@@ -344,13 +355,17 @@ Panel epTest(^UIParent, frameStrata: HIGH, hidden):
   Button $parentButton(text: 'Test This'):
     !Size(80, 19)
     !TopLeft(12, -32)
+    OnClick:
+      *P('test this')
   CheckBox $parentCheckBox(text: 'enabled'):
     !TopLeft(12, -55)
+    OnLoad:
+      *ep.CheckBox(self, {onValueChanged=D})
   DropBox $parentDropBox:
     !Size(110, 19)
     !TopLeft(12, -75)
     OnLoad:
-      *ep.DropBox(self, {default = 'nn', items = {
+      *ep.DropBox(self, {defaultValue = 'nn', options = {
       *  {'nn', 'None'}, {'bk', 'Back'}, {'bh', 'Both Hands'}
       *}})
   ComboBox $parentComboBox:
@@ -378,7 +393,7 @@ Panel epTest(^UIParent, frameStrata: HIGH, hidden):
     OnLoad:
       *ep.MultiButton(self, {
       *  items = {
-      *    {label = 'Discard', callback = function() d('Discard selected.') end}
+      *    {label = 'Discard', callback = function() P('Discard selected.') end}
       *  }
       *})
   Tree $parentTree:
@@ -393,15 +408,17 @@ Panel epTest(^UIParent, frameStrata: HIGH, hidden):
     !Size(160, 19)
     !TopLeft(12, -245)
     OnLoad:
-      *ep.EditBox(self, {placeholder='label', clearable=true})
+      *ep.EditBox(self, {placeholder='label', clearable=true, onValueChanged=D})
   Spinner $parentSpinner:
     !Size(80, 19)
     !TopLeft(12, -268)
+    OnLoad:
+      *ep.Spinner(self, {onValueChanged=D})
   Spinner $parentValueSpinner:
     !Size(140, 19)
     !TopLeft(12, -291)
     OnLoad:
-      *ep.Spinner(self, {values={'alpha', 'beta', 'gamma', 'delta'}, value='alpha'})
+      *ep.Spinner(self, {values={'alpha', 'beta', 'gamma', 'delta'}, defaultValue='alpha'})
   Grid $parentGrid:
     !TopLeft(12, -314)
     !BottomRight(-12, 12)

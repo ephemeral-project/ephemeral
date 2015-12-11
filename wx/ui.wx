@@ -360,6 +360,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' and frame:IsMovable() then
       *  frame:StartMoving()
       *end
+      *ep.event(':controlActivated', frame)
     OnMouseUp:
       *if button == 'LeftButton' then
       *  self:GetParent():StopMovingOrSizing()
@@ -375,6 +376,8 @@ Frame epPanel(epFrame, enableMouse, virtual):
       !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
     OnClick:
       *self:GetParent():iconify()
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
   Button $parentClose(NoInherit, .closeButton):
     !Size(20, 20)
     !TopRight(-6, -6)
@@ -386,6 +389,8 @@ Frame epPanel(epFrame, enableMouse, virtual):
       !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
     OnClick:
       *self:GetParent():close()
+    OnMouseDown:
+      *ep.event(':controlActivated', self:GetParent())
   Button $parentVerticalResize(NoInherit, .vr, hidden):
     !Size(9, 9)
     !BottomLeft(4, 0)
@@ -405,6 +410,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' and frame:IsResizable() then
       *  frame:startResizing('vertical')
       *end
+      *ep.event(':controlActivated', frame)
     OnMouseUp:
       *if button == 'LeftButton' then
       *  self:GetParent():stopResizing()
@@ -428,6 +434,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' and frame:IsResizable() then
       *  frame:startResizing('horizontal')
       *end
+      *ep.event(':controlActivated', frame)
     OnMouseUp:
       *if button == 'LeftButton' then
       *  self:GetParent():stopResizing()
@@ -446,6 +453,7 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' and frame:IsResizable() then
       *  frame:startResizing('full')
       *end
+      *ep.event(':controlActivated', frame)
     OnMouseUp:
       *if button == 'LeftButton' then
       *  self:GetParent():stopResizing()
@@ -464,10 +472,13 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' and frame:IsResizable() then
       *  frame:startResizing('full')
       *end
+      *ep.event(':controlActivated', frame)
     OnMouseUp:
       *if button == 'LeftButton' then
       *  self:GetParent():stopResizing()
       *end
+  OnMousedown:
+    *ep.event(':controlActivated', self)
 
 Frame epTooltip(epFrame, ^UIParent, frameStrata: TOOLTIP, hidden):
   !Size(100, 100)

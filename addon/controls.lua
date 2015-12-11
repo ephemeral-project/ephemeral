@@ -18,8 +18,8 @@ ep.Button = ep.control('ep.Button', 'epButton', ep.BaseControl, 'button', {
   end,
 
   disable = function(self)
-    self:Disable()
     self:SetAlpha(0.6)
+    self:Disable()
     return self
   end,
 
@@ -33,6 +33,9 @@ ep.Button = ep.control('ep.Button', 'epButton', ep.BaseControl, 'button', {
 ep.CheckBox = ep.control('ep.CheckBox', 'epCheckBox', ep.BaseControl, 'checkbox', {
   initialize = function(self, params)
     params = params or {}
+    self.defaultValue = params.defaultValue or false
+
+    self:setValue(self.defaultValue, true, true)
     if params.onValueChanged then
       self:subscribe(':valueChanged', params.onValueChanged)
     end
@@ -55,38 +58,45 @@ ep.CheckBox = ep.control('ep.CheckBox', 'epCheckBox', ep.BaseControl, 'checkbox'
     end
   end,
 
-  disable = function(self, state)
-    self:Disable()
-    if state ~= nil then
-      self:SetChecked(state)
-    end
-
+  disable = function(self, behavior)
     self:SetAlpha(0.6)
+    if behavior == 'hide' then
+      self:SetChecked(false)
+    end
+
+    self:Disable()
     return self
   end,
 
-  enable = function(self, state)
-    self:Enable()
-    if state ~= nil then
-      self:SetChecked(state)
-    end
-
+  enable = function(self, value)
     self:SetAlpha(1.0)
+    if type(value) ~= nil then
+      self:setValue(value)
+    elseif self.value ~= self:GetChecked() then
+      self:SetChecked(self.value)
+    end
+
+    self:Enable()
     return self
   end,
 
-  setValue = function(self, value, suppressEvent)
-    if value ~= self:GetChecked() then
-      self:SetChecked(value)
-      if not suppressEvent then
-        self:event(':valueChanged', value)
-      end
+  getValue = function(self)
+    return self.value
+  end,
+
+  setValue = function(self, value, suppressEvent, force)
+    if value == self.value and not force then
+      return
     end
-    return self
+
+    self.value = value
+    self:SetChecked(value)
+
+    if not suppressEvent then
+      self:event(':valueChanged', value)
+    end
   end
 })
-
-ep.CheckBox.getValue = ep.CheckBox.GetChecked
 
 ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
   initialize = function(self, params)
@@ -108,9 +118,9 @@ ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
     end
   end,
 
-  disable = function(self, cleared)
+  disable = function(self, behavior)
     self:SetAlpha(0.6)
-    if cleared then
+    if behavior == 'hide' then
       self.spot:SetTexture(0, 0, 0, 0)
     end
 
@@ -120,66 +130,66 @@ ep.ColorSpot = ep.control('ep.ColorSpot', 'epColorSpot', ep.Button, nil, {
 
   enable = function(self, value)
     self:SetAlpha(1.0)
-    self:setValue(value or self.color, true)
+    if value then
+      self:setValue(value, true, true)
+    elseif self.value then
+      self.spot:SetTexture(unpack(self.color:toNative()))
+    end
 
     self:Enable()
     return self
   end,
 
   getValue = function(self)
-    return self.color
+    return self.value
   end,
 
   selectColor = function(self)
-    epColorBrowser:display({anchor=self, color=self.color,
+    epColorBrowser:display({anchor=self, color=self.value,
       onSelect={self.setValue, self}})
   end,
 
-  setValue = function(self, value, suppressEvent)
+  setValue = function(self, value, suppressEvent, force)
     if not isinstance(value, Color) then
-      value = Color(value)
+      value = Color(value or self.defaultColor)
     end
 
-    if value == self.color then
+    if value == self.value and not force then
       return self
     end
 
-    self.color = value
-    self.spot:SetTexture(unpack(self.color:toNative()))
+    self.value = value
+    self.spot:SetTexture(unpack(value:toNative()))
 
     if not suppressEvent then
-      self:event(':valueChanged', self.color)
+      self:event(':valueChanged', value)
     end
-    return self
   end
 })
 
 ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
+  sortByLabel = attrsort('label'),
+
   initialize = function(self, params)
     params = params or {}
-    self.default = params.default
-    self.items = {}
-    self.prefix = ''
+    self.defaultValue = params.defaultValue
+    self.options = {}
     self.sorted = params.sorted
     self.values = {}
-
-    if params.prefix then
-      self.prefix = ep.Color('label'):applyToken(params.prefix..': ')
-    end
 
     self.menu = ep.Menu(self.name..'Menu', self, {
       callback = function(value)
         self:setValue(value)
       end,
-      items = self.items,
+      items = self.options,
       location = {anchor=self, x=0, y=-18},
-      scrollable = (params.scrollable or false),
-      window = (params.window or 8),
+      scrollable = params.scrollable,
+      window = params.window,
       width = self
     })
 
-    if params.items then
-      self:populate(params.items, self.default, params.value)
+    if params.options then
+      self:setOptions(params.options, self.defaultValue, params.initialValue)
     end
 
     if params.onValueChanged then
@@ -194,32 +204,55 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
     if self.label then
       self.label:SetText(_(self.label:GetText()))
     end
+
+    ep.subscribe(':controlActivated', function(event, control)
+      if control ~= self then
+        self:toggleMenu('closed')
+      end
+    end)
   end,
 
-  add = function(self, value, label, position)
-    local item = {value = value, label = label or value}
-    if self.values[value] then
-      self:remove(value)
+  addOption = function(self, value, label, position)
+    local option
+    if type(value) == 'table' then
+      option = value
+      if not option.value then
+        return exception('InvalidValue')
+      elseif label then
+        option.label = label
+      end
+    else
+      option = {value=value, label=label}
     end
 
-    self.values[value] = label or value
+    if not option.label then
+      option.label = option.value
+    end
+
+    if self.values[option.value] then
+      self:removeOption(option.value)
+    end
+
+    self.values[option.value] = option.label
     if position then
-      tinsert(self.items, position, item)
+      tinsert(self.options, position, option)
     else
-      tinsert(self.items, item)
+      tinsert(self.options, option)
     end
 
     if self.sorted then
-      sort(self.items, self._sortByLabel)
+      sort(self.options, self.sortByLabel)
     end
 
-    self.menu.built = false
+    self.menu:rebuild()
     return self
   end,
 
-  disable = function(self, cleared)
+  disable = function(self, behavior)
+    self:toggleMenu(false)
     self:SetAlpha(0.6)
-    if cleared then
+
+    if behavior == 'hide' then
       self:SetText('')
     end
 
@@ -231,8 +264,8 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
     self:SetAlpha(1.0)
     if value then
       self:setValue(value, true)
-    elseif self:GetText() == '' then
-      self:setText(self.value)
+    elseif self.value then
+      self:SetText(self.values[self.value])
     end
 
     self:Enable()
@@ -243,102 +276,124 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
     return self.value
   end,
 
-  open = function(self)
-    if self.menu and #self.items > 0 then
-      self.menu:toggle()
+  removeOption = function(self, value)
+    local position
+    for i, option in ipairs(self.options) do
+      if option.value == value then
+        position = i
+        break
+      end
+    end
+    
+    if not position then
+      return
+    end
+
+    self.values[value] = nil
+    tremove(self.options, position)
+
+    self.menu:rebuild()
+    if self.value == value then
+      self:setValue(self.defaultValue or self.options[1].value)
     end
     return self
   end,
 
-  populate = function(self, population, default, value)
-    local items, values = tclear(self.items), tclear(self.values)
-    for i, item in ipairs(population) do
-      if type(item) == 'table' then
-        if item.label then
-          values[item.value] = item.label
-          items[i] = item
+  setOptions = function(self, candidates, defaultValue, initialValue)
+    local options, values = tclear(self.options), tclear(self.values)
+    for i, candidate in ipairs(candidates) do
+      if type(candidate) == 'table' then
+        if candidate.value then
+          if not candidate.label then
+            candidate.label = candidate.value
+          end
+          values[candidate.value] = candidate.label
+          options[i] = candidate
         else
-          values[item[1]] = item[2]
-          items[i] = {label=item[2], value=item[1]}
+          values[candidate[1]] = candidate[2]
+          options[i] = {value=candidate[1], label=candidate[2]}
         end
       else
-        values[item] = item
-        items[i] = {label=item, value=item}
+        values[candidate] = candidate
+        options[i] = {value=candidate, label=candidate}
       end
     end
 
-    self.menu.built = false
+    self.menu:rebuild()
     if self.sorted then
-      sort(items, self._sortByLabel)
+      sort(options, self.sortByLabel)
     end
 
-    self.default = default
-    if value then
-      self:setValue(value, true)
-    elseif default then
-      self:setValue(default, true)
-    end
-    return self
-  end,
-
-  remove = function(self, value, position)
-    if value then
-      for i, item in ipairs(self.items) do
-        if item.value == value or (item.value == nil and item.label == value) then
-          position = i
-          break
-        end
-      end
-    end
-
-    if position then
-      value = self.items[position].value
-      self.values[value], self.menu.built = nil, false
-      tremove(self.items, position)
-      if value == self.value then
-        self:setValue(self.default or self.items[1].value)
-      end
-    end
-    return self
-  end,
-  
-  setValue = function(self, value, suppressEvent)
-    if self.values[value] and self.value ~= value then
-      self.value = value
-      P(suppressEvent)
-      if not suppressEvent then
-        self:event(':valueChanged', value)
-      end
-      self:setText(value)
+    self.defaultValue = defaultValue
+    if initialValue then
+      self:setValue(initialValue, true)
+    elseif defaultValue then
+      self:setValue(defaultValue, true)
     end
     return self
   end,
 
-  setText = function(self, value)
-    self:SetText(self.prefix..self.values[value])
+  setValue = function(self, value, suppressEvent, force)
+    local label = self.values[value]
+    if not label then
+      return exception('InvalidValue')
+    elseif value == self.value and not force then
+      return
+    end
+
+    self.value = value
+    if not suppressEvent then
+      self:event(':valueChanged', value)
+    end
+    self:SetText(label)
   end,
 
-  _sortByLabel = function(first, second)
-    return first.label < second.label
-  end
+  toggleMenu = function(self, state)
+    local opened = self.menu:IsShown()
+    if (state == 'open' and opened) or (state == 'closed' and not opened) then
+      return self
+    elseif state == 'open' or not opened then
+      self.menu:display()
+    elseif state == 'closed' or opened then
+      self.menu:close()
+    end
+    return self
+  end,
 })
 
 ep.ComboBox = ep.control('ep.ComboBox', 'epComboBox', ep.DropBox, 'editbox', {
+  initialize = function(self, params)
+    params = params or {}
+    self.formatter = params.formatter
+    self.placeholder = params.placeholder
+    self.validator = params.validator
+
+    ep.DropBox.initialize(self, params)
+
+    if self.placeholder then
+      self.innerLabel:SetText(self.placeholder)
+      if self:GetText() == '' then
+        self.innerLabel:Show()
+      end
+    end
+  end,
+  
   capture = function(self)
     self:setValue(self:GetText())
     return self
   end,
 
-  disable = function(self, cleared)
+  disable = function(self, behavior)
     self:ClearFocus()
-    self:super():disable(cleared)
+    ep.DropBox.disable(self, hideValue)
+
     self:EnableKeyboard(false)
     self:EnableMouse(false)
     return self
   end,
 
   enable = function(self, value)
-    self:super():enable(value)
+    ep.DropBox.enable(self, value)
     self:EnableKeyboard(true)
     self:EnableMouse(true)
     return self
@@ -356,136 +411,37 @@ ep.ComboBox = ep.control('ep.ComboBox', 'epComboBox', ep.DropBox, 'editbox', {
 
     self:ClearFocus()
     return self
-  end
-})
-
-ep.EditArea = ep.control('ep.EditArea', 'epEditArea', ep.BaseFrame, nil, {
-  initialize = function(self, params)
-    params = params or {}
-    self.editbox = self.scrollFrame:GetScrollChild()
-    self.placeholder = params.placeholder
-
-    if params.locked then
-      self:lock(true)
-    end
-
-    if self.placeholder then
-      self.innerLabel:SetText(self.placeholder)
-      if self.editbox:GetText() == '' then
-        self.innerLabel:Show()
-      end
-    end
-
-    if params.tooltip then
-      attachTooltip(self, params.tooltip, {delay=1,
-        location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
-    end
   end,
-
-  append = function(self, content, unmoved)
-    local position = (unmoved) and self.editbox:GetCursorPosition() or nil
-    self.editbox:SetCursorPosition(self.editbox:GetNumLetters())
-    self.editbox:Insert(content)
-
-    if position then
-      self.editbox:SetCursorPosition(position)
-    end
-  end,
-
-  disable = function(self, cleared, saved)
-    self.disabled = true
-    self.editbox:ClearFocus()
-    self:SetAlpha(0.6)
-
-    if saved then
-      self._savedText = self.editbox:GetText()
-    end
-
-    if cleared then
-      self.editbox:SetText('')
-    end
-
-    self.editbox:EnableKeyboard(false)
-    self.editbox:EnableMouse(false)
-    return self
-  end,
-
-  enable = function(self, cleared)
-    self.disabled = nil
-    self:SetAlpha(1.0)
-
-    if cleared then
-      self.editbox:SetText('')
-    elseif self._savedText then
-      self.editbox:SetText(self._savedText)
-      self._savedText = nil
-    end
-
-    self.editbox:EnableKeyboard(true)
-    self.editbox:EnableMouse(true)
-    return self
-  end,
-
-  getValue = function(self)
-    return self:GetText()
-  end,
-
-  lock = function(self, locked)
-    self.editbox:EnableKeyboard(not locked)
-    return self
-  end,
-
-  setValue = function(self, value)
-    self.editbox:SetText(value or '')
-    if #self.editbox:GetText() == 0 then
-      if self.placeholder then
-        self.innerLabel:Show()
-      end
-    else
-      self.innerLabel:Hide()
-    end
-    return self
-  end,
-
-  updateCursor = function(self, x, y)
-    local offset, height, y = self.scrollFrame:GetVerticalScroll(), self:GetHeight() - 26, abs(y)
-    if y < offset then
-      self.scrollFrame:scroll(y)
-    elseif y > (offset + height) then
-      self.scrollFrame:scroll(y - height)
-    end
-  end,
-
-  _focusLost = function(self)
-    self.editbox:HighlightText(0, 0)
-    if self.placeholder then
-      if self.editbox:GetText() == '' then
-        self.innerLabel:Show()
-      else
-        self.innerLabel:Hide()
-      end
-    end
-  end
 })
 
 ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
   initialize = function(self, params)
     params = params or {}
     self.clearable = params.clearable
+    self.defaultValue = params.defaultValue or ''
+    self.formatter = params.formatter
     self.placeholder = params.placeholder
+    self.highlightOnFocus = params.highlightOnFocus
     self.historyEnabled = params.historyEnabled
     self.historyLimit = params.historyLimit or 30
     self.historyTable = params.historyTable
+    self.validator = params.validator
 
-    if self.clearable and self:GetText() ~= '' then
-      self.clearButton:Show()
+    if not self.editbox then
+      self.editbox = self
     end
 
     if self.placeholder then
       self.innerLabel:SetText(self.placeholder)
-      if self:GetText() == '' then
-        self.innerLabel:Show()
-      end
+    end
+
+    self:setValue(self.defaultValue, true, true)
+    if params.onValueChanged then
+      self:subscribe(':valueChanged', params.onValueChanged)
+    end
+
+    if params.lockedInitially then
+      self:lock()
     end
 
     if params.tooltip then
@@ -496,6 +452,12 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
     if self.label then
       self.label:SetText(_(self.label:GetText()))
     end
+
+    ep.subscribe(':controlActivated', function(event, control)
+      if control ~= self and self.editbox:HasFocus() then
+        self.editbox:ClearFocus()
+      end
+    end)
   end,
 
   addToHistory = function(self, value)
@@ -525,57 +487,45 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
     return self
   end,
 
-  append = function(self, content, unmoved)
-    local position = nil
-    if #content == 0 then
-      return
-    end
-
-    if unmoved then
-      position = self:GetCursorPosition()
-    end
-
-    self:SetCursorPosition(self:GetNumLetters())
-    self:Insert(content)
-
-    if position then
-      self:SetCursorPosition(position)
-    end
-    return self
-  end,
-
   cancelHistory = function(self)
     self.historyActive, self.historyOffset = nil, nil
   end,
 
-  disable = function(self, cleared, saved)
-    self:ClearFocus()
+  disable = function(self, behavior)
+    local editbox = self.editbox
+    editbox:ClearFocus()
+
+    if behavior == 'clear' then
+      self:setValue('')
+    elseif behavior == 'hide' then
+      editbox:SetText('')
+    end
+
     self:SetAlpha(0.6)
+    self:toggleControls(nil, false)
 
-    if saved then
-      self._savedText = self:GetText()
-    end
+    editbox:EnableKeyboard(false)
+    editbox:EnableMouse(false)
 
-    if cleared then
-      self:SetText('')
-    end
-
-    self:EnableKeyboard(false)
-    self:EnableMouse(false)
+    self.disabled = true
     return self
   end,
 
-  enable = function(self, cleared)
-    self:SetAlpha(1.0)
-    if cleared then
-      self:SetText('')
-    elseif self._savedText then
-      self:SetText(self._savedText)
-      self._savedText = nil
+  enable = function(self, value)
+    local editbox = self.editbox
+    if value then
+      self:setValue(value)
+    elseif self.value ~= editbox:GetText() then
+      editbox:SetText(self.value)
     end
 
-    self:EnableKeyboard(true)
-    self:EnableMouse(true)
+    self:SetAlpha(1.0)
+    self:toggleControls()
+
+    editbox:EnableKeyboard(true)
+    editbox:EnableMouse(true)
+
+    self.disabled = false
     return self
   end,
 
@@ -594,24 +544,84 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
     return historyTable
   end,
 
-  setValue = function(self, value)
-    if type(value) ~= 'string' or value == self:GetText() then
-      return self
+  getValue = function(self, isUserInput)
+    local text = self.editbox:GetText()
+    if self.value ~= text then
+      self:setValue(text, false, false, isUserInput)
     end
+    return self.value
+  end,
 
-    self:SetText(value)
-    if #value == 0 then
-      self.clearButton:Hide()
-      if self.placeholder and self:HasFocus() then
-        self.innerLabel:Show()
-      end
-    else
-      self.innerLabel:Hide()
-      if self.clearable then
-        self.clearButton:Show()
-      end
+  initiateInput = function(self)
+    ep.event(':controlActivated', self)
+    if self.highlightOnFocus then
+      self.editbox:HighlightText()
+    end
+    self.innerLabel:Hide()
+  end,
+
+  lock = function(self, behavior)
+    self:toggleControls(nil, false)
+    if not behavior or behavior == 'keyboard' or behavior == 'both' then
+      self.editbox:EnableKeyboard(false)
+    end
+    if behavior == 'mouse' or behavior == 'both' then
+      self.editbox:EnableMouse(false)
     end
     return self
+  end,
+
+  processInput = function(self)
+    self.editbox:HighlightText(0, 0)
+    self:cancelHistory()
+    self:setValue(self.editbox:GetText(), false, false, true)
+  end,
+
+  setStatus = function(self, status)
+    if status == 'error' then
+      Color('error'):setTexture(self.overlay, 0.25)
+      self.overlay:Show()
+    else
+      self.overlay:Hide()
+    end
+  end,
+
+  setValue = function(self, value, suppressEvent, force, isUserInput)
+    if type(value) ~= 'string' then
+      return exception('InvalidValue')
+    end
+
+    if self.formatter then
+      value = self.formatter(value)
+    end
+
+    local invalid = false
+    if self.validator then
+      local failure = self.validator(value)
+      if exceptional(failure) then
+        if isUserInput then
+          invalid = true
+          self:setStatus('error')
+        else
+          return failure
+        end
+      end
+    end
+
+    if value == self.value and not force then
+      self:toggleControls()
+      return
+    end
+
+    self.value = value
+    if self.editbox:GetText() ~= value then
+      self.editbox:SetText(value)
+    end
+
+    self:toggleControls()
+    if not suppressEvent then
+      self:event(':valueChanged', value, invalid)
+    end
   end,
 
   showHistory = function(self)
@@ -620,7 +630,7 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
     end
 
     if IsControlKeyDown() then
-      self:setValue(self.historyStub or '')
+      self.editbox:SetText(self.historyStub or '')
       self:cancelHistory()
       return
     end
@@ -646,32 +656,57 @@ ep.EditBox = ep.control('ep.EditBox', 'epEditBox', ep.BaseControl, 'editbox', {
       self.historyActive = true
       self.historyOffset = 1
     end
-    self:setValue(history[self.historyOffset])
+    self.editbox:SetText(history[self.historyOffset])
   end,
 
-  _focusLost = function(self)
-    self:HighlightText(0, 0)
-    self:cancelHistory()
-
+  toggleControls = function(self, placeholder, clearButton)
+    local length = #self.editbox:GetText()
     if self.placeholder then
-      if self:GetText() == '' then
+      if placeholder == true then
+        self.innerLabel:Show()
+      elseif placeholder == false then
+        self.innerLabel:Hide()
+      elseif length == 0 and not self.editbox:HasFocus() then
         self.innerLabel:Show()
       else
         self.innerLabel:Hide()
       end
     end
-
     if self.clearable then
-      if self:GetText() == '' then
-        self.clearButton:Hide()
-      else
+      if clearButton == true then
         self.clearButton:Show()
+      elseif clearButton == false then
+        self.clearButton:Hide()
+      elseif length > 0 then
+        self.clearButton:Show()
+      else
+        self.clearButton:Hide()
       end
     end
+  end,
+
+  unlock = function(self)
+    self.editbox:EnableKeyboard(true)
+    self:toggleControls()
+    return self
   end
 })
 
-ep.EditBox.getValue = ep.EditBox.GetText
+ep.EditArea = ep.control('ep.EditArea', 'epEditArea', ep.EditBox, nil, {
+  initialize = function(self, params)
+    self.editbox = self.scrollFrame:GetScrollChild()
+    ep.EditBox.initialize(self, params)
+  end,
+
+  updateCursor = function(self, x, y)
+    local offset, height, y = self.scrollFrame:GetVerticalScroll(), self:GetHeight() - 26, abs(y)
+    if y < offset then
+      self.scrollFrame:scroll(y)
+    elseif y > (offset + height) then
+      self.scrollFrame:scroll(y - height)
+    end
+  end
+})
 
 ep.Grid = ep.control('ep.Grid', 'epGrid', ep.BaseFrame, nil, {
   controls = {
@@ -1041,15 +1076,18 @@ ep.GridRow = ep.control('ep.GridRow', 'epGridRow', ep.BaseFrame, nil, {
 ep.IconBox = ep.control('ep.IconBox', 'epIconBox', ep.Button, nil, {
   initialize = function(self, params)
     params = params or {}
+    self.anchor = params.anchor or self
+    self.defaultValue = params.defaultValue
+    self.enableBrowsing = params.enableBrowsing
+    self.value = nil
+
     if params.static then
       self:disable()
     end
-    if params.default then
-      self:setValue(default)
-    end
 
-    self.anchor = params.anchor or self
-    self.enableBrowsing = params.enableBrowsing
+    if self.defaultValue then
+      self:setValue(self.defaultValue, true)
+    end
 
     if params.onValueChanged then
       self:subscribe(':valueChanged', params.onValueChanged)
@@ -1084,40 +1122,49 @@ ep.IconBox = ep.control('ep.IconBox', 'epIconBox', ep.Button, nil, {
     return self
   end,
 
-  disable = function(self, shaded)
-    self:Disable()
-    if shaded then
-      self:SetAlpha(0.6)
+  disable = function(self, behavior)
+    self:SetAlpha(0.6)
+    if behavior == 'clear' then
+      self:setValue(nil)
+    elseif behavior == 'hide' then
+      self.texture:SetTexture('')
     end
+
+    self:Disable()
     return self
   end,
 
-  enable = function(self)
-    self:Enable()
+  enable = function(self, value)
     self:SetAlpha(1.0)
+    if value then
+      self:setValue(value)
+    elseif self.value and not self.texture:GetTexture() then
+      self.texture:SetTexture(ep.icon(self.value))
+    end
+
+    self:Enable()
     return self
   end,
 
   getValue = function(self)
-    return self.icon
+    return self.value
   end,
 
-  setValue = function(self, icon, suppressEvent)
-    if icon == self.icon then
-      return self
+  setValue = function(self, value, suppressEvent, force)
+    if value == self.value and not force then
+      return
     end
 
-    self.icon = icon
-    if icon then
-      self.texture:SetTexture(ep.icon(icon))
+    self.value = value
+    if value then
+      self.texture:SetTexture(ep.icon(value))
     else
       self.texture:SetTexture('')
     end
 
     if not suppressEvent then
-      self:event(':valueChanged', icon)
+      self:event(':valueChanged', value)
     end
-    return self
   end
 })
 
@@ -1142,7 +1189,7 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
     end
 
     if params.entries then
-      self:setValue(params.entries)
+      self:setValue(params.entries, true)
     end
 
     if params.onValueChanged then
@@ -1154,11 +1201,16 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
 
+    self.editor.text:subscribe('OnEnterPressed', {self.submit, self})
     if self.label then
       self.label:SetText(_(self.label:GetText()))
     end
 
-    self.editor.text:subscribe('OnEnterPressed', {self.submit, self})
+    ep.subscribe(':controlActivated', function(event, control)
+      if control ~= self and self.editing then
+        self:close()
+      end
+    end)
   end,
 
   addEntry = function(self, entry, skipUpdate)
@@ -1197,6 +1249,26 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
     self:close()
   end,
 
+  disable = function(self, behavior)
+    self:close()
+    self:SetAlpha(0.6)
+
+    if behavior == 'clear' then
+      self:setValue({})
+    elseif behavior == 'hide' then
+    end
+
+    self.add:Disable()
+    for i, button in ipairs(self.buttons) do
+      if button:IsShown() then
+        button:Disable()
+      else
+        break
+      end
+    end
+    return self
+  end,
+
   edit = function(self, entry, index)
     if self.editing then
       if self.currentEntry and self.currentEntry ~= entry then
@@ -1224,6 +1296,24 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
     self.editing = true
   end,
 
+  enable = function(self, value)
+    self:SetAlpha(1.0)
+    for i, button in ipairs(self.buttons) do
+      if button:IsShown() then
+        button:Enable()
+      else
+        break
+      end
+    end
+
+    if value then
+      self:setValue(value)
+    end
+
+    self.add:Enable()
+    return self
+  end,
+
   getTooltip = function(self, entry)
     if self.tooltipGenerator then
       return self.tooltipGenerator(entry)
@@ -1234,9 +1324,9 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
     return self.entries
   end,
 
-  setValue = function(self, entries)
+  setValue = function(self, value, suppressEvent, force)
     self.entries = {}
-    for i, entry in ipairs(entries) do
+    for i, entry in ipairs(value) do
       entry = self:addEntry(entry, true)
       if exceptional(entry) then
         return entry
@@ -1244,7 +1334,9 @@ ep.ListBuilder = ep.control('ep.ListBuilder', 'epListBuilder', ep.BaseFrame, nil
     end
 
     self:update()
-    return self
+    if not suppressEvent then
+      self:event(':valueChanged', self.entries)
+    end
   end,
 
   submit = function(self)
@@ -1385,9 +1477,9 @@ ep.ListBuilderButton = ep.control('ep.ListBuilderButton', 'epListBuilderButton',
     if self.entry then
       self:SetText(self.entry[1])
       if self.entry[2] then
-        Color:setTextColor(self.font, self.entry[2])
+        Color(self.entry[2]):setTextColor(self.font)
       else
-        Color:setTextColor(self.font, self.frame.defaultColor)
+        Color(self.frame.defaultColor):setTextColor(self.font)
       end
       self:SetWidth(self:GetTextWidth() + 11)
     else
@@ -1417,6 +1509,7 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
       self.scrollbar:SetPoint('TOPRIGHT', self, 'TOPRIGHT', 0, -13)
       self.scrollbar:SetPoint('BOTTOMRIGHT', self, 'BOTTOMRIGHT', 0, 13)
     end
+    self:Hide()
   end,
 
   build = function(self)
@@ -1584,6 +1677,10 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
     self.items, self.built = items, false
   end,
 
+  rebuild = function(self)
+    self.built = false
+  end,
+
   scroll = function(self, offset)
     self.offset = offset
     self:update()
@@ -1686,9 +1783,9 @@ ep.MenuButton = ep.control('ep.MenuButton', 'epMenuButton', ep.Button, nil, {
     if self.item then
       self:SetText(self.item.label)
       if self.item.color then
-        Color:setTextColor(self.font, self.item.color)
+        Color(self.item.color):setTextColor(self.font)
       else
-        Color:setTextColor(self.font, self.frame.defaultColor)
+        Color(self.frame.defaultColor):setTextColor(self.font)
       end
 
       if self.item.checkable then
@@ -1720,9 +1817,9 @@ ep.MessageFrame = ep.control('ep.MessageFrame', 'epMessageFrame', ep.BaseControl
   initialize = function(self, params)
     self.range = 0
     if params and params.defaultColor then
-      self.defaultColor = Color(params.color):toNative()
+      self.defaultColor = Color(params.defaultColor):toNative()
     else
-      self.defaultColor = Color('standard'):toNative()
+      self.defaultColor = Color('normal'):toNative()
     end
   end,
 
@@ -1748,6 +1845,7 @@ ep.MessageFrame = ep.control('ep.MessageFrame', 'epMessageFrame', ep.BaseControl
   end
 })
 
+-- TODO fix this (clean up init, make menu disappear when button is clicked)
 ep.MultiButton = ep.control('ep.MultiButton', 'epMultiButton', ep.BaseControl, 'button', {
   initialize = function(self, params)
     local text = self:GetText()
@@ -1767,6 +1865,12 @@ ep.MultiButton = ep.control('ep.MultiButton', 'epMultiButton', ep.BaseControl, '
       attachTooltip(self, params.tooltip, {delay=1,
         location={anchor=self, edge='BOTTOMLEFT', hook='TOPLEFT', x=-5}})
     end
+
+    ep.subscribe(':controlActivated', function(event, control)
+      if control ~= self then
+        self:toggleMenu('closed')
+      end
+    end)
   end,
 
   disable = function(self)
@@ -1787,9 +1891,17 @@ ep.MultiButton = ep.control('ep.MultiButton', 'epMultiButton', ep.BaseControl, '
     return self
   end,
 
-  open = function(self)
-    self.menu:toggle()
-  end,
+  toggleMenu = function(self, state)
+    local opened = self.menu:IsShown()
+    if (state == 'open' and opened) or (state == 'closed' and not opened) then
+      return
+    elseif state == 'open' or not opened then
+      self.menu:display()
+    elseif state == 'closed' or opened then
+      self.menu:close()
+    end
+    return self
+  end
 })
 
 ep.MultiFrame = ep.control('ep.MultiFrame', 'epMultiFrame', ep.BaseFrame, nil, {
@@ -1940,33 +2052,27 @@ ep.Slider = ep.control('ep.Slider', 'epSlider', ep.BaseControl, 'slider', {
   end
 })
 
-ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.EditBox, nil, {
+ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.BaseControl, 'editbox', {
   initialize = function(self, params)
     params = params or {}
     if params.values then
       self.circular = params.circular
-      self.value = params.value
+      self.defaultValue = params.defaultValue
       self.values = params.values
-      if self.value then
-        self:setValue(self.value)
-      else
-        self.offset = 1
-        self.value = self.values[1]
-        self:update()
-      end
+      self:setValue(self.defaultValue or self.values[1], true)
     else
-      self.bounded = params.bounded
+      self.defaultValue = params.defaultValue
+      self.displayPrecision = params.displayPrecision
       self.formatter = params.formatter
-      self.maximum = params.maximum
-      self.minimum = params.minimum
-      self.precision = params.precision
-      self.step = params.step or 1
+      self.maximumValue = params.maximumValue
+      self.minimumValue = params.minimumValue
       self.validator = params.validator
-      self:setValue(params.value or 0)
+      self.valueStep = params.valueStep
+      self:setValue(self.defaultValue or self.minimumValue or 0, true)
     end
 
-    self.static = params.static
-    if self.static then
+    self.disableInput = params.disableInput
+    if self.disableInput then
       self:EnableKeyboard(false)
       self:EnableMouse(false)
     end
@@ -1985,15 +2091,16 @@ ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.EditBox, nil, {
     end
   end,
 
-  disable = function(self, cleared)
+  disable = function(self, hideValue)
     self:ClearFocus()
-    if cleared then
-      self:SetText('')
-    end
     self:SetAlpha(0.6)
 
+    if hideValue then
+      self:SetText('')
+    end
+
     self:EnableMouseWheel(false)
-    if not self.static then
+    if not self.disableInput then
       self:EnableKeyboard(false)
       self:EnableMouse(false)
     end
@@ -2015,7 +2122,7 @@ ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.EditBox, nil, {
     end
 
     self:EnableMouseWheel(true)
-    if not self.static then
+    if not self.disableInput then
       self:EnableKeyboard(true)
       self:EnableMouse(true)
     end
@@ -2032,41 +2139,65 @@ ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.EditBox, nil, {
     return self.value
   end,
 
-  setValue = function(self, value, suppressEvent)
-    self:ClearFocus()
+  initiateInput = function(self)
+    ep.event(':controlActivated', self)
+    self:HighlightText()
+  end,
+  
+  processInput = function(self)
+    self:HighlightText(0, 0)
+    self:setValue(self:GetText(), false, false, true)
+  end,
+
+  setValue = function(self, value, suppressEvent, force, isUserInput)
     if self.values then
       local offset = tindex(self.values, value)
-      if offset and offset ~= self.offset then
+      if offset then
+        if offset == self.offset and not force then
+          self:update()
+          return
+        end
         self.offset = offset
+      elseif isUserInput then
+        self:update()
+        return
       else
-        return self
+        return exception('InvalidValue')
       end
     else
       value = tonumber(value)
       if type(value) ~= 'number' then
-        return self
-      elseif self.minimum and value < self.minimum then
-        value = self.minimum
-      elseif self.maximum and value > self.maximum then
-        value = self.maximum
-      elseif self.bounded then
-        value = self.minimum + (floor((value - self.minimum) / self.step) * self.step)
+        return exception('InvalidValue')
+      elseif self.minimumValue and value < self.minimumValue then
+        value = self.minimumValue
+      elseif self.maximumValue and value > self.maximumValue then
+        value = self.maximumValue
+      elseif self.valueStep then
+        value = self.minimumValue + (floor((value - self.minimumValue) / self.valueStep) * self.valueStep)
       end
-      if value == self.value then
-        return self
+      if value == self.value and not force then
+        self:update()
+        return
       end
     end
 
     self.value = value
+    self:update()
+
     if not suppressEvent then
       self:event(':valueChanged', value)
     end
-
-    self:update()
-    return self
   end,
 
   spin = function(self, direction, absolute)
+    local value
+    if self:HasFocus() then
+       value = self:GetText()
+       if value ~= self.value then
+         self:setValue(value, true)
+       end
+    end
+
     if self.values then
       local count, offset = #self.values, self.offset
       if absolute then
@@ -2079,41 +2210,46 @@ ep.Spinner = ep.control('ep.Spinner', 'epSpinner', ep.EditBox, nil, {
           offset = (self.circular) and 1 or count
         end
       end
+
       if offset ~= self.offset then
         self.offset = offset
         self.value = self.values[offset]
       else
-        return self
+        return
       end
     else
-      local value
+      value = self.value
       if absolute then
-        value = (direction < 0) and (self.minimum or 0) or (self.maximum or 0)
+        if direction < 0 and self.minimumValue then
+          value = self.minimumValue
+        elseif direction > 0 and self.maximumValue then
+          value = self.maximumValue
+        end
       else
-        value = self.value + (self.step * direction)
-        if self.minimum and value < self.minimum then
-          value = self.minimum
-        elseif self.maximum and value > self.maximum then
-          value = self.maximum
+        value = value + ((self.valueStep or 1) * direction)
+        if self.minimumValue and value < self.minimumValue then
+          value = self.minimumValue
+        elseif self.maximumValue and value > self.maximumValue then
+          value = self.maximumValue
         end
       end
+
       if value ~= self.value then
         self.value = value
       else
-        return self
+        return
       end
     end
 
     self:event(':valueChanged', self.value)
     self:update()
-    return self
   end,
 
   update = function(self)
     if self.formatter then
       self:SetText(invoke(self.formatter, self.value, self))
-    elseif self.precision then
-      self:SetText(format('%0.0'..self.precision..'f', self.value))
+    elseif self.displayPrecision then
+      self:SetText(format('%0.0'..self.displayPrecision..'f', self.value))
     else
       self:SetText(tostring(self.value))
     end
