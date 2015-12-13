@@ -1155,7 +1155,7 @@ ep.IconBox = ep.control('ep.IconBox', 'epIconBox', ep.Button, nil, {
     params = params or {}
     self.anchor = params.anchor or self
     self.defaultValue = params.defaultValue
-    self.enableBrowsing = params.enableBrowsing
+    self.disableBrowsing = params.disableBrowsing
     self.value = nil
 
     if params.static then
@@ -1183,8 +1183,8 @@ ep.IconBox = ep.control('ep.IconBox', 'epIconBox', ep.Button, nil, {
   end,
 
   browse = function(self)
-    if self.enableBrowsing then
-      epIconBrowser:display({self.setValue, self}, self.anchor)
+    if not self.disableBrowsing then
+      epIconBrowser:display({anchor=self.anchor, onSelect={self.iconSelected, self}})
     end
   end,
 
@@ -1227,7 +1227,11 @@ ep.IconBox = ep.control('ep.IconBox', 'epIconBox', ep.Button, nil, {
     return self.value
   end,
 
-  setValue = function(self, value, suppressEvent, force)
+  iconSelected = function(self, value)
+    self:setValue(value, nil, nil, true)
+  end,
+
+  setValue = function(self, value, suppressEvent, force, isUserInput)
     if value == self.value and not force then
       return
     end
@@ -1240,7 +1244,7 @@ ep.IconBox = ep.control('ep.IconBox', 'epIconBox', ep.Button, nil, {
     end
 
     if not suppressEvent then
-      self:event(':valueChanged', value)
+      self:event(':valueChanged', value, isUserInput)
     end
   end
 })

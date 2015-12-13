@@ -10,7 +10,8 @@ ep.Confirmation = ep.control('ep.Confirmation', 'epConfirmation', ep.BaseFrame, 
   defaultLocation = {edge='CENTER', anchor=UIParent, hook='CENTER'},
 
   styles = {
-    compact = {minimumButtonWidth=60, minimumTextWidth=200, outerPadding=11, verticalPadding=6},
+    compact = {minimumButtonWidth=50, minimumTextWidth=50, outerPadding=11, verticalPadding=6},
+    small = {minimumButtonWidth=60, minimumTextWidth=200, outerPadding=11, verticalPadding=6},
     standard = {minimumButtonWidth=100, minimumTextWidth=200, outerPadding=11, verticalPadding=12},
   },
 
@@ -53,7 +54,7 @@ ep.Confirmation = ep.control('ep.Confirmation', 'epConfirmation', ep.BaseFrame, 
       end
 
       self.title:Show()
-      verticalOffset = verticalOffset + self.title:GetTextHeight() + 6
+      verticalOffset = verticalOffset + self.title:GetStringHeight() + 6
     else
       self.title:Hide()
     end
@@ -68,21 +69,21 @@ ep.Confirmation = ep.control('ep.Confirmation', 'epConfirmation', ep.BaseFrame, 
       self.defaultColor:setTextColor(self.content)
     end
 
-    verticalOffset = verticalOffset + self.content:GetTextHeight() + style.verticalPadding
+    verticalOffset = verticalOffset + self.content:GetStringHeight() + style.verticalPadding
     self.buttonsContainer:SetPoint('TOP', self, 'TOP', 0, -verticalOffset)
 
-    self:SetWidth(max(buttonWidth, textWidth) + style.outerPadding)
-    self:SetHeight(verticalOffset + style.outerPadding)
+    self:SetWidth(max(buttonWidth, textWidth) + 10 +style.outerPadding)
+    self:SetHeight(verticalOffset + self.buttonsContainer:GetHeight() + style.outerPadding)
 
-    self:position(aspects.location, self.defaultLocation)
+    self:position(params.location, self.defaultLocation)
     self:Show()
   end,
 
   updateButtons = function(self, style, candidates)
-    local buttons, maxWidth = self.buttons, 0
+    local buttons, maxWidth, button = self.buttons, 0
     for i, candidate in ipairs(candidates) do
       button = buttons[i]
-      if not buttons then
+      if not button then
         button = ep.Button('epConfirmationButtons'..i, self.buttonsContainer)
         if i == 1 then
           button:SetPoint('TOPLEFT', self.buttonsContainer, 'TOPLEFT')
@@ -157,7 +158,7 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
         invoke(self.onSelect, self.color)
       end
     elseif self.onCancel then
-      invoke(self.onCancel, self.original)
+      invoke(self.onCancel)
     end
 
     self.onCancel, self.onSelect = nil, nil
@@ -200,7 +201,7 @@ ep.ColorBrowser = ep.panel('ep.ColorBrowser', 'epColorBrowser', {
     self.onSelect = params.onSelect
 
     if params.anchor then
-      self:position(anchor, {x=3})
+      self:position(params.anchor, {x=3})
     end
 
     self.original = params.color or Color('default')
@@ -514,7 +515,7 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
 
   initialize = function(self)
     self:super():initialize({
-      title = _'Icon Browser',
+      title = _'Icon Selector',
       resizable = true,
       onresize = self.resize,
       initsize = {249, 354},
@@ -529,44 +530,51 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
     self.icons = 0
     self.rows = 0
 
-    self.categoryDropbox.menu = ep.Menu('epIconBrowserCategoryMenu', self.categoryDropbox, {
+    self.categorySelector.menu = ep.Menu('epIconBrowserCategoryMenu', self.categorySelector, {
       callback = {self.setCategory, self},
       items = self.categories,
-      location = {anchor=self.categoryDropbox, x=0, y=-18},
-      width = self.categoryDropbox,
+      location = {anchor=self.categorySelector, x=0, y=-18},
+      width = self.categorySelector,
     })
   end,
 
-  close = function(self, anchor)
+  close = function(self, anchor, selection)
     if anchor and self.anchor ~= anchor then
       return
     end
-    if self.callback then
-      invoke(self.callback, false)
+
+    if selection then
+      if self.onSelect then
+        invoke(self.onSelect, selection)
+      end
+    elseif self.onCancel then
+      invoke(self.onCancel)
     end
-    self.callback, self.anchor = nil, nil
+
+    self.anchor, self.onCancel, self.onSelect = nil, nil, nil
     self:Hide()
   end,
 
-  display = function(self, callback, anchor, category, set)
-    if ep.icon:deployIconsets() then
-      for token in iterkeys(ep.icon.sets, true) do
-        self.setDropbox:addOption(token, ep.icon.sets[token].title)
-      end
-    end
-
+  display = function(self, params)
     if #self.buttons == 0 then
       self:layout()
     end
 
-    if not self.callback then
-      self.callback, self.anchor = callback, anchor
-      if self.anchor then
-        self:position(anchor, {edge='TOPLEFT', hook='TOPRIGHT'})
-      end
-      self:filter(category or 'ii', set or 'all')
-      self:Show()
+    if self.onCancel then
+      invoke(self.onCancel)
     end
+
+    params = params or {}
+    self.anchor = params.anchor
+    self.onCancel = params.onCancel
+    self.onSelect = params.onSelect
+
+    if params.anchor then
+      self:position(params.anchor, {x=3})
+    end
+
+    self:filter(params.category or 'ii', params.iconset or 'all')
+    self:Show()
   end,
 
   filter = function(self, category, set)
@@ -584,7 +592,7 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
       self.count = 0
     end
 
-    self:_updateDropboxes()
+    self.categorySelector:SetText(ep.icon.categories[self.category].title)
     self:_updateScrollbar()
     self:update(0)
   end,
@@ -633,23 +641,15 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
     end
   end,
 
-  select = function(self, identifier)
-    if self.callback then
-      invoke(self.callback, identifier)
-      self.callback, self.anchor = nil, nil
-      self:Hide()
-    end
-  end,
-
   setCategory = function(self, category)
     if category ~= self.category then
       self:filter(category)
     end
   end,
 
-  setSet = function(self, set)
-    if set ~= self.set then
-      self:filter(nil, set)
+  setIconSet = function(self, iconset)
+    if iconset ~= self.iconset then
+      self:filter(nil, iconset)
     end
   end,
 
@@ -670,10 +670,6 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
     else
       self.scrollbar:SetValue(offset)
     end
-  end,
-
-  _updateDropboxes = function(self)
-    self.categoryDropbox:SetText(ep.icon.categories[self.category].title)
   end,
 
   _updateScrollbar = function(self)

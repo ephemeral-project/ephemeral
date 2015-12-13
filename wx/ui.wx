@@ -477,6 +477,14 @@ Frame epPanel(epFrame, enableMouse, virtual):
       *if button == 'LeftButton' then
       *  self:GetParent():stopResizing()
       *end
+  Frame $parentInteractionOverlay(.interactionOverlay, frameStrata: HIGH, enableMouse, setAllPoints, hidden):
+    !Overlay:
+      Texture:
+        !TopLeft(4, -4)
+        !BottomRight(-4, 4)
+        !Color(0.2, 0.2, 0.2, 0.35)
+    OnMouseDown:
+      *self:GetParent():deactivateOverlay(false, true)
   OnMousedown:
     *ep.event(':controlActivated', self)
 

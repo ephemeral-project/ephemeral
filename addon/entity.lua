@@ -26,13 +26,14 @@ end
 
 ep.InstanceType = {
   __index = function(object, field)
+    local value
     if field:sub(1, 1) == '_' then
-      local value = rawget(object, field)
+      value = rawget(object, field)
       if value == nil then
         value = rawget(object, '__entity')[field]
       end
     else
-      local value = rawget(object, '__instance')[field]
+      value = rawget(object, '__instance')[field]
       if value == nil then
         value = rawget(object, '__entity')[field]
       end
@@ -170,13 +171,13 @@ ep.entities = {
     end
 
     local module, name = split(tag, ':', 1)
-    if #module == 0 then
-      local definition = self.definitions[name]
+    if not name then
+      local definition = self.definitions[module]
       if not definition then
         return exception('InvalidTag')
       end
 
-      entity = definition(definition.default or {})
+      entity = definition.baseEntity or definition({})
       self.cache[tag] = entity
       return entity
     end

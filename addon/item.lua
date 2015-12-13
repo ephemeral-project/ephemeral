@@ -1,6 +1,6 @@
-local _, capitalize, ceil, exception, exceptional, floor, split, tcopy
+local _, capitalize, ceil, exception, exceptional, invoke, floor, split, tcopy
     = ep.localize, ep.capitalize, math.ceil, ep.exception, ep.exceptional,
-      math.floor, ep.split, ep.tcopy
+      ep.invoke, math.floor, ep.split, ep.tcopy
 
 local QUALITY_TOKENS = {
   p = _'Poor',
@@ -54,13 +54,14 @@ local SLOT_MENU_ITEMS = {
 
 --[[
 
-Item Locations;
-  "s"         stash
-  "b:<id>"    character backpack
-  "e:<id>"    character equipment
-  "c:<id>"    container
-  "n:<id>"    named collection
-  "w"         in the world
+Item Locations:
+  stash       "st"
+  backpack    "bk:<char-id>[:<pos>]"
+  equipment   "eq:<char-id>[:<slot>:<pos>]"
+  container   "cn:<item-id>[:<pos>]"
+  socket      "sk:<item-id>[:<socket>:<pos>]"
+  collection  "cl:<clct-id>[:<pos>]"
+  spatial     "sp:<loc-id"
 
 ]]
 
@@ -68,8 +69,7 @@ ep.items = {
   name = 'ephemeral:items',
   description = _'Ephemeral Items',
 
-  definitions = {},
-  locationProviders = {},
+  locationManagers = {},
 
   classMenuItems = {},
   qualityMenuItems = QUALITY_MENU_ITEMS,
@@ -83,57 +83,41 @@ ep.items = {
       if definition.description then
         entry.tooltip = {c=definition.description, delay=1}
       end
-
       tinsert(self.classMenuItems, entry)
-      self.definitions[definition.cl] = definition
     end
 
-    for name, provider in pairs(ep.deployComponents('locationProvider')) do
-      if not exceptional(provider) and not self.locationProviders[name] then
-        self.locationProviders[name] = provider
+    for name, manager in pairs(ep.deployComponents('ItemLocationManager')) do
+      if not exceptional(manager) and not self.locationManagers[name] then
+        self.locationManagers[name] = manager
       end
     end
 
-    for name, provider in pairs(self.locationProviders) do
-      provider:deploy()
+    for name, manager in pairs(self.locationManagers) do
+      manager:deploy()
     end
   end,
 
   displayLocation = function(self, location)
-    local provider = self:getLocationProvider(location)
-    if not provider then
+    local manager = self:getLocationManager(location)
+    if not manager then
       return exception('InvalidLocation')
     end
 
-    location = provider:validateLocation(location)
-    if exceptional(location) then
+    location = manager:validateLocation(location)
+    if not exceptional(location) then
+      manager:displayLocation(location)
+    else
       return location
     end
-
-    provider:displayLocation(location)
   end,
 
-  getBackpack = function(self, character)
-    if not character.backpack then
-      character.backpack = {n = 0, i = 0}
-    end
-    return character.backpack
-  end,
-
-  getEquipment = function(self, character)
-    if not character.equipment then
-      character.equipment = {}
-    end
-    return character.equipment
-  end,
-
-  getLocationProvider = function(self, location)
+  getLocationManager = function(self, location)
     if type(location) == 'string' then
       location = select(1, split(location, ':', 1))
     else
       location = location.type
     end
-    return self.locationProviders[location]
+    return self.locationManagers[location]
   end,
 
   refreshInterfaces = function(self)
@@ -141,7 +125,7 @@ ep.items = {
   end
 }
 
-ep.Item = ep.entities:define('ep.Item', ep.entity, {
+ep.Item = ep.entities:define('ep.Item', ep.Entity, {
   cl = 'it',
   noun = _'item',
   plural = _'items',
@@ -164,28 +148,23 @@ ep.Item = ep.entities:define('ep.Item', ep.entity, {
   end,
 
   move = function(self, location)
-    local targetProvider = ep.items:getLocationProvider(location.type)
-    if not targetProvider then
-      return exception('InvalidLocation')
+    local targetManager = ep.items:getLocationManager(location)
+    if not targetManager then
+      return exception('InvalidLocationType')
     end
 
-    local targetLocation = targetProvider:validateLocation(self, location)
+    local targetLocation = targetManager:validateLocation(location)
     if exceptional(targetLocation) then
       return targetLocation
     end
 
-    local sourceLocation, sourceProvider, approval
+    local sourceLocation, sourceManager, approval
     if self.lc then
-      sourceProvider = ep.items:getLocationProvider(self.lc)
-      if sourceProvider then
-        sourceLocation = sourceProvider:parseLocation(self.lc)
+      sourceManager = ep.items:getLocationManager(self.lc)
+      if sourceManager then
+        sourceLocation = sourceManager:parseLocation(self.lc)
         if not exceptional(sourceLocation) then
-          approval = sourceProvider:approveRemoval(self, sourceLocation)
-          if exceptional(approval) then
-            return approval
-          end
-
-          approval = self:approveRemoval(sourceLocation)
+          approval = sourceManager:approveRemoval(sourceLocation, self)
           if exceptional(approval) then
             return approval
           end
@@ -195,29 +174,26 @@ ep.Item = ep.entities:define('ep.Item', ep.entity, {
       end
     end
 
-    approval = targetProvider:approveMove(self, targetLocation)
+    approval = targetManager:approveAddition(targetLocation, self)
     if exceptional(approval) then
       return approval
     end
 
     if sourceLocation then
-      sourceProvider:remove(self, sourceLocation)
+      sourceManager:removeItem(sourceLocation, self)
     end
 
-    self.lc = targetProvider:move(self, targetLocation)
+    self.lc = targetManager:addItem(targetLocation, self)
     ep.items:refreshInterfaces()
   end
 })
 
-ep.Item.default = ep.Item({
+ep.Item.baseEntity = ep.Item({
   ic = 'ii',
   qu = 'c',
-  sf = 'it',
-  wt = 0.0,
 })
 
-
-ep.ItemCollectorIcon = ep.control('ep.ItemCollectorIcon', 'epItemIcon', ep.iconbox)
+ep.ItemCollectorIcon = ep.control('ep.ItemCollectorIcon', 'epItemIcon', ep.IconBox)
 
 ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
   collectors = {},
@@ -256,11 +232,11 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
     self:Hide()
   end,
 
-  display = function(cls, context)
+  display = function(cls, location, context)
     local collectors, collector, id = cls.collectors
     for i, frame in ipairs(collectors) do
-      if frame:IsShown() and frame.context then
-        if frame.context.location == context.location then
+      if frame:IsShown() and frame.location then
+        if frame.location.token == location.token then
           return
         end
       else
@@ -275,7 +251,7 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
       collectors[id] = collector
       collector:layout()
     end
-    collector:show(context)
+    collector:show(location, context)
   end,
 
   filter = function(self)
@@ -416,9 +392,15 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
   selectOption = function(self, value)
   end,
 
-  show = function(self, context)
-    self.context = context
-    self.items = context.items
+  setIcon = function(self, value, isUserInput)
+    if isUserInput and self.context.iconCallback then
+      invoke(self.context.iconCallback, value)
+    end
+  end,
+
+  show = function(self, location, context)
+    self.location, self.context = location, context
+    self.items = location.items
 
     self.icon:setValue(context.icon or self.defaultIcon)
     if context.iconCallback then

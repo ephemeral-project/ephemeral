@@ -33,7 +33,7 @@ Panel epItemCollector(^UIParent, frameStrata: DIALOG, hidden, virtual):
   IconBox $parentIcon(.icon):
     !TopLeft(10, -31)
     OnLoad:
-      *ep.IconBox(self, {enableBrowsing=true})
+      *ep.IconBox(self, {onValueChanged={ep.ItemCollector.setIcon, self:GetParent()}})
   Frame $parentContainer(.container):
     !TopLeft(10, -73)
     !BottomRight(-33, 33)
@@ -68,8 +68,6 @@ Panel epItemEditor(^UIParent, frameStrata: HIGH, hidden, virtual):
   IconBox $parentIcon(.f_icon):
     !Size(42, 42)
     !TopLeft(10, -31)
-    OnClick:
-      *epIconBrowser:display({self.set, self}, self:parent())
   EditBox $parentName(.f_name):
     !TopLeft(56, -31)
     !TopRight(-159, -31)

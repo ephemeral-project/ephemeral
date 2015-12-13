@@ -15,6 +15,18 @@ local _referenceFrames = {
   slider = 'ReputationListScrollFrameScrollBar',
 }
 
+ep.ui = {
+  name = 'ephemeral:ui',
+  version = 1,
+
+  deploy = function(self)
+    ep.icon:deployIconsets()
+    for token in ep.iterkeys(ep.icon.sets, true) do
+      epIconBrowser.iconSetSelector:addOption(token, ep.icon.sets[token].title)
+    end
+  end
+}
+
 ep.ControlType = ep.tcopy(ep.metatype)
 
 ep.ControlType.__call = function(proto, object, ...)
@@ -243,6 +255,16 @@ ep.BaseFrame = ep.control('ep.Baseframe', 'epFrame', ep.BaseControl, 'frame', {
     self:initializeBackground()
   end,
 
+  activateOverlay = function(self)
+    local overlay = self.interactionOverlay
+    if not overlay then
+      overlay = CreateFrame('Frame', self.name..'InteractionOverlay', self, epInteractionOverlay)
+      overlay:SetAllPoints()
+      self.interactionOverlay = overlay
+    end
+    overlay:Show()
+  end,
+
   initializeBackground = function(self)
     self.background:SetTexture('Interface\\AddOns\\ephemeral\\textures\\panel-background', true)
     self:scaleBackground()
@@ -334,10 +356,46 @@ ep.BasePanel = ep.control('ep.BasePanel', 'epPanel', ep.BaseFrame, nil, {
     end
   end,
 
-  close = function(self)
-    self:Hide()
+  activateOverlay = function(self, callback, allowClick)
+    self.overlayParams = {callback, allowClick}
+    self.interactionOverlay:Show()
   end,
 
+  close = function(self)
+    self:Hide()
+    self:deactivateOverlay()
+  end,
+
+  confirmWithOverlay = function(self, params, allowClick)
+    local callback = params.callback
+    params.callback = function(value)
+      self:deactivateOverlay(true)
+      if callback then
+        invoke(callback, value)
+      end
+    end
+
+    self:activateOverlay(function()
+      epConfirmation:close()
+    end, allowClick)
+
+    epConfirmation:display(params)
+  end,
+
+  deactivateOverlay = function(self, suppressEvent, isClick)
+    local params = self.overlayParams
+    if params then
+      if isClick and not params[2] then
+        return
+      end
+      if not suppressEvent then
+        invoke(params[1])
+      end
+      self.overlayParams = nil
+    end
+    self.interactionOverlay:Hide()
+  end,
+  
   setTitle = function(self, title)
     self.title:SetText(title)
   end,
@@ -376,7 +434,7 @@ ep.BasePanel = ep.control('ep.BasePanel', 'epPanel', ep.BaseFrame, nil, {
       invoke(self.p_onresize, self, 'after')
     end
     self:scaleBackground()
-  end
+  end,
 })
 
 function ep.panel(name, structure, properties)
@@ -721,15 +779,12 @@ ep.icon = ep.pseudotype{
   end,
 
   deployIconsets = function(self)
-    if tempty(self.icons) then
-      for name, component in pairs(ep.deployComponents('iconset')) do
-        if not exceptional(component) then
-          self:_deployIconset(name, component)
-        else
-          -- log these
-        end
+    for name, component in pairs(ep.deployComponents('iconset')) do
+      if not exceptional(component) then
+        self:_deployIconset(name, component)
+      else
+        -- log these
       end
-      return true
     end
   end,
 

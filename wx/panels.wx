@@ -11,7 +11,7 @@ Frame epConfirmation(epFrame, ^UIParent, frameStrata: DIALOG, hidden):
   OnLoad:
     *ep.Confirmation(self)
 
-Panel epConsole(^UIParent, frameStrata: HIGH, hidden):
+Panel epConsole(^UIParent, frameStrata: MEDIUM, hidden):
   !Size(400, 400)
   !Center
   TabbedFrame $parentTabs(.tabs):
@@ -38,7 +38,7 @@ Panel epConsole(^UIParent, frameStrata: HIGH, hidden):
   OnLoad:
     *ep.Console(self)
 
-Panel epColorBrowser(^UIParent, frameStrata: HIGH, hidden):
+Panel epColorBrowser(^UIParent, frameStrata: MEDIUM, hidden):
   !Size(378, 298)
   !Center
   !Border:
@@ -236,7 +236,7 @@ Frame epDrawer(^UIParent, frameStrata: DIALOG):
     OnLoad:
       *ep.Drawer(self)
 
-Panel epHome(^UIParent, frameStrata: HIGH, hidden):
+Panel epHome(^UIParent, frameStrata: MEDIUM, hidden):
   !Size(400, 300)
   !Center
   TabbedFrame $parentTabs(.tabs):
@@ -271,16 +271,16 @@ Panel epHome(^UIParent, frameStrata: HIGH, hidden):
 IconBox epIconBrowserButton(virtual):
   OnClick:
     *if IsControlKeyDown() then
-    *  d(self.icon..': '..self.texture:GetTexture())
+    *  d(self.value..': '..self.texture:GetTexture())
     *else
-    *  epIconBrowser:select(self.icon)
+    *  epIconBrowser:close(nil, self.value)
     *end
   OnLoad:
     *ep.IconBrowserButton(self)
   OnMouseWheel:
     *epIconBrowserScrollBar:move(-delta)
 
-Panel epIconBrowser(^UIParent, frameStrata: HIGH, hidden):
+Panel epIconBrowser(^UIParent, frameStrata: MEDIUM, hidden):
   !Size(222, 312)
   !Center
   Frame $parentContainer(.container):
@@ -296,16 +296,14 @@ Panel epIconBrowser(^UIParent, frameStrata: HIGH, hidden):
     !BottomRight(-10, 49)
     OnLoad:
       *ep.Slider(self, {callback={ep.IconBrowser.update, self:GetParent()}})
-  DropBox $parentSet(.setDropbox, text: 'All Sets'):
+  DropBox $parentIconSet(.iconSetSelector, text: 'All Sets'):
     !BottomLeft(10, 10)
     !BottomRight(-125, 10)
     OnLoad:
       *ep.DropBox(self, {
-      *  onValueChanged = {ep.IconBrowser.setSet, self:GetParent()},
-      *  options = {{'all', 'All Sets'}},
-      *  initialValue = 'all',
-      *})
-  DropBox $parentCategory(.categoryDropbox, text: 'All Icons'):
+      *  onValueChanged = {ep.IconBrowser.setIconSet, self:GetParent()},
+      *  options = {{'all', 'All Sets'}}, defaultValue = 'all'})
+  DropBox $parentCategory(.categorySelector, text: 'All Icons'):
     !Size(111, 19)
     !BottomRight(-10, 10)
     OnClick:
@@ -354,7 +352,7 @@ Frame epTestRibbon(epRibbon, ^UIParent, hidden):
     *ep.Ribbon(self)
     *--self:display()
 
-Panel epTest(^UIParent, frameStrata: HIGH, hidden):
+Panel epTest(^UIParent, frameStrata: MEDIUM, hidden):
   !Size(400, 400)
   !Center
   Button $parentButton(text: 'Test This'):
