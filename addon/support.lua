@@ -815,12 +815,14 @@ function ep.tcontains(tbl, value)
   return false
 end
 
-function ep.tcopy(tbl)
-  local result = {}
+function ep.tcopy(tbl, params, overwriteParams)
+  params = params or {}
   for key, value in pairs(tbl) do
-    result[key] = value
+    if overwriteParams or not params[key] then
+      params[key] = value
+    end
   end
-  return result
+  return params
 end
 
 function ep.tcount(tbl, value, threshold)

@@ -2,6 +2,12 @@ local _, capitalize, ceil, exception, exceptional, invoke, floor, split, tcopy
     = ep.localize, ep.capitalize, math.ceil, ep.exception, ep.exceptional,
       ep.invoke, math.floor, ep.split, ep.tcopy
 
+function itemreset()
+  local id, item = next(ep.instances.instances)
+  item.lc = 'bk:'..ep.character.id..':1'
+  ep.character.backpack = {[1]=id, n=1, i=1}
+end
+
 local QUALITY_TOKENS = {
   p = _'Poor',
   c = _'Common',
@@ -52,6 +58,10 @@ local SLOT_MENU_ITEMS = {
   {'sh', _'Shoulders'}, {'sk', _'Skin'}, {'wa', _'Waist'}, {'wr', _'Wrists'}
 }
 
+local CONTEXT_MENU_ITEMS = {
+  use = {label=_'Use', value='use'}
+}
+
 --[[
 
 Item Locations:
@@ -70,6 +80,7 @@ ep.items = {
   description = _'Ephemeral Items',
 
   locationManagers = {},
+  registeredInterfaces = {},
 
   classMenuItems = {},
   qualityMenuItems = QUALITY_MENU_ITEMS,
@@ -97,15 +108,18 @@ ep.items = {
     end
   end,
 
-  displayLocation = function(self, location)
-    local manager = self:getLocationManager(location)
+  displayLocation = function(self, location, closeIfOpen)
+    local manager = location.manager
     if not manager then
-      return exception('InvalidLocation')
+      manager = self:getLocationManager(location)
+      if not manager then
+        return exception('InvalidLocation')
+      end
     end
 
     location = manager:validateLocation(location)
     if not exceptional(location) then
-      manager:displayLocation(location)
+      manager:displayLocation(location, closeIfOpen)
     else
       return location
     end
@@ -120,9 +134,41 @@ ep.items = {
     return self.locationManagers[location]
   end,
 
-  refreshInterfaces = function(self)
+  parseLocation = function(self, location)
+    local manager = self.locationManagers[select(1, split(location, ':', 1))]
+    if manager then
+      return manager:parseLocation(location)
+    else
+      return exception('InvalidLocationType')
+    end
+  end,
 
-  end
+  refreshInterfaces = function(self)
+    for interface, method in pairs(self.registeredInterfaces) do
+      if interface:IsShown() then
+        method(interface)
+      end
+    end
+  end,
+
+  registerInterface = function(self, interface, method)
+    self.registeredInterfaces[interface] = method
+  end,
+
+  validateLocation = function(self, location)
+    if location.valid then
+      return location
+    end
+
+    local manager = location.manager
+    if not manager then
+      manager = self.locationManagers[location.type]
+      if not manager then
+        return exception('InvalidLocationType')
+      end
+    end
+    return manager:validateLocation(location)
+  end,
 }
 
 ep.Item = ep.entities:define('ep.Item', ep.Entity, {
@@ -147,45 +193,117 @@ ep.Item = ep.entities:define('ep.Item', ep.Entity, {
     
   end,
 
-  move = function(self, location)
-    local targetManager = ep.items:getLocationManager(location)
-    if not targetManager then
-      return exception('InvalidLocationType')
-    end
-
-    local targetLocation = targetManager:validateLocation(location)
-    if exceptional(targetLocation) then
-      return targetLocation
-    end
-
-    local sourceLocation, sourceManager, approval
-    if self.lc then
-      sourceManager = ep.items:getLocationManager(self.lc)
-      if sourceManager then
-        sourceLocation = sourceManager:parseLocation(self.lc)
-        if not exceptional(sourceLocation) then
-          approval = sourceManager:approveRemoval(sourceLocation, self)
-          if exceptional(approval) then
-            return approval
-          end
-        else
-          sourceLocation = nil
-        end
+  exchange = function(self, targetLocation, counterpart, sourceLocation, noRefresh)
+    local approval
+    if targetLocation then
+      targetLocation = ep.items:validateLocation(targetLocation)
+      if exceptional(targetLocation) then
+        return targetLocation
       end
     end
 
-    approval = targetManager:approveAddition(targetLocation, self)
-    if exceptional(approval) then
-      return approval
+    if sourceLocation then
+      sourceLocation = ep.items:validateLocation(sourceLocation)
+    elseif self.lc then
+      sourceLocation = ep.items:parseLocation(self.lc)
+    end
+
+    if exceptional(sourceLocation) then
+      return sourceLocation
+    end
+
+    local sourceManager = sourceLocation.manager
+    if sourceLocation then
+      approval = sourceManager:approveRemoval(sourceLocation, self, targetLocation)
+      if exceptional(approval) then
+        return approval
+      end
+
+      approval = sourceManager:approveAddition(sourceLocation, counterpart, targetLocation)
+      if exceptional(approval) then
+        return approval
+      end
+    end
+
+    local targetManager = targetLocation.manager
+    if targetLocation then
+      approval = targetManager:approveRemoval(targetLocation, counterpart, sourceLocation)
+      if exceptional(approval) then
+        return approval
+      end
+
+      approval = targetManager:approveAddition(targetLocation, self, sourceLocation)
+      if exceptional(approval) then
+        return approval
+      end
     end
 
     if sourceLocation then
       sourceManager:removeItem(sourceLocation, self)
+      counterpart.lc = sourceManager:addItem(sourceLocation, counterpart)
+    else
+      counterpart.lc = nil
     end
 
-    self.lc = targetManager:addItem(targetLocation, self)
-    ep.items:refreshInterfaces()
-  end
+    if targetLocation then
+      targetManager:removeItem(targetLocation, counterpart)
+      self.lc = targetManager:addItem(targetLocation, self)
+    else
+      self.lc = nil
+    end
+
+    if not noRefresh then
+      ep.items:refreshInterfaces()
+    end
+  end,
+
+  move = function(self, targetLocation, sourceLocation, noRefresh)
+    local approval
+    if targetLocation then
+      targetLocation = ep.items:validateLocation(targetLocation)
+      if exceptional(targetLocation) then
+        return targetLocation
+      end
+    end
+
+    if sourceLocation then
+      sourceLocation = ep.items:validateLocation(sourceLocation)
+    elseif self.lc then
+      sourceLocation = ep.items:parseLocation(self.lc)
+    end
+
+    if sourceLocation then
+      if not exceptional(sourceLocation) then
+        approval = sourceLocation.manager:approveRemoval(sourceLocation, self, targetLocation)
+        if exceptional(approval) then
+          return approval
+        end
+      else
+        sourceLocation = nil
+      end
+    end
+
+    if targetLocation then
+      approval = targetLocation.manager:approveAddition(targetLocation, self, sourceLocation)
+      if exceptional(approval) then
+        return approval
+      end
+    end
+
+    if sourceLocation then
+      sourceLocation.manager:removeItem(sourceLocation, self)
+    end
+
+    if targetLocation then
+      self.lc = targetLocation.manager:addItem(targetLocation, self)
+    else
+      self.lc = nil
+    end
+
+    if not noRefresh then
+      ep.items:refreshInterfaces()
+    end
+  end,
 })
 
 ep.Item.baseEntity = ep.Item({
@@ -193,7 +311,161 @@ ep.Item.baseEntity = ep.Item({
   qu = 'c',
 })
 
-ep.ItemCollectorIcon = ep.control('ep.ItemCollectorIcon', 'epItemIcon', ep.IconBox)
+ep.ItemIconBox = ep.control('ep.ItemIconBox', 'epItemIconBox', ep.IconBox, nil, {
+  wantsSelectionDrops = true,
+
+  initialize = function(self, container, id)
+    ep.IconBox.initialize(self)
+    self.container = container
+    self.id = id
+
+    self:RegisterForClicks('LeftButtonUp', 'MiddleButtonUp', 'RightButtonUp')
+    self:RegisterForDrag('LeftButton')
+  end,
+
+  click = function(self, mouseButton)
+    local shifted, item, selection = IsShiftKeyDown(), self.item, ep.currentSelection
+    if selection then
+      if mouseButton == 'LeftButton' then
+        if selection.button == self then
+          ep.clearSelection(selection)
+        elseif selection.item then
+          self:dropSelection(selection)
+        end
+      elseif mouseButton == 'RightButton' then
+        ep.clearSelection()
+      end
+    elseif item then
+      if mouseButton == 'LeftButton' then
+        if shifted then
+          self:selectSplit()
+        else
+          ep.claimSelection({button=self, item=item}, item.ic)
+        end
+      elseif mouseButton == 'MiddleButton' then
+        if shifted then
+          self:editItem()
+        else
+          self:useItem()
+        end
+      elseif mouseButton == 'RightButton' then
+        if shifted then
+
+        else
+          self:showItemMenu()
+        end
+      end
+    else
+      if mouseButton == 'RightButton' then
+        self:showCreateMenu()
+      end
+    end
+  end,
+
+  doubleClick = function(self, mouseButton)
+    local item = self.item
+    if item then
+      if mouseButton == 'LeftButton' then
+        self:useItem()
+      elseif movenent == 'RightButton' then
+        self:editItem()
+      end
+    end
+  end,
+
+  drag = function(self)
+    local shifted, item = IsShiftKeyDown(), self.item
+    if item then
+      selection = {button=self, item=item}
+      if shifted and item.sk and item.qn and item.qn > 1 then
+        selection.split = floor(item.qn / 2)
+      end
+      ep.claimSelection(selection, item.ic)
+    end
+  end,
+
+  drop = function(self)
+    local selection = ep.currentSelection
+    if selection then
+      if selection.button == self then
+        ep.clearSelection(selection)
+      elseif selection.item then
+        self:dropSelection(selection)
+      end
+    else
+      local candidate = {GetCursorInfo()}
+      if #candidate > 0 then
+        -- todo handle this drop
+      end
+    end
+  end,
+
+  dropSelection = function(self, selection)
+    local sourceLocation
+    if selection.button then
+      sourceLocation = selection.button.location
+    end
+
+    local item, result = self.item
+    if item then
+      result = selection.item:exchange(self.location, item, sourceLocation, true)
+      if not exceptional(result) then
+        self:setItem(selection.item)
+        selection.button:setItem(item)
+        ep.clearSelection(selection)
+      else
+        D(result)
+        -- TODO
+      end
+    else
+      result = selection.item:move(self.location, sourceLocation, true)
+      if not exceptional(result) then
+        self:setItem(selection.item)
+        if selection.button then
+          selection.button:setItem(nil)
+        end
+        ep.clearSelection(selection)
+      else
+        D(result)
+        -- TODO
+      end
+    end
+  end,
+
+  enter = function(self)
+  end,
+
+  leave = function(self)
+  end,
+
+  setItem = function(self, item)
+    self.item = item
+    if item then
+      self:setValue(item.ic)
+    else
+      self:setValue(nil)
+    end
+  end,
+
+  setLocation = function(self, location)
+    self.location = location
+  end,
+
+  showItemMenu = function(self)
+
+  end,
+
+  spin = function(self, delta)
+    if IsShiftKeyDown() then
+      local item = self.item
+      if item and item.sk then
+
+      end
+    elseif self.container.scrollbar then
+      self.container.scrollbar:move(-delta)
+    end
+  end
+})
 
 ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
   collectors = {},
@@ -225,6 +497,8 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
       location = {anchor = self.options, x = 0, y = -18},
       width = self.options
     })
+
+    ep.items:registerInterface(self, self.update)
   end,
 
   close = function(self)
@@ -232,11 +506,14 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
     self:Hide()
   end,
 
-  display = function(cls, location, context)
+  display = function(cls, location, context, closeIfOpen)
     local collectors, collector, id = cls.collectors
     for i, frame in ipairs(collectors) do
       if frame:IsShown() and frame.location then
         if frame.location.token == location.token then
+          if closeIfOpen then
+            frame:close()
+          end
           return
         end
       else
@@ -272,8 +549,7 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
       end
     elseif self.icons > buttons then
       for i = buttons + 1, self.icons do
-        button = ep.ItemCollectorIcon(self.name..'b'..i, self.container)
-        button.container = self
+        button = ep.ItemIconBox(self.name..'b'..i, self.container, self, i)
         tinsert(self.buttons, button)
       end
     end
@@ -294,84 +570,16 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
     end
   end,
 
-  dropSelection = function(self, button)
-    
-  end,
-
-  manipulate = function(self, button, event, movement)
-    local shifted, item = IsShiftKeyDown(), button.item
-    if event == 'click' then
-      if ep.selection then
-        if movement == 'LeftButton' then
-          if ep.selection.button == button then
-            ep.clearSelection()
-          elseif ep.selection.item then
-            self:dropSelection(button)
-          end
-        elseif movement == 'RightButton' then
-          ep.clearSelection()
-        end
-      elseif item then
-        if movement == 'LeftButton' then
-          if shifted then
-            self:selectSplit(button)
-          else
-            ep.claimSelection({button=button,
-              item=item}, item.ic)
-          end
-        elseif movement == 'MiddleButton' then
-          if shifted then
-            self:editItem(button)
-          else
-            self:useItem(button)
-          end
-        elseif movement == 'RightButton' then
-          if shifted then
-
-          else
-            self:showMenu(button)
-          end
-        end
+  dropSelection = function(self, selection, button)
+    local result
+    if button.item then
+      
+    else
+      result = selection.item:move(button.location)
+      if exceptional(result) then
+        D(result)
       else
-        if movement == 'RightButton' then
-          self:showCreateMenu(button)
-        end
-      end
-    elseif event == 'dblclick' then
-      if item then
-        if movement == 'LeftButton' then
-          self:useItem(button)
-        elseif movement == 'RightButton' then
-          self:editItem(button)
-        end
-      end
-    elseif event == 'drag' then
-      if item then
-        local selection = {button=button, item=item}
-        if shifted and item.sk and item.qn and item.qn > 1 then
-          selection.split = floor(item.qn / 2)
-        end
-        ep.claimSelection(selection, item.ic)
-      end
-    elseif event == 'drop' then
-      if ep.selection then
-        if ep.selection.button == button then
-          ep.clearSelection()
-        elseif ep.selection.item then
-          self:dropSelection(button)
-        end
-      end
-    elseif event == 'enter' then
-
-    elseif event == 'leave' then
-
-    elseif event == 'wheel' then
-      if shifted then
-        if item and item.sk then
-
-        end
-      elseif self.scrollbar then
-        self.scrollbar:move(-movement)
+        ep.clearSelection(selection)
       end
     end
   end,
@@ -418,24 +626,29 @@ ep.ItemCollector = ep.panel('ep.ItemCollector', 'epItemCollector', {
 
   update = function(self, offset)
     offset = floor(offset or self.scrollbar:GetValue())
-    if self.scrollbar:GetValue() == offset then
-      local idx, button, item = (offset * self.cols) + 1
-      for i = 1, self.icons, 1 do
-        button = self.buttons[i]
-        if self.items[idx] then
-          item = ep.instances:get(self.items[idx])
-          if item then
-            button:setValue(item.ic)
-            button.item, button.idx = item, idx
-          end
-        else
-          button:setValue(nil)
-          button.item, button.idx = nil, nil
-        end
-        idx = idx + 1
-      end
-    else
+    if self.scrollbar:GetValue() ~= offset then
       self.scrollbar:SetValue(offset)
+      return
+    end
+
+    local buttons, items, button, construct, idx, location, item = self.buttons, self.items
+    construct = self.location.manager:createConstructor(self.location)
+
+    idx = (offset * self.cols) + 1
+    for i = 1, self.icons, 1 do
+      button, item = buttons[i], items[idx]
+      button:setLocation(construct(idx))
+      if item then
+        item = ep.instances:get(item)
+        if item then
+          button:setItem(item)
+        else
+          -- todo handle this condition
+        end
+      else
+        button:setItem(nil)
+      end
+      idx = idx + 1
     end
   end,
 

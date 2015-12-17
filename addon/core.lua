@@ -12,21 +12,8 @@ local _uniqidEntropy = 0
 
 ep.events = events
 ep.invocations = invocations
-ep.selection = nil
 
 ep.Locale:bootstrap()
-
-function ep.claimSelection(selection, icon)
-  ep.selection = selection
-  epIconCursor:activate(icon or selection.icon)
-end
-
-function ep.clearSelection(selection)
-  if not selection or ep.selection == selection then
-    ep.selection = nil
-    epIconCursor:deactivate()
-  end
-end
 
 function ep.event(event, ...)
   local subscriptions, invoke, invocation = events[event], invoke

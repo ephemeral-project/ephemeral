@@ -45,7 +45,7 @@ frame_type_equivalents = {
 
 implicit_flags = ['enableMouse', 'hidden', 'setAllPoints', 'virtual']
 anchor_macros = ['bottomleft', 'bottomright', 'center', 'left', 'right', 'top', 'topleft', 'topright']
-layer_macros = ['artwork', 'background', 'border', 'overlay']
+layer_macros = ['artwork', 'background', 'border', 'overlay', 'highlight']
 
 def _evaluate_macro(macro, block, children):
     args = block.get('__args__', [])

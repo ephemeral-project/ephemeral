@@ -1,26 +1,20 @@
-IconBox epItemIcon(virtual):
+IconBox epItemIconBox(virtual):
   OnClick:
-    *self.container:manipulate(self, 'click', button)
+    *self:click(button)
   OnDragStart:
-    *self.container:manipulate(self, 'drag', button)
-  OnDragStop:
-    *self.container:manipulate(self, 'drop')
-  OnDoubleclick:
-    *self.container:manipulate(self, 'dblclick', button)
+    *self:drag()
+  OnDoubleClick:
+    *self:doubleClick(button)
   OnEnter:
-    *self.container:manipulate(self, 'enter')
+    *self:enter()
   OnLeave:
-    *self.container:manipulate(self, 'leave')
+    *self:leave()
   OnLoad:
-    *self:RegisterForClicks('LeftButtonUp', 'MiddleButtonUp', 'RightButtonUp')
-    *self:RegisterForDrag('LeftButton')
-    *ep.IconBox(self)
+    *ep.ItemIconBox(self)
   OnMouseWheel:
-    *self.container:manipulate(self, 'wheel', delta)
-    *local scrollbar = self:GetParent().scrollbar
-    *if scrollbar then
-    *  scrollbar:move(-delta)
-    *end
+    *self:spin(delta)
+  OnReceiveDrag:
+    *self:drop()
 
 Panel epItemCollector(^UIParent, frameStrata: DIALOG, hidden, virtual):
   !Size(207, 354)
@@ -54,7 +48,7 @@ Panel epItemCollector(^UIParent, frameStrata: DIALOG, hidden, virtual):
     !Size(80, 19)
     !BottomRight(-10, 10)
     OnClick:
-      *self.menu:toggle()
+      *self.menu:display(nil, true)
   OnLoad:
     *ep.ItemCollector(self)
 

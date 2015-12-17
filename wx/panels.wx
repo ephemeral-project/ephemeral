@@ -159,6 +159,8 @@ Button epDrawerButton(NoInherit, virtual):
       !TopRight(10, 4)
       !BottomRight(10, -3)
   !HitRectInsets(-2, -2, -2, -2)
+  OnMouseDown:
+    *ep.event(':controlActivated', self)
 
 Frame epDrawer(^UIParent, frameStrata: DIALOG):
   !Size(400, 200)
@@ -188,6 +190,8 @@ Frame epDrawer(^UIParent, frameStrata: DIALOG):
       NormalTexture(epBackpackIcon)
       HighlightTexture(epBackpackHighlightedIcon, alphaMode: ADD)
       DisabledTexture(epBackpackDisabledIcon)
+      OnClick:
+        *ep.items:displayLocation({type='bk', character=ep.character}, true)
       OnLoad:
         *ep.Button(self, {tooltip={c=ep_'$drawer-backpack-button-tooltip',
         *  location={hook='BOTTOMLEFT', x=-7, y=-1}}})
@@ -307,7 +311,7 @@ Panel epIconBrowser(^UIParent, frameStrata: MEDIUM, hidden):
     !Size(111, 19)
     !BottomRight(-10, 10)
     OnClick:
-      *self.menu:toggle()
+      *self.menu:display(nil, true)
   OnLoad:
     *ep.IconBrowser(self)
 

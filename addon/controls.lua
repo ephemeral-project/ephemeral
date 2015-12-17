@@ -1589,15 +1589,13 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
     params = params or {}
     self.buttons = {}
     self.callback = params.callback
-    self.defaultColor = Color(params.defaultColor or 'label')
+    self.defaultColor = Color(params.defaultColor or 'normal')
     self.items = params.items
-    self.generator = params.generator
     self.location = params.location
     self.offset = 0
     self.width = params.width or 0
     self.window = params.window or 0
 
-    self.scrollbar = false
     if params.scrollable then
       self.scrollbar = ep.VerticalScrollBar(self.name..'ScrollBar', self, {self.scroll, self})
       self.scrollbar:SetPoint('TOPRIGHT', self, 'TOPRIGHT', 0, -13)
@@ -1607,6 +1605,109 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
   end,
 
   build = function(self)
+    local itemCount, buttonCount = #self.items, #self.buttons
+    if itemCount == 0 then
+      self.built = false
+      return
+    end
+
+    local buttons, scrollbar, button = self.buttons, self.scrollbar
+    if itemCount < buttonCount then
+      for i = itemCount + 1, buttonCount do
+        buttons[i]:Hide()
+      end
+      if scrollbar then
+        scrollbar:Hide()
+      end
+    elseif itemCount > buttonCount then
+      local target = (scrollbar) and min(self.window, itemCount) or itemCount
+      for i = buttonCount + 1, target do
+        button = ep.MenuButton(self.name..i, self, self, i)
+        button:SetPoint('TOPLEFT', self, 'TOPLEFT', 5, -(4 + (13 * (i - 1))))
+        buttons[i] = button
+      end
+      if scrollbar then
+        if itemCount > #self.buttons then
+          scrollbar:SetMinMaxValues(0, itemCount - self.window)
+          scrollbar:Show()
+        else
+          scrollbar:Hide()
+        end
+      end
+    end
+    local scrolled = (scrollbar and scrollbar:IsShown())
+
+    local model, hasChecks, hasArrows, hasSpots, widest = buttons[1], false, false, false, 0
+    for i, item in ipairs(self.items) do
+      if item.items then
+        hasArrows = true
+      end
+      if item.checkable then
+        hasChecks = true
+      end
+      if item.spot then
+        hasSpots = true
+      end
+      model:SetText(item.label)
+      widest = max(widest, model:GetTextWidth() + 1)
+    end
+
+    local iwidth = self.width
+    if type(iwidth) == 'table' then
+      iwidth = self.width:GetWidth()
+    end
+
+    local padding, offset, width = max(0, iwidth - (widest + 10)), 0, max(iwidth - 10, widest)
+    if hasChecks then
+      offset, padding = 15, padding - 15
+      if padding < 0 then
+        width = width + abs(padding)
+        padding = 0
+      end
+    end
+
+    if hasSpots then
+      offset, padding = offset + 15, padding - 15
+      if padding < 0 then
+        width = width + abs(padding)
+        padding = 0
+      end
+    end
+
+    if hasArrows then
+      padding = padding - 6
+      if padding < 0 then
+        width = width + abs(padding)
+        padding = 0
+      end
+    end
+
+    if scrolled and (width - 15) >= widest then
+      width = width - 15
+    end
+
+    buttonCount = 0
+    for i, button in ipairs(buttons) do
+      if button:IsShown() then
+        button:SetWidth(width)
+        button.text:ClearAllPoints()
+        button.text:SetPoint('TOPLEFT', button, 'TOPLEFT', offset, 1)
+        buttonCount = buttonCount + 1
+      else
+        break
+      end
+    end
+
+    self:SetHeight((buttonCount * 13) + 8)
+    if scrolled and (width - 15) >= widest then
+      width = width + 15
+    end
+
+    self:SetWidth(width + 10)
+    self.built = true
+  end,
+
+  oldbuild = function(self)
     local items, buttons, target, button, scrolled = #self.items, #self.buttons
     if items == 0 then
       self.built = false
@@ -1708,10 +1809,10 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
   end,
 
   close = function(self)
-    local target
+    local menus, target = self.menus
     if self.depth then
-      for i = #self.menus, self.depth, -1 do
-        target = tremove(self.menus, i)
+      for i = #menus, self.depth, -1 do
+        target = tremove(menus, i)
         target.depth = nil
         target:Hide()
       end
@@ -1724,22 +1825,38 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
     end
   end,
 
-  display = function(self, location)
-    location = location or self.location
-    if not self.built then
-      if self.generator then
-        self.items = self.generator(self)
+  display = function(self, params, closeIfOpen)
+    local location = self.location
+    if params and params.location then
+      location = params.location
+    end
+
+    if closeIfOpen and self:IsShown() and self.anchor == location.anchor then
+      self:close()
+      return
+    end
+
+    local menus = self.menus
+    if params then
+      if params.callback then
+        self.callback = params.callback
       end
+      if params.items then
+        self.items, self.built = params.items, false
+      end
+    end
+
+    if self.built then
+      local width, savedWidth = self.width, self.savedWidth
+      if type(width) == 'table' and (not savedWidth or savedWidth ~= width:GetWidth()) then
+        self.built = false
+      end
+    end
+
+    if not self.built then
       self:build()
       if not self.built then
-        return
-      end
-    elseif type(self.width) == 'table' then
-      if not self.savedWidth or self.savedWidth ~= self.width:GetWidth() then
-        self:build()
-        if not self.built then
-          return
-        end
+        return exception('MenuBuildFailed')
       end
     end
 
@@ -1747,28 +1864,22 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
       self.scrollbar:SetValue(0)
     end
 
-    local menuCount = #self.menus
+    local menuCount = #menus
     if self.ancestor then
       if menuCount > self.ancestor.depth then
-        self.menus[self.ancestor.depth + 1]:close()
+        menus[self.ancestor.depth + 1]:close()
       end
     elseif menuCount > 0 then
-      self.menus[1]:close()
+      menus[1]:close()
     end
 
-    self.menus[#self.menus + 1] = self
+    menus[#menus + 1] = self
     self.anchor = location.anchor
-    self.depth = #self.menus
+    self.depth = #menus
 
-    self:update()
-    if not location.static then
-      self:position(location, {edge = 'TOPLEFT', hook = 'TOPLEFT'})
-    end
+    self:updateButtons()
+    self:position(location, {edge='TOPLEFT', hook='TOPLEFT'})
     self:Show()
-  end,
-
-  populate = function(self, items)
-    self.items, self.built = items, false
   end,
 
   rebuild = function(self)
@@ -1780,18 +1891,14 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
     self:update()
   end,
 
-  toggle = function(self, location)
-    location = location or self.location
-    if self:IsShown() and self.anchor == location.anchor then
-      self:close()
-    else
-      self:display(location)
-    end
+  setItems = function(self, items)
+    self.items, self.built = items, false
   end,
 
-  update = function(self)
+  updateButtons = function(self)
+    local offset = self.offset
     for i, button in ipairs(self.buttons) do
-      button.item = self.items[i + self.offset]
+      button.item = self.items[i + offset]
       if button.item then
         button:update()
       else
@@ -1845,7 +1952,7 @@ ep.MenuButton = ep.control('ep.MenuButton', 'epMenuButton', ep.Button, nil, {
   end,
 
   enter = function(self)
-    self.highlight:Show()
+    --self.highlight:Show()
     if self.item.submenu then
       self.arrow:SetTexture('Interface\\AddOns\\ephemeral\\textures\\arrow-right-highlight')
       if not self.item.submenu.ancestor then
@@ -1865,7 +1972,7 @@ ep.MenuButton = ep.control('ep.MenuButton', 'epMenuButton', ep.Button, nil, {
   end,
 
   leave = function(self)
-    self.highlight:Hide()
+    --self.highlight:Hide()
     if self.item.submenu then
       self.arrow:SetTexture('Interface\\AddOns\\ephemeral\\textures\\arrow-right')
     elseif self.item.tooltip then
@@ -2820,6 +2927,8 @@ ep.TreeButton = ep.control('ep.TreeButton', 'epTreeButton', ep.Button, nil, {
     self.frame = frame
     self.id = id
     self.selected = false
+
+    --self:setBorderColors(1, 1, 1, 0.5)
   end,
 
   enter = function(self)
@@ -2829,12 +2938,11 @@ ep.TreeButton = ep.control('ep.TreeButton', 'epTreeButton', ep.Button, nil, {
       tooltip.delay = self.frame.tooltipDelay
       epTooltip:display(tooltip)
     end
-    self.highlight:Show()
   end,
 
   leave = function(self)
     if not self.selected then
-      self.highlight:Hide()
+      self:UnlockHighlight(false)
     end
     if self.node.item.tooltip then
       epTooltip:hide(self)
@@ -2882,11 +2990,9 @@ ep.TreeButton = ep.control('ep.TreeButton', 'epTreeButton', ep.Button, nil, {
       end
       if node == self.frame.selection then
         self.selected = true
-        self.highlight:Show()
         self:LockHighlight()
       else
         self.selected = nil
-        self.highlight:Hide()
         self:UnlockHighlight()
       end
       self:SetWidth(self.frame.buttonWidth)

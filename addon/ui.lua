@@ -15,6 +15,8 @@ local _referenceFrames = {
   slider = 'ReputationListScrollFrameScrollBar',
 }
 
+ep.currentSelection = nil
+
 ep.ui = {
   name = 'ephemeral:ui',
   version = 1,
@@ -24,6 +26,12 @@ ep.ui = {
     for token in ep.iterkeys(ep.icon.sets, true) do
       epIconBrowser.iconSetSelector:addOption(token, ep.icon.sets[token].title)
     end
+
+    ep.subscribe(':controlActivated', function(event, control)
+      if not control.wantsSelectionDrops then
+        ep.clearSelection()
+      end
+    end)
   end
 }
 
@@ -1124,6 +1132,19 @@ function ep.attachScalingBackground(frame, attr, texture)
   frame[attr]:SetTexture(texture, true)
   frame:SetScript('OnSizeChanged', scaleBackground)
   scaleBackground()
+end
+
+function ep.claimSelection(selection, icon)
+  ep.currentSelection = selection
+  epIconCursor:activate(icon or selection.icon)
+  ep.lastSelection = selection
+end
+
+function ep.clearSelection(selection)
+  if not selection or selection == ep.currentSelection then
+    ep.currentSelection = nil
+    epIconCursor:deactivate()
+  end
 end
 
 function ep.detachTooltip(control)

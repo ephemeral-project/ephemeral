@@ -1,5 +1,18 @@
-local exception, tinject
-    = ep.exception, ep.tinject
+local exception, split, tinject
+    = ep.exception, ep.split, ep.tinject
+
+--[[
+
+An ItemLocation is a simple table which describes the logical location of a particular
+item instance. Standard attrs include:
+
+  type
+  token
+  manager
+  items
+  valid
+
+]]
 
 ep.ItemLocationManager = ep.prototype('ep.ItemLocationManager', {
   addToOrderedContainer = function(cls, container, id, position)
@@ -15,10 +28,10 @@ ep.ItemLocationManager = ep.prototype('ep.ItemLocationManager', {
     return position
   end,
 
-  approveAddition = function(self, location, item)
+  approveAddition = function(self, location, item, sourceLocation)
   end,
 
-  approveRemoval = function(self, location, item)
+  approveRemoval = function(self, location, item, targetLocation)
   end,
 
   deploy = function(self)
@@ -29,6 +42,9 @@ ep.ItemLocationManager = ep.prototype('ep.ItemLocationManager', {
     if container.i == position then
       while container[position] == nil do
         position = position - 1
+        if position == 0 then
+          break
+        end
       end
       container.i = position
     end
@@ -43,13 +59,40 @@ ep.BackpackManager = ep.prototype('ep.BackpackManager', ep.ItemLocationManager, 
     return format('bk:%s:%d', location.id, location.position)
   end,
 
+  approveAddition = function(cls, location, item, sourceLocation)
+    if sourceLocation and sourceLocation.type == 'bk' and sourceLocation.id == location.id then
+      return
+    end
+    return exception('Invalid')
+  end,
+
+  approveRemoval = function(cls, location, item, targetLocation)
+    if targetLocation and targetLocation.type == 'bk' and targetLocation.id == location.id then
+      return
+    end
+  end,
+
+  constructLocation = function(cls, base, position)
+    token = base.token..':'..position
+    return {type='bk', token=token, id=base.id, character=base.character,
+      position=position, manager=cls, valid=true}
+  end,
+
+  createConstructor = function(cls, location)
+    local token, id, character = location.token..':', location.id, location.character
+    return function(position)
+      return {type='bk', token=token..position, id=id, character=character,
+        position=position, manager=cls, valid=true}
+    end
+  end,
+
   deploy = function(cls)
     if not ep.character.backpack then
       ep.character.backpack = {n=0, i=0}
     end
   end,
 
-  displayLocation = function(cls, location)
+  displayLocation = function(cls, location, closeIfOpen)
     location.items = cls:getLocation(location)
     ep.ItemCollector:display(location, {
       icon = location.items.ic,
@@ -57,7 +100,7 @@ ep.BackpackManager = ep.prototype('ep.BackpackManager', ep.ItemLocationManager, 
         location.items.ic = icon
       end,
       title = format("%s's Backpack", location.character.name)
-    })
+    }, closeIfOpen)
   end,
 
   getLocation = function(cls, location)
@@ -81,7 +124,8 @@ ep.BackpackManager = ep.prototype('ep.BackpackManager', ep.ItemLocationManager, 
 
     local position = tonumber(tokens[3])
     if position and position >= 1 then
-      return {type='bk', token=location, id=tokens[2], character=character, position=position}
+      return {type='bk', token=location, id=tokens[2], character=character,
+        position=position, manager=cls, valid=true}
     else
       return exception('InvalidLocation')
     end
@@ -91,7 +135,7 @@ ep.BackpackManager = ep.prototype('ep.BackpackManager', ep.ItemLocationManager, 
     local backpack, candidate = cls:getLocation(location)
     candidate = backpack[location.position]
 
-    if candidate and candidate == item then
+    if candidate and candidate == item.id then
       cls:removeFromOrderedContainer(backpack, location.position)
     end
   end,
@@ -126,7 +170,7 @@ ep.BackpackManager = ep.prototype('ep.BackpackManager', ep.ItemLocationManager, 
       token = token..':'..location.position
     end
 
-    location.token = token
+    location.manager, location.token, location.valid = cls, token, true
     return location
   end
 })
@@ -137,12 +181,38 @@ ep.ContainerManager = ep.prototype('ep.ContainerManager', ep.ItemLocationManager
     return format('cn:%s:%d', location.id, location.position)
   end,
 
-  displayLocation = function(cls, location)
+  approveAddition = function(cls, location, item, sourceLocation)
+    if sourceLocation and sourceLocation.type == 'cn' and sourceLocation.id == location.id then
+      return
+    end
+  end,
+
+  approveRemoval = function(cls, location, item, targetLocation)
+    if targetLocation and targetLocation.type == 'cn' and targetLocation.id == location.id then
+      return
+    end
+  end,
+
+  constructLocation = function(cls, base, position)
+    token = base.token..':'..position
+    return {type='cn', token=token, id=base.id, container=base.container,
+      position=position, manager=cls, valid=true}
+  end,
+
+  createConstructor = function(cls, location)
+    local token, id, container = location.token..':', location.id, location.container
+    return function(position)
+      return {type='cn', token=token..position, id=id, container=container,
+        position=position, manager=cls, valid=true}
+    end
+  end,
+
+  displayLocation = function(cls, location, closeIfOpen)
     location.items = cls:getLocation(location)
     ep.ItemCollector:display(location, {
       icon = location.container.ic,
       title = location.container.name
-    })
+    }, closeIfOpen)
   end,
 
   getLocation = function(cls, location)
@@ -162,7 +232,8 @@ ep.ContainerManager = ep.prototype('ep.ContainerManager', ep.ItemLocationManager
 
     position = tonumber(tokens[3])
     if position and position >= 1 then
-      return {type='cn', token=location, id=tokens[2], container=container, position=position}
+      return {type='cn', token=location, id=tokens[2], container=container,
+        position=position, manager=cls, valid=true}
     else
       return exception('InvalidLocation')
     end
@@ -210,7 +281,7 @@ ep.ContainerManager = ep.prototype('ep.ContainerManager', ep.ItemLocationManager
       end
     end
 
-    location.token = token
+    location.manager, location.token, location.valid = cls, token, true
     return location
   end
 })
@@ -220,6 +291,22 @@ ep.EquipmentManager = ep.prototype('ep.EquipmentManager', ep.ItemLocationManager
     local equipment = cls:getLocation(location)
     -- todo add item
     return format('eq:%s:%s:%d', location.id, location.slot, location.position)
+  end,
+
+  approveAddition = function(cls, location, item, sourceLocation)
+  end,
+
+  approveRemoval = function(cls, location, item, targetLocation)
+  end,
+
+  constructLocation = function(cls, base, slot, position)
+    token = base.token..':'..slot..':'..position
+    return {type='eq', token=token, id=base.id, character=base.character,
+      slot=slot, position=position, manager=cls, valid=true}
+  end,
+
+  createConstructor = function(cls, location)
+
   end,
 
   deploy = function(self)
@@ -257,7 +344,8 @@ ep.EquipmentManager = ep.prototype('ep.EquipmentManager', ep.ItemLocationManager
 
     local position = tonumber(tokens[4])
     if position and position >= 1 then
-      return {type='eq', token=location, id=tokens[2], character=character, position=position}
+      return {type='eq', token=location, id=tokens[2], character=character,
+        position=position, manager=cls}
     else
       return exception('InvalidLocation')
     end
@@ -302,7 +390,7 @@ ep.EquipmentManager = ep.prototype('ep.EquipmentManager', ep.ItemLocationManager
       end
     end
 
-    location.token = token
+    location.manager, location.token = cls, token
     return location
   end
 })
@@ -333,37 +421,10 @@ ep.SpatialManager = ep.prototype('ep.SpatialManager', ep.ItemLocationManager, {
   
 })
 
-ep.StashManager = ep.prototype('ep.StashManager', ep.ItemLocationManager, {
-  addItem = function(cls, location, item)
-    return nil
-  end,
-
-  parseLocation = function(cls, location)
-    if location == 's' then
-      return {type='st', token='st'}
-    else
-      return exception('InvalidLocation')
-    end
-  end,
-
-  removeItem = function(cls, location, item)
-  end,
-
-  validateLocation = function(cls, location)
-    if location.type == 'st' then
-      location.token = 'st'
-      return location
-    else
-      return exception('InvalidLocation')
-    end
-  end
-})
-
 ep.items.locationManagers = {
   bk = ep.BackpackManager,
   cn = ep.ContainerManager,
   eq = ep.EquipmentManager,
   sk = ep.SocketManager,
   sp = ep.SpatialManager,
-  st = ep.StashManager
 }

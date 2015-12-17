@@ -444,7 +444,12 @@ ep.Home = ep.panel('ep.Home', 'epHome', {
   end
 })
 
-ep.IconBrowserButton = ep.control('ep.IconBrowserButton', 'epIconBrowserButton', ep.IconBox)
+ep.IconBrowserButton = ep.control('ep.IconBrowserButton', 'epIconBrowserButton', ep.IconBox, nil, {
+  initialize = function(self)
+    ep.IconBox.initialize(self)
+    self.texture:SetNonBlocking(true)
+  end
+})
 
 ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
   categories = {
@@ -677,7 +682,7 @@ ep.IconBrowser = ep.panel('ep.IconBrowser', 'epIconBrowser', {
   end
 })
 
-ep.IconCursor = ep.control('ep.IconCursor', 'epIconCursor', ep.basecontrol, 'frame', {
+ep.IconCursor = ep.control('ep.IconCursor', 'epIconCursor', ep.BaseControl, 'frame', {
   initialize = function(self)
     self.reference = nil
     self.substrate = {'ep'}
@@ -714,7 +719,7 @@ ep.IconCursor = ep.control('ep.IconCursor', 'epIconCursor', ep.basecontrol, 'fra
   end
 })
 
-ep.RibbonButton = ep.control('ep.RibbonButton', 'epRibbonButton', ep.iconbox, nil, {
+ep.RibbonButton = ep.control('ep.RibbonButton', 'epRibbonButton', ep.IconBox, nil, {
   initialize = function(self, ribbon, id)
     self:super():initialize()
     self.id = id
