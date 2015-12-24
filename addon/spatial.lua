@@ -1,5 +1,5 @@
-local floor, tinsert
-    = math.floor, table.insert
+local ScriptExecutor, exception, exceptional, floor, tinsert
+    = ep.ScriptExecutor, ep.exception, ep.exceptional, math.floor, table.insert
 
 local function dist(a, b)
   return math.sqrt(math.pow((b[1] - a[1]), 2) + (math.pow((b[2] - a[2]), 2)))
@@ -20,40 +20,73 @@ end
 ep.Location = ep.entities:define('ep.Location', ep.Entity, {
   detect = function(self, px, py)
     local box = self._detectionBox
-    if px >= box[1] and py >= box[2] and px <= box[3] and py <= box[4] then
-      if self.dd and not IsIndoors() then
-        return false
-      elseif self.df and IsFlying() then
-        return false
-      elseif self.ds and not IsSwimming() then
-        return false
-      elseif self.dz and GetSubZoneText() ~= self.dz then
-        return false
-      elseif self.od then
+    if px < box[1] or py < box[2] or px > box[3] or py > box[4] then
+      return false
+    end
 
-      end
+    if self.dd and not IsIndoors() then
+      return false
+    elseif self.df and IsFlying() then
+      return false
+    elseif self.ds and not IsSwimming() then
+      return false
+    elseif self.dz and GetSubZoneText() ~= self.dz then
+      return false
+    elseif not self.od then
       return true
     end
-    return false
+
+    local script = self._detectionScript
+    if not script then
+      script = self:_constructScript(self.od, 'detect')
+      self._detectionScript = script
+    end
+
+    local detected = script:execute({position={px, py}})
+    if not exceptional(detected) then
+      return detected
+    else
+      -- todo: log this?
+      return false
+    end
   end,
 
   locate = function(self, px, py)
     local box = self._locationBox
-    if px >= box[1] and py >= box[2] and px <= box[3] and py <= box[4] then
-      if self.ld and not IsIndoors() then
-        return false
-      elseif self.lg and IsFlying() then
-        return false
-      elseif self.ls and not IsSwimming() then
-        return false
-      elseif self.lz and GetSubZoneText() ~= self.lz then
-        return false
-      elseif self.ol then
+    if px < box[1] or py < box[2] or px > box[3] or py > box[4] then
+      return false
+    end
 
-      end
+    if self.ld and not IsIndoors() then
+      return false
+    elseif self.lg and IsFlying() then
+      return false
+    elseif self.ls and not IsSwimming() then
+      return false
+    elseif self.lz and GetSubZoneText() ~= self.lz then
+      return false
+    elseif not self.ol then
       return true
     end
-    return false
+
+    local script = self._locationScript
+    if not script then
+      script = self:_constructScript(self.ol, 'locate')
+      self._locationScript = script
+    end
+
+    local located = script:execute({position={px, py}})
+    if not exceptional(located) then
+      return located
+    else
+      return false
+    end
+  end,
+  
+  _constructScript = function(self, script, phase)
+    return ScriptExecutor:construct(script, {phase=phase,
+      location=self
+    })
   end,
 
   _prepareLocation = function(self)

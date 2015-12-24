@@ -437,6 +437,22 @@ Panel epTest(^UIParent, frameStrata: MEDIUM, hidden):
       *  {field = 'name', title = 'Name', width = 80},
       *  {field = 'description', title = 'Description', relWidth = 0.75},
       *  {field = 'value', title = 'Value', relWidth = 0.25}}})
+  OnMouseDown:
+    * if button == 'RightButton' then
+    *   if not self.testMenu then
+    *     self.testMenu = ep.Menu('epTestMenu', self, {items={
+    *       {label='Alpha', value='alpha'},
+    *       {label='Beta', value='beta'},
+    *       {label='Gamma', submenu={items={
+    *         {label='One'}, {label='Two'}, {label='Three'}
+    *       }}},
+    *     }})
+    *   end
+    *   
+    *   local x, y = ep.getScaledCursorPosition()
+    *   self.testMenu:display({location={edge='TOPLEFT', anchor=UIParent,
+    *     hook='BOTTOMLEFT', x=x, y=y}, isActivation=true}, true)
+    * end
   OnLoad:
     *ep.BasePanel(self, {
     *    title = 'Test',

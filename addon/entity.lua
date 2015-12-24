@@ -1,6 +1,6 @@
-local _, attrsort, deepcopy, deployModule, exception, exceptional, isderived,
+local _, ScriptExecutor, attrsort, deepcopy, deployModule, exception, exceptional, isderived,
       split, uniqid
-    = ep.localize, ep.attrsort, ep.deepcopy, ep.deployModule, ep.exception,
+    = ep.localize, ep.ScriptExecutor, ep.attrsort, ep.deepcopy, ep.deployModule, ep.exception,
       ep.exceptional, ep.isderived, ep.split, ep.uniqid
 
 ep.EntityType = ep.tcopy(ep.metatype)
@@ -212,6 +212,24 @@ ep.Entity = ep.entities:define('ep.Entity', nil, {
   construct = function(self, origin)
   end,
 
+  constructSurrogateIndexer = function(self, tbl)
+    local instance, entity = rawget(self, '__instance'), rawget(self, '__entity')   
+    return function(obj, field)
+      local value = rawget(tbl, field)
+      if value == nil then
+        value = instance[field]
+        if value == nil then
+          value = entity[field]
+        end
+        if type(value) == 'table' then
+          value = ep.surrogate(value)
+          rawset(tbl, field, value)
+        end
+      end
+      return value
+    end
+  end,
+
   destroy = function(self)
     if self.pt then
       return exception('CannotDestroy', _'Entity is protected.')
@@ -242,4 +260,131 @@ ep.Entity = ep.entities:define('ep.Entity', nil, {
 
   located = function(self, phase, location)
   end,
+})
+
+ep.Script = ep.entities:define('ep.Script', ep.Entity, {
+  -- sc: script source
+  -- ev: script environment (optional)
+
+  noun = _'script',
+  plural = _'scripts',
+})
+
+ep.ScriptExecutor = ep.prototype('ep.ScriptExecutor', {
+  baseEnvironment = {
+    abs=math.abs, acos=acos, asin=asin, atan=atan, atan2=atan2, ceil=ceil, concat=concat,
+    cos=cos, date=date, deg=deg, exp=exp, floor=floor, foreach=foreach, foreachi=foreachi,
+    format=format, frexp=frexp, ipairs=ipairs, ldexp=ldexp, log=log, log10=log10,
+    max=max, min=min, mod=mod, next=next, pairs=pairs, rad=rad, random=random,
+    select=select, sin=sin, sort=sort, sqrt=sqrt, tan=tan, tinsert=tinsert, time=time,
+    tonumber=tonumber, tostring=tostring, tremove=tremove, type=type, unpack=unpack,
+
+    deepcopy=ep.deepcopy, freeze=ep.freeze, hash=ep.hash, iterkeys=ep.iterkeys,
+    itersplit=ep.itersplit, itervalues=ep.itervalues, lstrip=ep.lstrip,
+    partition=ep.partition, rstrip=ep.rstrip, split=ep.split, strcount=ep.strcount,
+    strip=ep.strip, tcombine=ep.tcombine, tcontains=ep.tcontains, tcopy=ep.tcopy,
+    tcount=ep.tcount, tempty=ep.empty, textend=ep.textend, textract=ep.textract,
+    tfilter=ep.tfilter, thaw=ep.thaw, tindex=ep.tindex, tinject=ep.tinject,
+    tkeys=ep.tkeys, tmap=ep.tmap, treverse=ep.treverse, tunique=ep.tunique,
+    tupdate=ep.tupdate, tvalues=ep.tvalues,
+
+    print = print
+  },
+
+  staticEnvironment = {},
+
+  construct = function(cls, script, name)
+    if type(script) == 'string' then
+      script = ep.entities:load(script)
+      if exceptional(script) then
+        return script
+      end
+    end
+    return cls(script.sc, script.ev, script.nm or name)
+  end,
+
+  initialize = function(self, source, environment, name)
+    self.environment = {}
+    self.name = name or '<script>'
+    self.source = source
+
+    if environment then
+      self:update(environment)
+    end
+  end,
+
+  compile = function(self)
+    local code, err = loadstring(self.source, self.name)
+    if not code then
+      return exception('CompilationError', err)
+    end
+
+    local bn, sn, en = self.baseEnvironment, self.staticEnvironment, self.environment
+    self.code = setfenv(code, setmetatable({}, {
+      __index = function(obj, field)
+        local value = en[field]
+        if value == nil then
+          value = sn[field]
+          if value == nil then
+            value = bn[field]
+          end
+        end
+        return value
+      end
+    }))
+  end,
+
+  derive = function(cls, name, ...)
+    local environment = {}
+    for i, candidate in ipairs({...}) do
+      for attr, value in pairs(candidate) do
+        if type(value) == 'table' then
+          environment[attr] = surrogate(value)
+        elseif type(value) ~= 'userdata' and type(value) ~= 'thread' then
+          environment[attr] = value
+        end
+      end
+    end
+    return ep.prototype(name, cls, {staticEnvironment=environment})
+  end,
+
+  execute = function(self, immutable, mutable, clearEnvironment)
+    if not self.code then
+      local failure = self:compile()
+      if exceptional(failure) then
+        return failure
+      end
+    end
+
+    if immutable or mutable then
+      self:update(immutable, mutable, clearEnvironment)
+    end
+
+    local status, result = pcall(self.code)
+    if status then
+      return result
+    else
+      return exception('ScriptError', result)
+    end
+  end,
+
+  update = function(self, immutable, mutable, clearEnvironment)
+    local environment = self.environment
+    if clearEnvironment then
+      tclear(environment)
+    end
+
+    if immutable then
+      for attr, value in pairs(immutable) do
+        environment[attr] = surrogate(value)
+      end
+    end
+
+    if mutable then
+      for attr, value in pairs(mutable) do
+        environment[attr] = value
+      end
+    end
+    return self
+  end
 })

@@ -175,6 +175,13 @@ def _parse_arguments(tokens):
             arguments['__args__'].append(token)
     return arguments
 
+def _parse_script_tokens(tokens):
+    offset = 1
+    if tokens[0][1] == ' ':
+        offset = 2
+
+    return '\n'.join([token[offset:] for token in tokens])
+
 candidates = flag | keyvalue | parent | parentkey | token | value
 arguments = ~Token('\(') & Extend(candidates[:, comma]) & ~Token('\)') > _parse_arguments
 declaration = token[1:] & arguments[0:1]
@@ -204,7 +211,8 @@ def _parse_block(tokens):
             del block['inherits']
         i += 1
     if len(tokens) > i and isinstance(tokens[i], basestring) and tokens[i].startswith('*'):
-        block['script'] = '\n'.join(token.lstrip('*') for token in tokens[i:])
+        block['script'] = _parse_script_tokens(tokens[i:])
+        #block['script'] = '\n'.join(token.lstrip('*') for token in tokens[i:])
         return (block, [])
     children = tokens[i:]
     if block['type'].startswith('!'):

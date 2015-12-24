@@ -1,8 +1,8 @@
 local concat, exception, exceptional, format, invoke, isprototype, ref, put,
-      split, surrogate, tclear, tinsert, tkeys, tremove
+      split, surrogate, tclear, tcopy, tinsert, tkeys, tremove
     = table.concat, ep.exception, ep.exceptional, string.format, ep.invoke,
-      ep.isprototype, ep.ref, ep.put, ep.split, ep.surrogate, ep.tclear, table.insert,
-      ep.tkeys, table.remove
+      ep.isprototype, ep.ref, ep.put, ep.split, ep.surrogate, ep.tclear,
+      ep.tcopy, table.insert, ep.tkeys, table.remove
 
 local events = {}
 local invocations = ep.PriorityQueue('delta')
@@ -466,85 +466,44 @@ ep.DataStore = ep.prototype('ep.DataStore', {
   end
 })
 
-ep.script = ep.prototype('ep.script', {
-  environment = {
-    abs = math.abs, acos = acos, asin = asin, atan = atan, atan2 = atan2, ceil = ceil, concat = concat,
-    cos = cos, date = date, deg = deg, exp = exp, floor = floor, foreach = foreach, foreachi = foreachi,
-    format = format, frexp = frexp, ipairs = ipairs, ldexp = ldexp, log = log, log10 = log10,
-    max = max, min = min, mod = mod, next = next, pairs = pairs, rad = rad, random = random,
-    select = select, sin = sin, sort = sort, sqrt = sqrt, tan = tan, tinsert = tinsert, time = time,
-    tonumber = tonumber, tostring = tostring, tremove = tremove, type = type, unpack = unpack,
+ep.Interpreter = ep.prototype('ep.Interpreter', {
+  commands = {},
 
-    deepcopy=ep.deepcopy, freeze=ep.freeze, hash=ep.hash, iterkeys=ep.iterkeys,
-    itersplit=ep.itersplit, itervalues=ep.itervalues, lstrip=ep.lstrip,
-    partition=ep.partition, rstrip=ep.rstrip, split=ep.split, strcount=ep.strcount,
-    strip=ep.strip, tcombine=ep.tcombine, tcontains=ep.tcontains, tcopy=ep.tcopy,
-    tcount=ep.tcount, tempty=ep.empty, textend=ep.textend, textract=ep.textract,
-    tfilter=ep.tfilter, thaw=ep.thaw, tindex=ep.tindex, tinject=ep.tinject,
-    tkeys=ep.tkeys, tmap=ep.tmap, treverse=ep.treverse, tunique=ep.tunique,
-    tupdate=ep.tupdate, tvalues=ep.tvalues,
+  initialize = function(self, params)
+    params = params or {}
 
-    print = print
-  },
+  end,
 
-  initialize = function(self, source, namespace, name)
-    self.name = name or '<script>'
-    self.source = source
-    self._executionNamespace = {}
-    self._staticNamespace = {}
-    if namespace then
-      for attr, value in pairs(namespace) do
-        self._staticNamespace[attr] = surrogate(value)
+  interpret = function(self, text)
+    if not text then
+      return {}
+    end
+
+    if text:sub(1, 1) == '/' then
+      return self:interpretCommand(text)
+    end
+
+    local script, err = loadstring('return '..text)
+    if not script then
+      script, err = loadstring(text)
+    end
+
+    if script then
+      local result = {pcall(script)}
+      if tremove(result, 1) then
+        return result
+      else
+        return {exception('LuaError', result[1], nil, true)}
       end
+    elseif not text:find('[^%.%[%]%w]') then
+      return {ref(text)}
+    else
+      return {exception('LuaError', err, nil, true)}
     end
   end,
 
-  compile = function(self)
-    local code, err = loadstring(self.source, self.name)
-    if code then
-      local env, sn, en = self.environment, self._staticNamespace, self._executionNamespace
-      return setfenv(code, setmetatable({}, {
-        __index = function(object, field)
-          local value = en[field]
-          if value == nil then
-            value = sn[field]
-            if value == nil then
-              value = env[field]
-            end
-          end
-          return value
-        end
-      }))
-    else
-      return code, err
-    end
-  end,
-
-  execute = function(self, immutable, mutable)
-    local namespace = self._executionNamespace
-    if not self.code then
-      self.code, err = self:compile()
-      if not self.code then
-        return exception('CompilationError', err)
-      end
-    end
-    tclear(namespace)
-    if immutable then
-      for attr, value in pairs(immutable) do
-        namespace[attr] = surrogate(value)
-      end
-    end
-    if mutable then
-      for attr, value in pairs(mutable) do
-        namespace[attr] = value
-      end
-    end
-    local status, result = pcall(self.code)
-    if status then
-      return result
-    else
-      return exception('ScriptError', result)
-    end
+  interpretCommand = function(self, text)
+    return {}
   end
 })
 

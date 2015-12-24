@@ -1155,6 +1155,11 @@ function ep.detachTooltip(control)
   end
 end
 
+function ep.getScaledCursorPosition()
+  local scale, x, y = UIParent:GetEffectiveScale(), GetCursorPosition()
+  return x / scale, y / scale
+end
+
 function ep.mover(frame, point, parent)
   if not parent then
     parent = frame:GetParent()

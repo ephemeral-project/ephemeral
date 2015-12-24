@@ -749,14 +749,16 @@ end
 
 function ep.surrogate(tbl)
   if type(tbl) ~= 'table' then
-      return tbl
+    return tbl
   end
 
-  local s = {}
-  return setmetatable(s, {
-    __index = function(object, field)
+  local s, indexer = {}
+  if tbl.constructSurrogateIndexer then
+    indexer = tbl:constructSurrogateIndexer(s)
+  else
+    indexer = function(obj, field)
       local value = rawget(s, field)
-      if not value then
+      if value == nil then
         value = tbl[field]
         if type(value) == 'table' then
           value = ep.surrogate(value)
@@ -764,7 +766,11 @@ function ep.surrogate(tbl)
         end
       end
       return value
-    end,
+    end
+  end
+
+  return setmetatable(s, {
+    __index = indexer,
     __newindex = function()
     end
   })
@@ -1065,7 +1071,14 @@ ep.Locale = ep.prototype('ep.Locale', {
   strings = nil,
 
   bootstrap = function(cls, locale)
-    locale = locale or GetLocale()
+    if not locale then
+      if GetLocale then
+        locale = GetLocale()
+      else
+        locale = 'enUs'
+      end
+    end
+
     if ep.locales[locale] then
       ep.locales[locale]:deploy()
     end

@@ -429,29 +429,30 @@ Frame epListBuilder(epControl, virtual):
     *ep.ListBuilder(self)
 
 Button epMenuButton(NoInherit, virtual):
-  !Size(128, 13)
+  !Size(128, 15)
   ButtonText $parentText(.text):
-    !Left(0, 0)
-  HighlightTexture $parentHighlight(epControlHighlight):
-    !TopLeft(-2, 0)
-    !BottomRight(2, 0)
+    !Left(4, 0)
   !PushedTextOffset(0, 0)
   !NormalFont(epLabelFont, LEFT)
   !HighlightFont(epHighlightFont, LEFT)
   !Background:
     Texture(setAllPoints):
-      !Color(1.0, 0.0, 0.0, 0.0)
-  !Highlight:
-    Texture $parentHighlight(epControlHighlight, hidden):
-      !TopLeft(-2, 0)
-      !BottomRight(2, 0)
+      !Color(1.0, 0.0, 0.0, 0)
   !Artwork:
     Texture $parentCheck(file: '%textures\box-empty'):
       !Size(20, 20)
       !Left(-4, 0)
       !TexCoords(0.1875, 0.8125, 0.1875, 0.8125)
     Texture $parentArrow(epArrowRight):
-      !Right(7, 0)
+      !Right(3, 0)
+  !Highlight:
+    Texture(epControlHighlight, setAllPoints)
+    Texture(epControlEdgeT, .ce_t):
+      !TopLeft(0, 7)
+      !TopRight(0, 7)
+    Texture(epControlEdgeB, .ce_b):
+      !BottomLeft(0, -7)
+      !BottomRight(0, -7)
   OnClick:
     *self:activate()
   OnEnter:
@@ -708,36 +709,20 @@ Frame epTabbedFrame(virtual):
     *ep.event(':controlActivated', self)
 
 Button epTreeButton(NoInherit, virtual):
-  !Size(128, 16)
+  !Size(128, 15)
   ButtonText $parentText(.text):
-    !Left(0, 0)
+    !Left(4, 0)
   !PushedTextOffset(0, 0)
   !NormalFont(epLabelFont, LEFT)
   !HighlightFont(epHighlightFont, LEFT)
   !Highlight:
-    Texture(epControlEdgeTL, .ce_tl):
-      !TopLeft(-8, 6)
+    Texture(epControlHighlight, setAllPoints)
     Texture(epControlEdgeT, .ce_t):
-      !TopLeft(4, 6)
-      !TopRight(-4, 6)
-    Texture(epControlEdgeTR, .ce_tr):
-      !TopRight(8, 6)
-    Texture(epControlEdgeL, .ce_l):
-      !TopLeft(-8, -6)
-      !BottomLeft(-8, 6)
-    Texture(epControlEdgeR, .ce_r):
-      !TopRight(8, -6)
-      !BottomRight(8, 6)
-    Texture(epControlEdgeBL, .ce_bl):
-      !BottomLeft(-8, -6)
+      !TopLeft(0, 7)
+      !TopRight(0, 7)
     Texture(epControlEdgeB, .ce_b):
-      !BottomLeft(4, -6)
-      !BottomRight(-4, -6)
-    Texture(epControlEdgeBR, .ce_br):
-      !BottomRight(8, -6)
-    Texture(epControlHighlight):
-      !TopLeft(-2, 0)
-      !TopRight(2, 0)
+      !BottomLeft(0, -7)
+      !BottomRight(0, -7)
   Button $parentArrow(NoInherit, .arrow, hidden):
     !Size(20, 20)
     !Left(-7, -1)
@@ -754,6 +739,8 @@ Button epTreeButton(NoInherit, virtual):
       *self:GetParent():scroll(delta)
   OnClick:
     *self:select()
+  OnDoubleClick:
+    *self:openOrClose()
   OnEnter:
     *self:enter()
   OnLeave:
