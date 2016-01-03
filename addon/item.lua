@@ -8,6 +8,53 @@ function itemreset()
   ep.character.backpack = {[1]=id, n=1, i=1}
 end
 
+local CONTEXT_MENU_ITEMS = {
+  {divider=true, section='interaction'},
+  {label=_'Equip', value='equip', prepare=function(self, item)
+    if item.sl then
+      self.disabled = nil
+      if item:isEquipped() then
+        self.label, self.value = _'Unequip', 'unequip'
+      else
+        self.label, self.value = _'Equip', 'equip'
+      end
+    else
+      self.label, self.value, self.disabled = _'Equip', 'equip', true
+    end
+  end},
+  {label=_'Inspect', value='inspect'},
+  {label=_'Place', value='place', prepare=function(self, item)
+
+  end},
+  {label=_'Split', value='split', prepare=function(self, item)
+    if item.sk and item.qn > 1 then
+      self.disabled = nil
+    else
+      self.disabled = true
+    end
+  end},
+  {label=_'Destroy', value='destroy', prepare=function(self, item)
+    self.disabled = item.pt
+  end},
+  {divider=true, section='editing'},
+  {label=_'Edit', value='edit'},
+  {label=_'Clone', value='clone'},
+  {label=_'Status', submenu={items={
+    {label=_'Protected', value='protected', checkable=true},
+    {label=_'Disabled', value='disabled', checkable=true},
+    {label=_'Debugging', value='debugging', checkable=true}
+  }}, prepare=function(self, item)
+  
+  end},
+  {divider=true, section='transferring'},
+  {label=_'Give', value='give', prepare=function(self, item)
+
+  end},
+  {label=_'Send', submenu={}},
+  {label=_'Transfer', submenu={}},
+  {label=_'Stash', value='stash'}
+}
+
 local QUALITY_TOKENS = {
   p = _'Poor',
   c = _'Common',
@@ -56,10 +103,6 @@ local SLOT_MENU_ITEMS = {
   {'fi', _'Fingers'}, {'gr', _'Groin'}, {'hr', _'Hair'}, {'hn', _'Hands'}, {'hd', _'Head'},
   {'lg', _'Legs'}, {'mt', _'Mouth'}, {'nk', _'Neck'}, {'ns', _'Nose'}, {'pk', _'Pockets'},
   {'sh', _'Shoulders'}, {'sk', _'Skin'}, {'wa', _'Waist'}, {'wr', _'Wrists'}
-}
-
-local CONTEXT_MENU_ITEMS = {
-  use = {label=_'Use', value='use'}
 }
 
 --[[
@@ -177,6 +220,8 @@ ep.Item = ep.entities:define('ep.Item', ep.Entity, {
   plural = _'items',
   description = _'A basic item.',
 
+  menu = ep.Menu('epItemMenu', UIParent, items=CONTEXT_MENU_ITEMS),
+
   destroy = function(self)
     local failure = self:super():destroy()
     if exceptional(failure) then
@@ -190,6 +235,23 @@ ep.Item = ep.entities:define('ep.Item', ep.Entity, {
   end,
 
   determineSlot = function(self, slot)
+    
+  end,
+
+  displayMenu = function(self, anchor)
+    local items = self.menu.items
+    -- handle usage
+
+    for i, item in ipairs(items) do
+      if item.prepare then
+        item:prepare(self)
+      end
+    end
+
+    self.menu:display({location={anchor=anchor}}, true)
+  end,
+
+  execute = function(self, action)
     
   end,
 
@@ -303,6 +365,14 @@ ep.Item = ep.entities:define('ep.Item', ep.Entity, {
     if not noRefresh then
       ep.items:refreshInterfaces()
     end
+  end,
+
+  isEquipped = function(self)
+    return (self.lc and self.lc:sub(1, 2) == 'eq')
+  end,
+
+  isSocketed = function(self)
+    return (self.lc and self.lc:sub(1, 2) == 'sk')
   end,
 })
 

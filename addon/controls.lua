@@ -193,11 +193,12 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
     self.values = {}
 
     self.menu = ep.Menu(self.name..'Menu', self, {
-      callback = function(value)
-        self:setValue(value)
+      callback = function(item)
+        self:setValue(item.value)
       end,
       items = self.options,
       location = {anchor=self, x=0, y=-18},
+      noAutoClose = true,
       scrollable = params.scrollable,
       window = params.window,
       width = self
@@ -221,7 +222,7 @@ ep.DropBox = ep.control('ep.DropBox', 'epDropBox', ep.Button, nil, {
     end
 
     ep.subscribe(':controlActivated', function(event, control)
-      if control ~= self then
+      if control ~= self and self.menu:IsShown() then
         self:toggleMenu('closed')
       end
     end)
@@ -692,8 +693,8 @@ ep.ComboBox = ep.control('ep.ComboBox', 'epComboBox', ep.EditBox, nil, {
     end
 
     self.menu = ep.Menu(self.name..'Menu', self, {
-      callback = function(value)
-        self:setValue(value)
+      callback = function(item)
+        self:setValue(item.value)
       end,
       items = self.options,
       location = {anchor=self, x=0, y=-18},
@@ -1592,6 +1593,7 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
     self.defaultColor = Color(params.defaultColor or 'normal')
     self.items = params.items
     self.location = params.location
+    self.noAutoClose = params.noAutoClose
     self.offset = 0
     self.submenus = {}
     self.width = params.width or 0
@@ -1831,7 +1833,10 @@ ep.Menu = ep.control('ep.Menu', 'epMenu', ep.BaseFrame, nil, {
 
 ep.subscribe(':controlActivated', function(event, control)
   if not isinstance(control, ep.Menu) then
-    ep.Menu:closeAll()
+    local menu = ep.Menu.menus[1]
+    if menu and not menu.noAutoClose then
+      menu:close()
+    end
   end
 end)
 
@@ -1847,38 +1852,36 @@ ep.MenuButton = ep.control('ep.MenuButton', 'epMenuButton', ep.Button, nil, {
   end,
 
   activate = function(self)
-    local responder, ancestor
-    if not self.item.submenu then
-      responder = self.item.callback or self.frame.callback
-      if not responder and self.frame.depth > 1 then
-        for i = self.frame.depth - 1, 1, -1 do
-          ancestor = self.frame.menus[i]
-          if ancestor.callback then
-            responder = ancestor.callback
-            break
-          end
-        end
-      end
-      if self.item.checkable then
-        self.item.checked = not self.item.checked
-        if responder then
-          invoke(responder, self.item.value or self.item.label, self.item)
-        end
-        self:check(self.item.checked)
-      elseif self.item.spot then
+    local item, frame = self.item, self.frame
+    if item.submenu then
+      return
+    end
 
-      else
-        self.frame.menus[1]:close()
-        if responder then
-          invoke(responder, self.item.value or self.item.label, self.item)
+    local callback = item.callback or frame.callback
+    if not callback and frame.depth > 1 then
+      for i = frame.depth - 1, 1, -1 do
+        local ancestor = frame.menus[i]
+        if ancestor.callback then
+          callback = ancestor.callback
+          break
         end
       end
     end
-  end,
 
-  check = function(self, checked)
-    local texture = (checked) and 'box-check' or 'box-empty'
-    self.checkbox:SetTexture('Interface\\AddOns\\ephemeral\\textures\\'..texture)
+    if item.checkable then
+      item.checked = not item.checked
+      if callback then
+        invoke(callback, item)  
+      end
+      self:setChecked(item.checked)
+    elseif item.colorable then
+      
+    else
+      self.frame.menus[1]:close()
+      if callback then
+        invoke(callback, item)
+      end
+    end
   end,
 
   enter = function(self)
@@ -1914,33 +1917,39 @@ ep.MenuButton = ep.control('ep.MenuButton', 'epMenuButton', ep.Button, nil, {
     end
   end,
 
+  setChecked = function(self, checked)
+    self.checkbox:SetTexture('Interface\\AddOns\\ephemeral\\textures\\'
+      ..(checked and 'box-check' or 'box-empty'))
+  end,
+
   update = function(self)
-    if not self.item then
+    local item = self.item
+    if not item then
       self:Hide()
       return
     end
 
-    self:SetText(self.item.label)
-    if self.item.color then
-      Color(self.item.color):setTextColor(self.font)
+    self:SetText(item.label)
+    if item.color then
+      Color(item.color):setTextColor(self.font)
     else
       self.frame.defaultColor:setTextColor(self.font)
     end
 
-    if self.item.checkable then
+    if item.checkable then
       self.checkbox:Show()
-      self:check(self.item.checked)
+      self:setChecked(item.checked)
     else
       self.checkbox:Hide()
     end
 
-    if self.item.submenu then
+    if item.submenu then
       self.arrow:Show()
     else
       self.arrow:Hide()
     end
 
-    if self.item.disabled then
+    if item.disabled then
       self:disable()
     else
       self:enable()

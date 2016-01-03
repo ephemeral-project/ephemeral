@@ -417,7 +417,7 @@ Frame epListBuilder(epControl, virtual):
       OnClick:
         *self:GetParent():GetParent():delete()
     Button $parentSave(NoInherit, .saveButton):
-      !Size(25, 25)
+      !Size(25, k25)
       !Right
       NormalTexture(epPlus)
       HighlightTexture(epPlusHighlight)
